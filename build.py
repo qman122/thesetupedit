@@ -110,7 +110,7 @@ HEAD = """<!doctype html><html lang="en"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>{title}</title><meta name="description" content="{desc}">
 <meta property="og:title" content="{title}"><meta property="og:description" content="{desc}">
-<meta property="og:image" content="{og}">
+<meta property="og:image" content="{og}"><meta name="p:domain_verify" content="77efeace518f495ac7564d61a39f2015"/>
 <link rel="icon" href="{root}img/icon.png">
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=Inter:wght@400;600&display=swap" rel="stylesheet">
