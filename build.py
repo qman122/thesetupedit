@@ -137,6 +137,7 @@ def build():
     shutil.copytree(ROOT / "img", OUT / "img")
     (OUT / "style.css").write_text(CSS, encoding="utf-8")
     (OUT / ".nojekyll").write_text("")
+    if (ROOT / "media").exists(): shutil.copytree(ROOT / "media", OUT / "media")
 
     cards = "".join(f"""<a class="card" href="setups/{s['slug']}.html"><img src="img/{s['img']}" alt="{html.escape(s['title'])}" loading="lazy">
 <div class="in"><div class="eyebrow">{len(s['items'])} items</div><h3>{html.escape(s['title'])}</h3><p>{html.escape(s['blurb'])}</p></div></a>""" for s in SETUPS)
