@@ -11,6 +11,7 @@ OUT = ROOT / "docs"
 TAG = "thesetupedi0e-20"
 SITE_NAME = "The Setup Edit"
 BASE_URL = "https://qman122.github.io/thesetupedit/"
+METRICOOL_HASH = "4e7cfa329af58d2c62006b3191c8194b"  # Metricool brand TheSetupEdit20: page views, visitors and traffic sources
 
 def amz(asin):
     return f"https://www.amazon.com/dp/{asin}?tag={TAG}"
@@ -1184,6 +1185,12 @@ def ld(obj):
     return f'<script type="application/ld+json">{json.dumps(obj, ensure_ascii=False)}</script>'
 
 
+def metricool():
+    return ('<script>function loadScript(a){var b=document.getElementsByTagName("head")[0],c=document.createElement("script");'
+            'c.type="text/javascript",c.src="https://tracker.metricool.com/resources/be.js",c.onreadystatechange=a,c.onload=a,b.appendChild(c)}'
+            f'loadScript(function(){{beTracker.t({{hash:"{METRICOOL_HASH}"}})}});</script>')
+
+
 def page(title, desc, body, root="", og="img/hero.jpg", path="", current="", extra_head="", preload="", dock_html="", schema=()):
     url = BASE_URL + path
     og_abs = og if og.startswith("http") else BASE_URL + og
@@ -1209,7 +1216,8 @@ def page(title, desc, body, root="", og="img/hero.jpg", path="", current="", ext
 <main id="main">{body}</main>
 {footer(root)}
 {dock_html}
-<script>{JS}</script></body></html>""")
+<script>{JS}</script>
+{metricool()}</body></html>""")
 
 
 def breadcrumbs(trail):
@@ -1483,7 +1491,7 @@ def build_disclosure():
 <h2 id="shop">The shop</h2>
 <p>The Desk Cable Checklist is free. The Clean Desk Guide and the Minimalist Wallpaper Pack are digital products made by The Setup Edit and sold through Payhip, which handles payment and delivery.</p>
 {mini_prods('', heading=False)}
-<h2 id="privacy">Privacy</h2><p>This site doesn't use its own cookies or collect personal information. Amazon may set cookies when you click an affiliate link, as described in Amazon's own privacy notice. Payhip handles any downloads under its own privacy policy.</p>
+<h2 id="privacy">Privacy</h2><p>This site uses Metricool to count page views and see where visitors come from, such as Pinterest or search. It doesn't collect names, email addresses or other personal information. Amazon may set cookies when you click an affiliate link, as described in Amazon's own privacy notice. Payhip handles any downloads under its own privacy policy.</p>
 <p class="back"><a class="go" href="index.html">Back to the front page</a></p>
 </div></div></div>"""
     (OUT / "disclosure.html").write_text(page(f"About & Disclosure | {SITE_NAME}",
