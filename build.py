@@ -15,9 +15,15 @@ BASE_URL = "https://qman122.github.io/thesetupedit/"
 def amz(asin):
     return f"https://www.amazon.com/dp/{asin}?tag={TAG}"
 
+# Each setup: items are (name, model, ASIN, why). The first item is the "Start here" pick (see `start`).
 SETUPS = [
     dict(slug="trading-desk-setup", title="The Trading Desk Setup", img="trading.jpg",
          blurb="A multi-monitor desk built for long sessions: floating screens, good light, and room to think.",
+         meta="A trading desk setup, item by item: monitor arms, a screen light bar, a standing desk, an ergonomic chair and mouse, and two trading books.",
+         good_for="Traders, and anyone who works across two screens for hours.",
+         start="Everything else on this desk is placed around the screens, so mount them first.",
+         intro="""<p>This desk is built around two screens at the same height, straight in front of you, with the space under them left clear. Arms carry the monitors, a light bar lights the desk without glare, and bias lighting softens the contrast during evening sessions.</p>
+<p>The standing frame, the chair and the mouse are there for long days. The two books are the one part of the setup that has nothing to do with hardware.</p>""",
          items=[
              ("Dual Monitor Arm", "VIVO dual monitor desk mount", "B009S750LA", "Floats two screens off the desk so you get your whole surface back."),
              ("Single Monitor Arm", "VIVO single monitor arm", "B00B21TLQU", "One screen, fully adjustable height, tilt and swivel."),
@@ -25,11 +31,17 @@ SETUPS = [
              ("Electric Standing Desk", "FLEXISPOT EN1", "B08BHPMYGK", "Sit or stand at the push of a button, with 4 memory presets."),
              ("LED Monitor Backlight", "Luminoodle bias lighting", "B01LG99NW4", "USB-powered glow behind your screen, softer on your eyes at night."),
              ("Ergonomic Mouse", "Logitech MX Master 3S", "B0B11LJ69K", "Shaped for long days, with an ultra-fast scroll wheel."),
+             ("Ergonomic Mesh Chair", "Ergonomic mesh office chair", "B07Y8BXBX8", "A breathable mesh back that stays cooler than foam through a long session."),
              ("Trading in the Zone", "Book by Mark Douglas", "0735201447", "The classic on trading psychology and discipline."),
              ("How to Day Trade for a Living", "Book by Andrew Aziz", "1535585951", "A beginner's guide to day trading tools and risk management."),
          ]),
     dict(slug="minimal-desk-setup", title="The Clean Minimal Desk", img="minimal.jpg",
          blurb="Fewer things, better things. Warm materials and a desk that looks calm every time you sit down.",
+         meta="A clean, minimal desk setup: leather desk pad, compact wireless keyboard, walnut wrist rest, headphone stand, bamboo tray, faux plants and a clamp lamp.",
+         good_for="Anyone who wants a desk that looks calm every time they sit down.",
+         start="It defines the working area, and the rest of the desk is arranged on top of it.",
+         intro="""<p>A calm desk is mostly about what you leave off. This one sticks to a few warm materials (leather, walnut and bamboo) and gives every loose item a place to live: a tray for the small things, a stand for the headphones.</p>
+<p>The compact wireless keyboard and the clamp lamp keep the surface open, so the desk still looks tidy in the middle of a working day.</p>""",
          items=[
              ("Leather Desk Pad", "Aothia leather desk pad", "B082F5ZLS5", "The fastest way to make a desk look put together."),
              ("75% Mechanical Keyboard", "AULA F75 wireless", "B0CNT61VMZ", "Compact, wireless, hot-swappable, and a creamy sound."),
@@ -41,25 +53,73 @@ SETUPS = [
          ]),
     dict(slug="small-space-office", title="The Small Space Office", img="small.jpg",
          blurb="A full workstation for a corner, a bedroom or an apartment. Every item earns its space.",
+         meta="A small space home office setup: monitor riser, laptop stand, monitor light bar, floating shelves, footrest and faux plants, chosen to free up desk space.",
+         good_for="Bedrooms, corners and apartments where the desk has to stay small.",
+         start="It lifts the screen and adds a shelf underneath, which frees more surface than anything else here.",
+         intro="""<p>Every item here either lifts something off the desk or hides it underneath. The riser and the laptop stand raise screens to a better height and free the surface below them. The light bar and the floating shelves use space that was going to waste.</p>
+<p>The footrest solves the usual small-space compromise: a chair or a desk that is not quite the right height.</p>""",
          items=[
              ("Monitor Riser", "WALI adjustable monitor stand", "B094QTGHNZ", "Raises your screen and adds storage underneath."),
              ("Laptop Stand", "BESIGN LS03 aluminum stand", "B08BRCT4JH", "Turns a laptop into a proper workstation."),
              ("Monitor Light Bar", "Quntis monitor lamp", "B08DKQ3JG1", "Desk light with zero footprint."),
+             ("Floating Shelves", "Wall-mounted floating shelves", "B0DZWXJ9VZ", "Storage above the desk, so the desktop itself stays clear."),
              ("Under-Desk Footrest", "Everlasting Comfort memory foam", "B07PGLBCFG", "The comfort upgrade nobody sees."),
              ("Mini Desk Plants", "Der Rose artificial plants (3-pack)", "B07VKJKFN2", "Fits on shelves and small desks."),
          ]),
     dict(slug="cable-management", title="The Cable Management Kit", img="cable.jpg",
          blurb="Hide the mess in an afternoon. The cheapest upgrade with the biggest before-and-after.",
+         meta="A cable management kit for any desk: an under-desk cable tray and adhesive cable clips, plus a simple method to hide desk cables in an afternoon.",
+         good_for="Any desk with a power strip on the floor.",
+         start="Getting the power strip off the floor is the single biggest step, and everything else routes to it.",
+         intro="""<p>Two parts do most of the work. A tray under the desk holds the power strip and the chargers, so only one cable runs down to the wall. Clips along the desk edge keep the cables you touch every day from sliding off the back.</p>
+<p>The rest is method: route every cable along one path, bundle them with reusable ties and label the ends. The <a href="../guides/cable-management-101-hide-desk-cables.html">cable management guide</a> walks through it, and the free checklist below puts it on paper.</p>""",
          items=[
              ("Under-Desk Cable Tray", "Scanfield no-screw tray (2-pack)", "B09J5HH2LR", "Power strips and chargers go under the desk, off the floor."),
              ("Adhesive Cable Clips", "OHill cable clips (16-pack)", "B071FXZBMV", "Chargers stop falling behind the desk."),
          ]),
 ]
 
+# Products recommended in guides that are not part of a setup list: ASIN -> (name, model, why).
+EXTRA_PRODUCTS = {
+    "B099596F3B": ("Mini Faux Plants", "Small artificial potted plants", "Green on the desk or a shelf, with nothing to water."),
+    "B07T5SY43L": ("Dual Monitor Arm", "Dual monitor desk mount", "Holds two screens at matching heights, and moves with a standing desk because it clamps to the top."),
+    "B096S2Z9Q7": ("Felt Desk Mat", "Felt desk pad, 40 x 16 in", "A soft, quiet surface under the keyboard and mouse."),
+    "B08HVH8FPF": ("Desk Ring Light", "Desk-mounted ring light", "An even, front-facing light for your face on calls."),
+    "B01L3LL95O": ("Mic Boom Arm", "Clamp-on microphone boom arm", "Brings the microphone close to your mouth, then swings out of the way."),
+    "B088NHGC48": ("Monitor Stand with Drawer", "2-tier monitor stand with drawer", "Raises the screen and hides small things in a drawer underneath."),
+    "B01559O0WY": ("Clip-On Fan", "Small clip-on desk fan", "Clamps to a shelf or the desk edge to move air without using floor space."),
+    "B09GTRVJQM": ("Compact Air Purifier", "Small-room air purifier", "A small footprint for a closed room you work and sleep in."),
+    "B07HFDJCSL": ("Clamp-On Keyboard Tray", "Under-desk clamp keyboard tray", "Adds a lower surface for the keyboard, and clamps on without drilling."),
+    "B0C3HCD34R": ("Noise-Cancelling Headphones", "Wireless ANC headphones", "Turns down a shared room so you can focus or take a call."),
+    "B0B6P9J3J5": ("Monitor Light Bar", "LED monitor light bar", "Lights the desk from above the screen, without glare on the display."),
+}
+
+# Short role tag shown on each product card.
+ROLE = {
+    "B009S750LA": "Screens", "B00B21TLQU": "Screens", "B094QTGHNZ": "Screens", "B08BRCT4JH": "Screens",
+    "B07T5SY43L": "Screens", "B088NHGC48": "Screens",
+    "B076VNFZJG": "Light", "B01LG99NW4": "Light", "B08DKQ3JG1": "Light", "B07R56PTMS": "Light",
+    "B08HVH8FPF": "Light", "B0B6P9J3J5": "Light",
+    "B08BHPMYGK": "Desk", "B07Y8BXBX8": "Seating", "B07PGLBCFG": "Comfort", "B09DPGVPG1": "Comfort",
+    "B0B11LJ69K": "Input", "B0CNT61VMZ": "Input", "B07HFDJCSL": "Input",
+    "B082F5ZLS5": "Surface", "B096S2Z9Q7": "Surface",
+    "B01GJQ7N94": "Storage", "B00KAZ12OS": "Storage", "B0DZWXJ9VZ": "Storage",
+    "B07VKJKFN2": "Greenery", "B099596F3B": "Greenery",
+    "B09J5HH2LR": "Cables", "B071FXZBMV": "Cables",
+    "B01L3LL95O": "Audio", "B0C3HCD34R": "Audio", "B01559O0WY": "Air", "B09GTRVJQM": "Air",
+    "0735201447": "Reading", "1535585951": "Reading",
+}
+
+# Photo credits: (used for, photographer, Unsplash photo id, image file in img/)
 CREDITS = [
-    ("Home page", "Roberto Nickson", "Gvm2wM3V5PA"), ("Trading desk", "João Inácio", "Wk_6p1TuhRE"),
-    ("Minimal desk", "Muhammet Sain", "_g0SLFllfBY"), ("Small space", "Behnam Norouzi", "j3b15qP-ckc"),
-    ("Cable management", "Bedirhan Gül", "I_3D0pVrMhY"),
+    ("Home page", "Roberto Nickson", "Gvm2wM3V5PA", "hero.jpg"), ("Trading desk", "João Inácio", "Wk_6p1TuhRE", "trading.jpg"),
+    ("Minimal desk", "Muhammet Sain", "_g0SLFllfBY", "minimal.jpg"), ("Small space", "Behnam Norouzi", "j3b15qP-ckc", "small.jpg"),
+    ("Cable management", "Bedirhan Gül", "I_3D0pVrMhY", "cable.jpg"),
+    ("Bedroom guide", "Aleksandra Dementeva", "GzR2KS4ABYA", "bedroom.jpg"),
+    ("Video call guide", "Adeniji Abdullahi A", "F5FrFqwIKAI", "video-call.jpg"),
+    ("Standing desk guide", "EFFYDESK", "aDZ-UZSvhE4", "standing.jpg"),
+    ("Cable checklist", "Jakub Żerdzicki", "weJ7qyjHYwk", "checklist.jpg"),
+    ("Clean Desk Guide", "Max Andrey", "-8-2YWKt8Ag", "clean-desk.jpg"),
 ]
 
 DISCLOSURE = ("The Setup Edit is reader-supported. As an Amazon Associate I earn from qualifying purchases. "
@@ -83,7 +143,7 @@ ARTICLES = [
 <h2>Step 2: Pick a desk that can carry the load</h2>
 <p>Multiple monitors, arms and a laptop add up. You want a stable desk with a solid top that a clamp can grip, and enough depth that screens are not right in your face. If you split your day between research and active sessions, a sit-stand desk lets you change position without breaking focus.</p>
 [[B08BHPMYGK]]
-<p>Memory presets matter more than they sound. If switching heights takes one button press, you are far more likely to actually do it during a long session.</p>
+<p>Memory presets matter more than they sound. If switching heights takes one button press, you are far more likely to actually do it during a long session. The <a href="standing-desk-setup-guide.html">standing desk setup guide</a> covers how to find both heights.</p>
 
 <h2>Step 3: Mount the monitors instead of using the stands</h2>
 <p>Stock monitor stands take up desk space and rarely go high enough. A monitor arm clamps to the back edge of the desk and lets you set height, tilt and angle independently for each screen. For a two-screen layout, a dual arm keeps both displays aligned at the same height, which makes moving your eyes between them easier.</p>
@@ -144,7 +204,7 @@ ARTICLES = [
 <h2>Step 2: Get power off the floor</h2>
 <p>A power strip on the floor is where most mess starts. Every cable has to reach down to it, and the strip itself collects dust and gets kicked. Mount it under the desk instead, inside a cable tray attached to the underside of the desktop. Power bricks and excess cable sit in the tray too, so only one cable runs from the desk to the wall.</p>
 [[B09J5HH2LR]]
-<p>Position the tray toward the back of the desk, where it is out of sight and away from your knees. If your desk is a standing model, place it so the one cable down to the wall has enough slack for the full height range.</p>
+<p>Position the tray toward the back of the desk, where it is out of sight and away from your knees. If your desk is a standing model, place it so the one cable down to the wall has enough slack for the full height range. The <a href="standing-desk-setup-guide.html">standing desk setup guide</a> has more on that.</p>
 
 <h2>Step 3: Route everything along one path</h2>
 <p>Pick a single route from the desktop to the tray, usually down the back edge or along one desk leg, and send every cable that way. If you use a monitor arm, run display and power cables along the arm with ties or clips so they drop neatly behind the desk instead of hanging in a loop.</p>
@@ -199,7 +259,7 @@ ARTICLES = [
 <h2>Light the desk without using the desk</h2>
 <p>Desk lamps with wide bases take up surprising room. Two alternatives save space entirely. A monitor light bar sits on top of the screen and lights the desk from above without glare on the display.</p>
 [[B08DKQ3JG1]]
-<p>A clamp-on swing arm lamp attaches to the desk edge and can be pushed out of the way when not needed, which is handy if the desk doubles as a dining or hobby table.</p>
+<p>A clamp-on swing arm lamp attaches to the desk edge and can be pushed out of the way when not needed, which is handy if the desk doubles as a dining or hobby table. If you take video calls from the same desk, see <a href="how-to-light-a-desk-for-video-calls.html">how to light a desk for video calls</a>.</p>
 [[B07R56PTMS]]
 
 <h2>Keep the floor clear</h2>
@@ -216,7 +276,7 @@ ARTICLES = [
 <p>Choose a limited palette of two or three colors or materials, such as wood, white and green, so the corner reads as calm rather than crowded. For more on keeping things pared back, see our guide to a <a href="minimalist-desk-setup-essentials.html">minimalist desk setup</a>.</p>
 
 <h2>Bedroom offices: set a boundary</h2>
-<p>If your office shares a room with your bed, a clear visual boundary helps separate work from rest. Face the desk away from the bed if you can, keep work items in one tray or drawer, and clear the desk at the end of the day so the room returns to being a bedroom. A few minutes of reset each evening goes a long way.</p>
+<p>If your office shares a room with your bed, a clear visual boundary helps separate work from rest. Face the desk away from the bed if you can, keep work items in one tray or drawer, and clear the desk at the end of the day so the room returns to being a bedroom. A few minutes of reset each evening goes a long way. The <a href="best-desk-setup-for-small-bedrooms.html">bedroom desk setup guide</a> goes further, from desk placement to light and air.</p>
 <p>You can find every item mentioned here in <a href="../setups/small-space-office.html">The Small Space Office</a>.</p>
 """,
          faq=[
@@ -289,389 +349,611 @@ ARTICLES = [
              ("How do I keep a minimalist desk clean?", "Do a short reset at the end of each day, give small items a single tray, and move chargers and power strips under the desk."),
              ("Can a minimalist desk still have personality?", "Yes. Choose a consistent palette of materials and one or two objects you genuinely like, rather than many small decorations."),
          ]),
+
+    dict(slug="standing-desk-setup-guide", img="standing.jpg", eyebrow="Standing desk guide", date="2026-09-24",
+         title="Standing Desk Setup Guide: Heights, Screens and Cables",
+         desc="How to set up a standing desk properly: find your sitting and standing heights, mount screens that move with the desk, give cables enough slack, and make switching easy.",
+         setups=["trading-desk-setup", "cable-management"],
+         body="""
+<p>Buying a standing desk is the easy part. The benefit comes from setting two heights correctly, making sure everything on the desk can travel with it, and making the switch so effortless that you actually do it. This guide covers the setup in that order, from the frame to the habit.</p>
+
+<h2>Choose a frame that suits what sits on it</h2>
+<p>Add up what the desk will carry: monitors, arms, a laptop, speakers, a lamp. Check that the frame's weight rating covers it with room to spare, and look at how stable it is at your standing height, because that is where wobble shows up first. A dual-motor electric frame with memory presets is the most common choice for a full desk setup.</p>
+[[B08BHPMYGK]]
+<p>Presets matter more than they sound. If changing position takes one button press, you will do it several times a day. If it takes thirty seconds of holding a switch, you will stop.</p>
+
+<h2>Find your two heights</h2>
+<p>Set the standing height first. Stand relaxed with your shoulders down and your elbows bent at roughly a right angle. The desktop, or more precisely the keyboard, should sit at about the height of your forearms, so your wrists stay straight and you are not reaching up or hunching down. Save that as a preset.</p>
+<p>Then sit down and repeat. With your feet flat on the floor and your thighs roughly level, bring the desk to the same elbow height and save it as the second preset. If the chair has to go high enough that your feet no longer rest flat, a footrest closes the gap.</p>
+[[B07PGLBCFG]]
+
+<h2>Mount the screens so they move with the desk</h2>
+<p>Monitor stands work, but monitor arms are better on a standing desk. An arm clamped to the desktop rises and falls with it, and you can fine-tune the height separately for each position. A common guideline is to keep the top of the screen at or slightly below eye level, at about arm's length.</p>
+[[B07T5SY43L]]
+<p>After you set both presets, check the screen height in each one. Small differences in posture between sitting and standing often mean a slight adjustment is worth it.</p>
+
+<h2>Keep the keyboard at elbow height</h2>
+<p>If the desktop is at the right height, the keyboard can sit directly on it. Some desks, though, will not go low enough for shorter people when seated, or the desk is shared with someone taller. A clamp-on keyboard tray adds a second, lower surface without drilling into the desktop.</p>
+[[B07HFDJCSL]]
+
+<h2>Give the cables slack, not just tidiness</h2>
+<p>This is where most standing desk setups go wrong. A cable that is neat at sitting height can pull tight at standing height, and a power strip on the floor means every cable has to stretch the full distance. Mount the power strip in a tray on the underside of the desk so it travels with everything plugged into it.</p>
+[[B09J5HH2LR]]
+<p>That leaves just one cable running from the desk to the wall. Give it enough slack for the full height range, then run the desk from its lowest to its highest position with nothing on the floor to snag. Adhesive clips keep the cables you use daily in place along the edge.</p>
+[[B071FXZBMV]]
+<p>The <a href="cable-management-101-hide-desk-cables.html">cable management guide</a> covers the full routing method, and the <a href="../setups/cable-management.html">Cable Management Kit</a> lists the parts.</p>
+
+<h2>Do not skip the chair</h2>
+<p>Most people with a standing desk still sit for much of the day, so the chair deserves as much thought as the frame. Look for adjustable seat height and a supportive back. A mesh back is a popular choice for long sessions because it breathes better than foam.</p>
+[[B07Y8BXBX8]]
+
+<h2>Build a switching habit</h2>
+<p>The goal is not to stand all day. It is to change position regularly. Tie the switch to something you already do: stand for calls, sit for focused writing, stand after lunch. If you are new to standing, start with short stretches and build up. On a hard floor, comfortable shoes or a cushioned mat make standing periods easier.</p>
+
+<h2>Common mistakes to avoid</h2>
+<ul>
+<li><strong>Standing with the desk too high.</strong> If your shoulders rise or your wrists bend upward, lower it.</li>
+<li><strong>Forgetting the second preset.</strong> Save both heights on day one, so switching never means guessing.</li>
+<li><strong>Tight cables.</strong> Test the full height range before you call the setup finished.</li>
+<li><strong>Heavy screens on a light frame.</strong> Check the weight rating against everything on the desk, arms included.</li>
+</ul>
+<p>For a full multi-screen build around a standing frame, see <a href="how-to-build-a-trading-desk-setup.html">how to build a trading desk setup</a>, or shop every piece in <a href="../setups/trading-desk-setup.html">The Trading Desk Setup</a>.</p>
+""",
+         faq=[
+             ("How high should a standing desk be?", "At standing height, the keyboard should sit at about elbow height with your arms relaxed and your elbows bent at roughly a right angle, so your wrists stay straight."),
+             ("Should monitors move with a standing desk?", "Yes. Mount them on arms or stands attached to the desktop, so the screens keep the same relationship to you in both positions."),
+             ("How do I manage cables on a standing desk?", "Put the power strip in a tray under the desktop so it moves with the desk, and leave enough slack on the single cable to the wall for the full height range."),
+             ("How long should I stand at a standing desk?", "There is no single right number. The common advice is to change position regularly rather than stand all day, and to build up standing time gradually."),
+         ]),
+
+    dict(slug="how-to-light-a-desk-for-video-calls", img="video-call.jpg", eyebrow="Lighting guide", date="2026-09-24",
+         title="How to Light a Desk for Video Calls",
+         desc="Look clear and natural on video calls: use the window you have, place a main light in front of you, raise the camera to eye level and add soft light behind you.",
+         setups=["small-space-office", "trading-desk-setup"],
+         body="""
+<p>Most video call problems are lighting problems. A webcam in a dim room produces a grainy, flat picture, and a bright window behind you turns you into a silhouette. The fix is rarely a new camera. It is putting the right light in the right place, which takes a few minutes and a lamp or two.</p>
+
+<h2>Start with the window you already have</h2>
+<p>Daylight is the best light you have, as long as it is in front of you. Face the window, or sit at an angle to it, so the light falls on your face. Never sit with a window behind you: the camera exposes for the bright glass and your face goes dark.</p>
+<p>If direct sun is harsh, a sheer curtain softens it. Daylight changes through the day and disappears in the evening, so it works best combined with a lamp you control.</p>
+
+<h2>Put your main light in front of you, a little above eye level</h2>
+<p>Your main light, often called the key light, should sit behind or just beside the camera, a little above eye level, angled slightly down toward your face. Too low and it lights you from below. Too high and it leaves shadows under your eyes.</p>
+<p>A desk ring light is the simplest way to do this. It sits behind the screen and lights your face evenly from the front.</p>
+[[B08HVH8FPF]]
+<p>Start at a low brightness and turn it up until your face looks clear, not washed out. If you wear glasses and see reflections of the light, raise it higher and move it slightly off to one side.</p>
+
+<h2>Raise the camera to eye level</h2>
+<p>A laptop on a desk looks up at you, which is rarely flattering and shows a lot of ceiling. Raising the laptop brings the camera to eye level, so you look straight into it.</p>
+[[B08BRCT4JH]]
+<p>With an external webcam on a monitor, the same rule applies: set the screen so the camera sits at about eye height. Pair a raised laptop with a separate keyboard and mouse so your typing position stays comfortable.</p>
+
+<h2>Add soft light behind you and behind the screen</h2>
+<p>A dark background makes the picture look grainy and makes you look cut out. A small lamp somewhere in the room behind you, even pointed at a wall, adds depth and helps the camera. A clamp-on swing arm lamp is easy to aim at a wall and push away after the call.</p>
+[[B07R56PTMS]]
+<p>Bias lighting behind the monitor softens the contrast between a bright screen and a dark room. It is more about your comfort than the camera, but it helps on evening calls.</p>
+[[B01LG99NW4]]
+
+<h2>Keep your work light separate</h2>
+<p>A monitor light bar lights the desk, not your face, so it does not replace a key light. It is still worth having. You can read notes or write during a call without the glare that a desk lamp can cause on the screen.</p>
+[[B0B6P9J3J5]]
+
+<h2>Match the color of your lights</h2>
+<p>Mixing a warm lamp with cool daylight gives patchy, uneven skin tones. If your lights are adjustable, set them to a similar color temperature, warmer in the evening and more neutral during the day. If they are not, turn off the one that clashes with your main light.</p>
+
+<h2>Sound is half the call</h2>
+<p>Good light makes you look better, but clear audio is what people notice first. A microphone on a boom arm sits close to your mouth, where it picks up your voice rather than the room, and swings out of shot when you are done.</p>
+[[B01L3LL95O]]
+
+<h2>A two-minute check before important calls</h2>
+<ul>
+<li><strong>Open your camera preview.</strong> Your face should be the brightest thing in the frame.</li>
+<li><strong>Look for bright windows behind you.</strong> Close the blind or turn your seat.</li>
+<li><strong>Check the framing.</strong> Your eyes should sit about a third of the way down the frame.</li>
+<li><strong>Check your glasses.</strong> Move the light up or to the side if it reflects.</li>
+</ul>
+<p>Working from a small room? The <a href="../setups/small-space-office.html">Small Space Office</a> keeps lights and screens off the desk surface. For a bedroom office, read <a href="best-desk-setup-for-small-bedrooms.html">the best desk setup for small bedrooms</a>.</p>
+""",
+         faq=[
+             ("Where should a light go for video calls?", "In front of you, behind or just beside the camera, a little above eye level and angled slightly down. Avoid having a bright window or lamp behind you."),
+             ("Is a ring light good for video calls?", "It is an easy way to light your face evenly from the front. Keep the brightness moderate and raise it if you see reflections in glasses."),
+             ("Why do I look dark on video calls?", "Usually because the brightest light is behind you, like a window, so the camera exposes for the background. Face the light instead."),
+             ("Does a monitor light bar light my face?", "Not really. It aims down at the desk. It is great for reading and writing during calls, but you still need a light in front of you."),
+         ]),
+
+    dict(slug="best-desk-setup-for-small-bedrooms", img="bedroom.jpg", eyebrow="Bedroom office guide", date="2026-09-24",
+         title="The Best Desk Setup for Small Bedrooms",
+         desc="How to fit a real desk setup into a small bedroom: where to put the desk, how to use the wall, keep the room comfortable and separate work from sleep.",
+         setups=["small-space-office", "minimal-desk-setup"],
+         body="""
+<p>A bedroom office has two jobs that pull in opposite directions. During the day it needs to work like a real desk, with a screen at a sensible height, good light and somewhere to put things. At night it needs to disappear, so the room still feels like a place to sleep. This guide covers both, starting with where the desk goes.</p>
+
+<h2>Pick the spot before you pick the desk</h2>
+<p>Look for a wall with an outlet nearby and, ideally, a window to one side. Side light is the easiest daylight to work with: it does not glare off the screen the way light from behind the desk can, and it does not silhouette you on calls the way a window behind you does.</p>
+<p>Measure the width and depth of the space, then check the chair. You need room to push it back and stand up without hitting the bed or a wardrobe door. If you can, set the desk so that you face away from the bed while you work.</p>
+
+<h2>Choose a shallow desk and make the depth work</h2>
+<p>A shallow desk saves floor space, but it brings the screen closer to your face and leaves little room for the keyboard. Two additions solve most of that. A monitor stand raises the screen and adds a drawer for small things, so the desktop stays clear.</p>
+[[B088NHGC48]]
+<p>A clamp-on keyboard tray adds a lower surface at the front edge, which moves the keyboard toward you and gives your arms a more comfortable angle. It clamps on, so there is nothing to drill.</p>
+[[B07HFDJCSL]]
+<p>If you work from a laptop, a stand does the same job as the monitor stand. Add a separate keyboard and mouse so you are not hunching over the laptop keyboard.</p>
+[[B08BRCT4JH]]
+
+<h2>Build up the wall, not out into the room</h2>
+<p>In a small bedroom, floor space is the scarcest thing you have. The wall above the desk is usually empty. Floating shelves hold books, a printer paper stack, chargers and a plant, and keep all of it off the desktop.</p>
+[[B0DZWXJ9VZ]]
+<p>Mount them into studs or with anchors rated for what you plan to put on them, and keep the lowest shelf high enough that you do not hit it when you stand up.</p>
+
+<h2>Light the desk, not the bed</h2>
+<p>A bright desk lamp lights the whole room, which matters if someone else is trying to sleep. A monitor light bar aims light down at the desk surface only, with no glare on the screen and much less spill across the room.</p>
+[[B0B6P9J3J5]]
+<p>If you take video calls, light your face from the front. The guide to <a href="how-to-light-a-desk-for-video-calls.html">lighting a desk for video calls</a> covers where to put it.</p>
+
+<h2>Keep the air comfortable</h2>
+<p>A small room with a computer running and the door closed warms up quickly. A clip-on fan moves air without taking any floor space, and it can clamp to a shelf or the desk edge.</p>
+[[B01559O0WY]]
+<p>Because you both work and sleep in the room, a compact air purifier can be worth considering. Check the recommended room size on the listing against your room before you buy.</p>
+[[B09GTRVJQM]]
+
+<h2>Handle noise if you share the space</h2>
+<p>A bedroom office is often next to a shared living space, a partner, or a busy street. Noise-cancelling headphones turn that down so you can focus or take a call, and they double as a way to signal that you are working.</p>
+[[B0C3HCD34R]]
+
+<h2>Keep the floor clear</h2>
+<p>Cables and a power strip on the floor are visible from the bed and make the whole room feel busier. Mount the power strip under the desk in a tray, so only one cable reaches the wall. The <a href="cable-management-101-hide-desk-cables.html">cable management guide</a> covers the method step by step.</p>
+[[B09J5HH2LR]]
+
+<h2>Close the office at night</h2>
+<p>A short end-of-day reset is what makes a bedroom office work. Put work items in one drawer or tray, close the laptop, turn off the desk light and push the chair in. Keep work off the nightstand. One or two small plants on the shelf make the corner feel like part of the room rather than an office dropped into it.</p>
+[[B099596F3B]]
+
+<h2>Common mistakes to avoid</h2>
+<ul>
+<li><strong>A desk that is too deep for the room.</strong> Measure chair clearance before you buy.</li>
+<li><strong>A window behind the screen.</strong> The glare is tiring during the day and hard to fix later.</li>
+<li><strong>Storage on the desktop.</strong> Move it to the wall or into a drawer.</li>
+<li><strong>Work spreading across the room.</strong> Give it one boundary and clear it every evening.</li>
+</ul>
+<p>Every piece for a compact desk is in <a href="../setups/small-space-office.html">The Small Space Office</a>. For more ideas, read <a href="small-home-office-ideas.html">small home office ideas that actually work</a>.</p>
+""",
+         faq=[
+             ("Where should a desk go in a small bedroom?", "Against a wall near an outlet, ideally with a window to one side, and facing away from the bed if possible. Leave room to push the chair back."),
+             ("How do I make a small desk work in a bedroom?", "Raise the screen on a stand or riser, use a clamp-on keyboard tray for extra depth, and move storage to floating shelves above the desk."),
+             ("What lighting is best for a bedroom desk?", "A monitor light bar lights the desk surface without lighting the whole room, which helps if someone else is sleeping. Add a front light for video calls."),
+             ("How do I separate work and sleep in one room?", "Face the desk away from the bed, keep work items in one tray or drawer, and do a short reset at the end of each day."),
+         ]),
 ]
 
 
 # ---- Stylesheet (written to docs/style.css) ---------------------------------------------
+# Shape rule: buttons 6px, cards 12px, photos in cards 10px, thumbnails 6-8px, full-bleed photos square.
+# Color rule: forest (--ink) carries text, Amazon buttons and dark surfaces; terracotta is the single accent
+# (links, the free-checklist button, "Start here"). No other hues.
 CSS = r"""
-/* The Setup Edit: editorial stylesheet */
+/* The Setup Edit */
 :root{
-  --paper:#F6F1E7; --cream:#EFE6D6; --sand:#E5D8C2; --ink:#1E2A26; --ink-2:#22302B; --moss:#2C3A34;
-  --stone:#5C5A53; --clay:#C0582F; --clay-ink:#9C4320; --clay-soft:#E39A76;
-  --on-dark:#F2EADB; --on-dark-2:#BDB6A8; --rule:rgba(30,42,38,.16); --rule-dark:rgba(242,234,219,.18);
-  --serif:"Newsreader",Georgia,"Times New Roman",serif; --sans:"Inter Tight","Helvetica Neue",Arial,system-ui,sans-serif;
-  --pad:clamp(20px,4.4vw,64px); --gut:clamp(16px,1.8vw,28px); --sec:clamp(80px,10vw,152px);
-  --ease:cubic-bezier(.2,.7,.2,1);
+  --paper:#F4EEE3; --cream:#ECE3D1; --card:#FBF7F0; --sand:#E2D5BF; --chip:#E6DCC9;
+  --ink:#1E2A26; --ink-2:#2A3732; --moss:#33463E; --stone:#5E5A51;
+  --clay:#C0582F; --clay-ink:#A2461F; --clay-hover:#8A3B19; --clay-soft:#E0915F;
+  --on-dark:#F2EADB; --on-dark-2:#C4BDAF;
+  --line:rgba(30,42,38,.13); --line-2:rgba(30,42,38,.26); --line-dark:rgba(242,234,219,.16);
+  --serif:"Newsreader",Georgia,"Times New Roman",serif;
+  --sans:"Schibsted Grotesk",ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif;
+  --pad:clamp(16px,4vw,56px); --gut:clamp(16px,2vw,32px); --sec:clamp(72px,8.4vw,128px);
+  --r-btn:6px; --r-card:12px; --r-img:10px;
+  --shadow:0 1px 1px rgba(30,42,38,.04),0 18px 40px -24px rgba(30,42,38,.34);
+  --ease:cubic-bezier(.16,1,.3,1);
+  --z-dock:20; --z-skip:30;
 }
 *,*::before,*::after{box-sizing:border-box}
-html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
+html{-webkit-text-size-adjust:100%;text-size-adjust:100%;color-scheme:light;scroll-padding-bottom:96px}
 @media (prefers-reduced-motion:no-preference){html{scroll-behavior:smooth}}
 body{margin:0;background:var(--paper);color:var(--ink);font:400 17px/1.6 var(--sans);-webkit-font-smoothing:antialiased;
-  -moz-osx-font-smoothing:grayscale;overflow-wrap:break-word;font-kerning:normal;overflow-x:hidden}
+  -moz-osx-font-smoothing:grayscale;overflow-wrap:break-word;font-kerning:normal;overflow-x:clip}
 img{max-width:100%;height:auto;display:block}picture{display:block}
 a{color:inherit;text-decoration:none}
-h1,h2,h3{font-family:var(--serif);font-weight:400;margin:0;line-height:1.08;letter-spacing:-.015em;text-wrap:balance}
+h1,h2,h3{font-family:var(--serif);font-weight:400;margin:0;line-height:1.1;letter-spacing:-.018em;text-wrap:balance}
 p{margin:0;text-wrap:pretty}ul,ol{margin:0;padding:0;list-style:none}figure{margin:0}
-em,i{font-style:italic}
-::selection{background:var(--clay);color:var(--paper)}
-:focus-visible{outline:2px solid var(--clay-ink);outline-offset:3px;border-radius:1px}
-.band-dark :focus-visible,.foot :focus-visible{outline-color:var(--clay-soft)}
-.skip{position:absolute;left:12px;top:-60px;z-index:10;background:var(--ink);color:var(--paper);padding:10px 14px;font-size:14px}
+::selection{background:var(--ink);color:var(--on-dark)}
+:focus-visible{outline:2px solid var(--clay-ink);outline-offset:3px;border-radius:2px}
+.foot :focus-visible,.pcard.lead :focus-visible{outline-color:var(--clay-soft)}
+.vh{position:absolute!important;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);clip-path:inset(50%);white-space:nowrap}
+.skip{position:absolute;left:12px;top:-80px;z-index:var(--z-skip);background:var(--ink);color:var(--on-dark);padding:10px 14px;border-radius:var(--r-btn)}
 .skip:focus{top:12px}
-.wrap{width:100%;max-width:1440px;margin-inline:auto;padding-inline:var(--pad)}
-.label{font:600 11.5px/1.35 var(--sans);letter-spacing:.14em;text-transform:uppercase}
-.kicker{color:var(--clay-ink)}
-.section{padding-block:var(--sec)}
-.band{padding-block:var(--sec)}
-.band-cream{background:var(--cream)}
-.band-dark{background:var(--ink);color:var(--on-dark)}
-.band-dark .kicker{color:var(--clay-soft)}
+.wrap{width:100%;max-width:1360px;margin-inline:auto;padding-inline:var(--pad)}
+.meta{font:500 14px/1.4 var(--sans);color:var(--stone)}
+.tag{display:inline-block;font:600 12.5px/1 var(--sans);padding:6px 8px 5px;border-radius:4px;background:var(--chip);color:var(--ink)}
+.tag-clay{background:var(--clay-ink);color:var(--on-dark)}
+.ul{background:linear-gradient(currentColor,currentColor) 0 100%/0 1px no-repeat;transition:background-size .5s var(--ease)}
+a:hover .ul,a:focus-visible .ul{background-size:100% 1px}
 
-/* links */
-.ulink{background:linear-gradient(currentColor,currentColor) 0 100%/0 1px no-repeat;transition:background-size .4s var(--ease)}
-.ulink:hover{background-size:100% 1px}
-.uline{background:linear-gradient(currentColor,currentColor) 0 96%/0 1px no-repeat;transition:background-size .5s var(--ease)}
-a:hover .uline,a:focus-visible .uline{background-size:100% 1px}
-.cta{display:inline-flex;align-items:center;gap:.55em;font:600 12px/1 var(--sans);letter-spacing:.12em;text-transform:uppercase;
-  white-space:nowrap;padding:.9em 0 .75em;border-bottom:1px solid currentColor;transition:color .25s,border-color .25s}
-.cta .arr{display:inline-block;font-family:var(--sans);letter-spacing:0;transition:transform .35s var(--ease)}
-.cta:hover{color:var(--clay-ink)}.cta:hover .arr{transform:translateX(4px)}
-.cta-back:hover .arr{transform:translateX(-4px)}
-.band-dark .cta:hover{color:var(--clay-soft)}
+/* buttons and links */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:.45em;min-height:48px;padding:0 22px;border-radius:var(--r-btn);
+  font:600 15.5px/1.1 var(--sans);white-space:nowrap;background:var(--ink);color:var(--on-dark);cursor:pointer;
+  transition:background-color .25s var(--ease),transform .2s var(--ease),box-shadow .25s var(--ease)}
+.btn:hover{background:var(--moss)}
+.btn:active{transform:scale(.98)}
+.btn .ext{display:inline-block;transition:transform .35s var(--ease)}
+.btn:hover .ext{transform:translate(2px,-2px)}
+.btn-clay{background:var(--clay-ink)}.btn-clay:hover{background:var(--clay-hover)}
+.btn-light{background:var(--on-dark);color:var(--ink)}.btn-light:hover{background:#FFF9EE}
+.btn-line{background:transparent;color:var(--ink);box-shadow:inset 0 0 0 1px var(--line-2)}
+.btn-line:hover{background:var(--card);box-shadow:inset 0 0 0 1px var(--ink)}
+.tlink{text-decoration:underline;text-decoration-thickness:1px;text-underline-offset:.22em;text-decoration-color:var(--clay);transition:color .2s}
+.tlink:hover{color:var(--clay-ink)}
+.go{display:inline-flex;align-items:center;gap:10px;font:600 15px/1.2 var(--sans)}
+.go::after{content:"";width:18px;height:1px;background:currentColor;transition:width .4s var(--ease)}
+a:hover .go::after,a.go:hover::after{width:30px}
 .media{display:block;overflow:hidden;background:var(--sand)}
-.media img{width:100%;height:100%;object-fit:cover;transition:transform 1.4s var(--ease)}
-a:hover .media img,a.media:hover img{transform:scale(1.02)}
+.media img{width:100%;height:100%;object-fit:cover;transition:transform 1.2s var(--ease)}
+a:hover .media img{transform:scale(1.025)}
+@media (prefers-reduced-motion:reduce){.media img,.btn,.btn .ext,.ul,.go::after{transition:none}}
 
-/* reveal */
-.js .reveal{opacity:0;transform:translateY(16px);transition:opacity 1s var(--ease),transform 1s var(--ease)}
-.js .reveal.in{opacity:1;transform:none}
-@media (prefers-reduced-motion:reduce){.js .reveal{opacity:1;transform:none;transition:none}.media img,.cta .arr,.ulink,.uline{transition:none}}
-
-/* masthead */
-.mast-top{display:flex;justify-content:space-between;gap:16px;padding:12px 0 11px;color:var(--stone);border-bottom:1px solid var(--rule)}
-.mast-top span:first-child{display:none}
-.mast-main{display:flex;flex-wrap:wrap;align-items:baseline;justify-content:space-between;padding:18px 0 0;border-bottom:1px solid var(--ink)}
-.wordmark{font:400 29px/1 var(--serif);letter-spacing:-.025em;padding-bottom:16px;font-variation-settings:"opsz" 48}
+/* top bar + masthead */
+.topbar{display:block;background:var(--ink);color:var(--on-dark);font:500 14px/1.35 var(--sans);text-align:center;padding:10px var(--pad)}
+.topbar u{text-decoration-color:var(--clay-soft);text-underline-offset:.22em}
+.topbar:hover u{text-decoration-color:currentColor}
+.tb-long{display:none}
+.mast{border-bottom:1px solid var(--line)}
+.mast .wrap{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;column-gap:24px}
+.wordmark{font:400 25px/1 var(--serif);letter-spacing:-.02em;padding:18px 0 10px;font-variation-settings:"opsz" 36}
 .wordmark i{font-weight:300}
-.primary{display:flex;width:100%;justify-content:space-between;border-top:1px solid var(--rule);padding:11px 0 12px}
-.primary a{font:500 12px/1 var(--sans);letter-spacing:.14em;text-transform:uppercase;padding:4px 0;border-bottom:1px solid transparent;transition:border-color .3s,color .3s}
+.primary{display:flex;gap:24px;width:100%;padding:0 0 10px}
+.primary a{font:500 15px/1 var(--sans);padding:9px 0 7px;border-bottom:2px solid transparent;transition:color .2s,border-color .2s}
 .primary a:hover{color:var(--clay-ink)}
-.primary a[aria-current]{border-bottom-color:var(--ink)}
-@media (min-width:700px){
-  .mast-top span:first-child{display:inline}
-  .mast-main{flex-wrap:nowrap;padding:24px 0 20px}
-  .wordmark{font-size:34px;padding:0}
-  .primary{width:auto;border:0;padding:0;gap:clamp(22px,3vw,44px)}
-}
+.primary a[aria-current]{border-bottom-color:var(--clay)}
+@media (min-width:760px){.tb-long{display:inline}.tb-short{display:none}
+  .wordmark{font-size:30px;padding:22px 0}.primary{width:auto;padding:0;gap:34px}}
 
-/* shared type */
-.sec-head{display:grid;gap:14px;padding-bottom:28px;border-bottom:1px solid var(--ink);margin-bottom:0}
-.sec-title{font-size:clamp(38px,5.6vw,80px);font-weight:300;letter-spacing:-.03em;line-height:1;font-variation-settings:"opsz" 72}
-.sec-title em{font-weight:300}
-.sec-count{color:var(--stone)}
-.caption{display:flex;flex-direction:column;gap:4px;padding-top:12px;font-size:13px;line-height:1.5;color:var(--stone)}
-.caption .label{color:var(--ink);margin-right:.8em}
-.model{font:600 11px/1.4 var(--sans);letter-spacing:.13em;text-transform:uppercase;color:var(--stone)}
-.disclosure{font-size:13px;line-height:1.55;color:var(--stone);border-top:1px solid var(--rule);padding-top:14px;margin-top:22px;max-width:52ch}
-.disclosure .label{color:var(--ink);margin-right:.5em;font-size:10.5px}
+/* breadcrumbs */
+.crumbs ol{display:flex;flex-wrap:wrap;row-gap:4px;font:500 14px/1.4 var(--sans);color:var(--stone)}
+.crumbs li+li::before{content:"/";margin:0 10px;color:var(--stone);opacity:.6}
+.crumbs a{color:var(--ink);text-decoration:underline;text-decoration-color:var(--line-2);text-underline-offset:.22em;transition:text-decoration-color .2s}
+.crumbs a:hover{text-decoration-color:var(--clay)}@media (max-width:699px){.crumbs li[aria-current]{display:none}}
 
-/* cover */
-.cover{padding-top:clamp(36px,6vw,96px)}
-.cover-lines{display:none}
-.cover-title{font-size:clamp(50px,13.4vw,168px);font-weight:300;letter-spacing:-.045em;line-height:.9;max-width:11.5ch;
-  font-variation-settings:"opsz" 72}
-.cover-title em{font-weight:300;letter-spacing:-.03em}
-.cover-row{display:grid;gap:14px;margin-top:clamp(28px,4vw,56px);padding:18px 0 clamp(28px,3.4vw,44px);border-top:1px solid var(--ink)}
-.cover-dek{font:400 19px/1.5 var(--serif);color:var(--ink-2);max-width:46ch}
-.cover-row .cta{justify-self:start}
-.bleed img{width:100%;object-fit:cover}
-.cover-fig img{aspect-ratio:4/3}
-.setup-fig img{aspect-ratio:4/3}
-@media (min-width:700px){.cover-title{font-size:clamp(50px,10.4vw,168px)}}
+/* home: hero */
+.hero{display:grid;gap:28px;padding-top:clamp(28px,4.4vw,64px);padding-bottom:clamp(28px,3vw,44px)}
+.hero-title{font-size:clamp(44px,5.6vw,82px);font-weight:350;letter-spacing:-.035em;line-height:1;font-variation-settings:"opsz" 72}
+.hero-dek{font:400 clamp(18px,1.45vw,20px)/1.5 var(--sans);color:var(--ink-2);max-width:40ch;margin-top:22px}
+.hero-ctas{display:flex;flex-wrap:wrap;align-items:center;gap:16px 26px;margin-top:30px}
+.hero-ctas .tlink{font:600 15.5px/1.2 var(--sans);padding:12px 0}
+.hero-fig .media{border-radius:var(--r-img)}
+.hero-fig img{aspect-ratio:4/3}
+.caption{display:flex;flex-wrap:wrap;justify-content:space-between;gap:2px 24px;padding-top:10px;font-size:13px;line-height:1.5;color:var(--stone)}
+.caption a{text-decoration:underline;text-decoration-color:var(--line-2);text-underline-offset:.2em}
 @media (min-width:1000px){
-  .cover-top{display:grid;grid-template-columns:repeat(12,minmax(0,1fr));column-gap:var(--gut);align-items:end}
-  .cover-title{grid-column:1/10}
-  .cover-lines{display:block;grid-column:10/13;border-top:1px solid var(--ink);padding-top:10px;margin-bottom:10px}
-  .cover-lines li{border-bottom:1px solid var(--rule)}
-  .cover-lines a{display:flex;gap:14px;align-items:baseline;padding:11px 0;font:400 18px/1.25 var(--serif);letter-spacing:-.01em}
-  .cover-row{grid-template-columns:repeat(12,minmax(0,1fr));column-gap:var(--gut);align-items:start}
-  .cover-row .label{grid-column:1/4;padding-top:6px}
-  .cover-row .cover-dek{grid-column:4/9;font-size:21px}
-  .cover-row .cta{grid-column:11/13;justify-self:end;padding-top:.4em}
-  .cover-fig img{aspect-ratio:auto;height:min(78vh,760px);min-height:480px}
-  .setup-fig img{aspect-ratio:auto;height:min(72vh,680px);min-height:440px}
-  .caption{flex-direction:row;justify-content:space-between;gap:24px}
+  .hero{grid-template-columns:repeat(12,minmax(0,1fr));column-gap:var(--gut);align-items:center}
+  .hero-text{grid-column:1/8;padding-right:clamp(0px,2vw,32px)}
+  .hero-fig{grid-column:8/13}
+  .hero-fig img{aspect-ratio:auto;height:min(66vh,620px);min-height:440px}
 }
+@media (prefers-reduced-motion:no-preference){
+  .hero-text>*{animation:rise .9s var(--ease) both}
+  .hero-text>:nth-child(2){animation-delay:.07s}.hero-text>:nth-child(3){animation-delay:.14s}
+  @keyframes rise{from{opacity:0;transform:translateY(14px)}}
+}
+.jump{display:flex;align-items:center;gap:10px;overflow-x:auto;scrollbar-width:none;padding:18px 0 4px;border-top:1px solid var(--line)}
+.jump::-webkit-scrollbar{display:none}
+.jump .meta{flex:0 0 auto;margin-right:6px}
+.jump a{display:flex;align-items:center;gap:12px;flex:0 0 auto;padding:6px 16px 6px 6px;border-radius:10px;background:var(--card);
+  box-shadow:inset 0 0 0 1px var(--line);font:500 15px/1.2 var(--sans);transition:box-shadow .25s var(--ease)}
+.jump a:hover{box-shadow:inset 0 0 0 1px var(--ink)}
+.jump img{width:44px;height:44px;border-radius:6px;object-fit:cover}
 
-/* setups index */
-.feature{display:grid;gap:22px;padding-block:clamp(40px,7vw,120px);border-bottom:1px solid var(--rule)}
-.feature:last-child{border-bottom:0;padding-bottom:0}
-.feature-media img{aspect-ratio:4/3}
-.f2 .feature-media img{aspect-ratio:4/5}.f3 .feature-media img{aspect-ratio:3/2}.f4 .feature-media img{aspect-ratio:16/10}
-.no{display:flex;align-items:baseline;gap:10px;color:var(--clay-ink)}
-.no-n{font:300 clamp(56px,6vw,92px)/.8 var(--serif);letter-spacing:-.04em;color:var(--clay);font-variant-numeric:lining-nums;font-variation-settings:"opsz" 72}
-.feature-title{font-size:clamp(32px,3.5vw,52px);font-weight:350;letter-spacing:-.025em;line-height:1.02;margin:22px 0 14px}
-.feature-title a{background:linear-gradient(currentColor,currentColor) 0 96%/0 1px no-repeat;transition:background-size .5s var(--ease)}
-.feature-title a:hover{background-size:100% 1px}
-.feature-dek{color:var(--stone);max-width:38ch}
-.feature-meta{display:flex;align-items:center;justify-content:space-between;gap:16px;margin-top:26px;border-top:1px solid var(--rule);padding-top:6px}
-@media (min-width:1000px){.feature-meta{max-width:420px}}
-.feature-meta .label{color:var(--stone)}
+/* shared section heads */
+.sec{padding-block:var(--sec)}
+.sec-rule{position:relative}.sec-rule::before{content:"";position:absolute;top:0;left:var(--pad);right:var(--pad);border-top:1px solid var(--line)}
+.sec-head{display:grid;gap:14px;margin-bottom:clamp(32px,4vw,56px);max-width:780px}
+.sec-title{font-size:clamp(34px,4.2vw,58px);font-weight:350;letter-spacing:-.03em;line-height:1.03;font-variation-settings:"opsz" 72}
+.sec-dek{color:var(--stone);max-width:56ch;font-size:17.5px}
+
+/* home: setups bento */
+.bento{display:grid;gap:44px var(--gut)}
+.scard{display:flex;flex-direction:column;gap:18px}
+.scard .media{border-radius:var(--r-img)}
+.scard img{aspect-ratio:3/2}
+.scard-body{display:grid;gap:8px;justify-items:start}
+.scard-title{font:400 clamp(27px,2.4vw,36px)/1.08 var(--serif);letter-spacing:-.022em}
+.scard-dek{color:var(--stone);max-width:44ch;font-size:16.5px;line-height:1.55}
+.scard .go{margin-top:8px}
 @media (min-width:1000px){
-  .sec-head{grid-template-columns:repeat(12,minmax(0,1fr));column-gap:var(--gut);align-items:end}
-  .sec-head>.label:first-child{grid-column:1/4;align-self:start;padding-top:10px}
-  .sec-title{grid-column:4/11}
-  .sec-count{grid-column:11/13;justify-self:end}
-  .feature{grid-template-columns:repeat(12,minmax(0,1fr));column-gap:var(--gut);row-gap:0;align-items:end}
-  .feature>*{grid-row:1}
-  .f1 .feature-media{grid-column:6/13}.f1 .feature-text{grid-column:1/5}
-  .f2 .feature-media{grid-column:1/6}.f2 .feature-text{grid-column:8/12;align-self:center}
-  .f3 .feature-media{grid-column:5/12}.f3 .feature-text{grid-column:1/5;align-self:start}
-  .f4 .feature-media{grid-column:2/9}.f4 .feature-text{grid-column:9/13;padding-left:var(--gut)}
+  .bento{grid-template-columns:repeat(12,minmax(0,1fr));row-gap:48px}
+  .sc1{grid-column:1/8;grid-row:1/3}
+  .sc1 .media{position:relative;flex:1 1 auto;min-height:440px}
+  .sc1 picture,.sc1 img{position:absolute;inset:0;width:100%;height:100%}
+  .sc1 .scard-title{font-size:clamp(34px,3.2vw,48px)}
+  .sc2{grid-column:8/13;grid-row:1}.sc3{grid-column:8/13;grid-row:2}
+  .sc2 img,.sc3 img{aspect-ratio:16/10}
+  .sc4{grid-column:1/13;display:grid;grid-template-columns:repeat(12,minmax(0,1fr));column-gap:var(--gut);align-items:center;
+    padding-top:48px;border-top:1px solid var(--line)}
+  .sc4 .media{grid-column:1/8}.sc4 img{aspect-ratio:2/1}.sc4 .scard-body{grid-column:9/13}
 }
 
-/* guides list */
-.guide-row a{display:grid;grid-template-columns:minmax(0,1fr) 88px;column-gap:18px;row-gap:12px;padding:28px 0;border-bottom:1px solid var(--rule)}
-.gr-meta{grid-column:1/-1;display:flex;gap:18px;color:var(--stone)}
-.gr-text{grid-column:1}
-.gr-title{font-size:clamp(24px,2.6vw,36px);font-weight:400;letter-spacing:-.02em;line-height:1.1;margin:10px 0 10px}
-.gr-dek{color:var(--stone);font-size:15.5px;line-height:1.55;max-width:58ch;display:none}
-.gr-thumb{grid-column:2;grid-row:2}
-.gr-thumb img{aspect-ratio:1}
-@media (min-width:700px){.gr-dek{display:block}}
+/* home: free checklist */
+.lead-band{background:var(--cream)}
+.lead-grid{display:grid;gap:30px;align-items:center}
+.lead-fig .media{border-radius:var(--r-img)}
+.lead-fig img{aspect-ratio:4/3;object-position:60% 50%}
+.lead-title{font-size:clamp(32px,3.8vw,54px);font-weight:350;letter-spacing:-.03em;line-height:1.04;margin:16px 0}
+.lead-dek{color:var(--ink-2);max-width:46ch;font-size:17.5px}
+.ticks{display:grid;gap:10px;margin:22px 0 28px}
+.ticks li{position:relative;padding-left:30px}
+.ticks li::before{content:"";position:absolute;left:3px;top:.45em;width:12px;height:6px;border:solid var(--clay-ink);border-width:0 0 2px 2px;transform:rotate(-45deg)}
+.lead-note{margin-top:14px}
 @media (min-width:1000px){
-  .guide-row a{grid-template-columns:repeat(12,minmax(0,1fr));column-gap:var(--gut);padding:40px 0;align-items:start}
-  .gr-meta{grid-column:1/4;flex-direction:column;gap:6px;padding-top:6px}
-  .gr-text{grid-column:4/10}
-  .gr-thumb{grid-column:10/13;grid-row:1}
-  .gr-thumb img{aspect-ratio:3/2}
+  .lead-grid{grid-template-columns:repeat(12,minmax(0,1fr));column-gap:var(--gut)}
+  .lead-fig{grid-column:1/7}.lead-fig img{aspect-ratio:5/4}.lead-text{grid-column:8/13}
 }
 
-/* shop */
-.shop-grid{display:grid;gap:48px}
-.shop-head .sec-title{margin:16px 0 20px;color:var(--on-dark)}
-.shop-head p:last-child{color:var(--on-dark-2);max-width:36ch}
-.products{display:grid;gap:36px}
-.product{display:grid;grid-template-columns:112px minmax(0,1fr);gap:20px;align-items:start;align-content:start}
-.product-name{font-size:26px;font-weight:400;letter-spacing:-.02em;margin:8px 0 8px;color:var(--on-dark)}
-.product-desc{color:var(--on-dark-2);font-size:15.5px;line-height:1.55;margin-bottom:10px;max-width:34ch}
-.tile{position:relative;display:flex;flex-direction:column;justify-content:space-between;aspect-ratio:4/5;padding:12px;overflow:hidden;
-  transition:transform .8s var(--ease)}
-.tile:hover{transform:translateY(-4px)}
-.tile-brand{font:600 7.5px/1.2 var(--sans);letter-spacing:.16em;text-transform:uppercase}
-.tile-name{font:400 15px/1.02 var(--serif);letter-spacing:-.02em;position:relative}
-.tile-check{background:var(--cream);color:var(--ink)}
-.tile-guide{background:var(--clay);color:var(--paper)}
-.tile-wall{background:var(--moss);color:var(--on-dark)}
-.tile-lines{display:grid;gap:12px;margin:auto 0 auto 2px}
-.tile-lines i{display:block;height:1px;background:rgba(30,42,38,.3);position:relative;margin-left:14px}
-.tile-lines i::before{content:"";position:absolute;left:-14px;top:-4px;width:8px;height:8px;border:1px solid var(--ink)}
-.tile-lines i:nth-child(-n+2)::after{content:"";position:absolute;left:-12px;top:-3px;width:4px;height:2px;border:solid var(--clay);border-width:0 0 1.5px 1.5px;transform:rotate(-45deg)}
-.tile-pp{font:300 italic 34px/1 var(--serif);margin:auto 0;opacity:.9}
-.tile-horizon{position:absolute;inset:0}
-.tile-horizon::before{content:"";position:absolute;left:0;right:0;top:52%;height:1px;background:rgba(242,234,219,.35)}
-.tile-horizon i{position:absolute;width:24%;aspect-ratio:1;border-radius:50%;background:var(--clay);left:60%;top:calc(52% - 12%)}
-@media (min-width:700px){
-  .products{grid-template-columns:repeat(3,minmax(0,1fr));gap:var(--gut)}
-  .product{grid-template-columns:1fr;gap:22px}
-  .tile{padding:18px}
-  .tile-brand{font-size:9px}.tile-name{font-size:clamp(20px,2vw,28px)}
-  .tile-lines{gap:14px}.tile-lines i{margin-left:22px}
-  .tile-lines i::before{left:-22px;top:-6px;width:12px;height:12px}
-  .tile-lines i:nth-child(-n+2)::after{left:-19px;top:-4px;width:6px;height:3px}
-  .tile-pp{font-size:clamp(48px,5vw,72px)}
-}
+/* compact checklist promo (setup and guide pages) */
+.promo{display:grid;gap:18px;padding:18px;border-radius:var(--r-card);background:var(--cream);align-items:center;font-family:var(--sans)}
+.promo .media{border-radius:8px}
+.promo img{aspect-ratio:3/2;object-position:60% 50%}
+.promo .promo-title{font:400 clamp(24px,2.2vw,30px)/1.12 var(--serif);letter-spacing:-.02em;margin:12px 0 8px;color:var(--ink)}
+.promo-text p{color:var(--ink-2);font-size:16px;line-height:1.55;max-width:48ch}
+.promo .btn{margin-top:18px}
+@media (min-width:700px){.promo{grid-template-columns:220px minmax(0,1fr);gap:30px;padding:22px}.promo img{aspect-ratio:1}}
+
+/* home: guides */
+.guides{display:grid;gap:40px}
+.gfeat{display:grid;gap:18px;align-content:start}
+.gfeat .media{border-radius:var(--r-img)}
+.gfeat img{aspect-ratio:3/2}
+.gfeat-title{display:block;font:400 clamp(28px,2.8vw,40px)/1.08 var(--serif);letter-spacing:-.025em;margin-top:6px}
+.gfeat-dek{display:block;color:var(--stone);max-width:52ch;margin-top:8px}
+.glist li+li{border-top:1px solid var(--line)}
+.glist a{display:grid;grid-template-columns:minmax(0,1fr) 76px;gap:18px;align-items:center;padding:18px 0}
+.glist li:first-child a{padding-top:0}
+.glist .media{border-radius:6px}
+.glist img{aspect-ratio:1}
+.glist-title{display:block;font:400 21px/1.22 var(--serif);letter-spacing:-.012em;margin-top:6px}
 @media (min-width:1000px){
-  .shop-grid{grid-template-columns:repeat(12,minmax(0,1fr));column-gap:var(--gut)}
-  .shop-head{grid-column:1/5;align-self:start;position:sticky;top:40px}
-  .products{grid-column:6/13}
+  .guides{grid-template-columns:repeat(12,minmax(0,1fr));column-gap:var(--gut)}
+  .gfeat{grid-column:1/7}.glist{grid-column:8/13}
+  .glist a{grid-template-columns:minmax(0,1fr) 92px}
 }
 
-/* about */
-.about{display:grid;gap:18px}
-.about-text{display:grid;gap:22px;max-width:760px}
-.about-lede{font:350 clamp(26px,2.8vw,40px)/1.18 var(--serif);letter-spacing:-.02em}
-.about-text p:not(.about-lede){color:var(--stone);max-width:56ch}
-.about-text .cta{justify-self:start}
-@media (min-width:1000px){.about{grid-template-columns:repeat(12,minmax(0,1fr));column-gap:var(--gut)}
-  .about>.label{grid-column:1/4;padding-top:12px}.about-text{grid-column:4/11}
-  .about-text p:not(.about-lede){margin-left:calc(100% / 7)}
-  .about-text .cta{margin-left:calc(100% / 7)}}
+/* home: shop */
+.prods{display:grid;gap:var(--gut)}
+.prod{display:grid;gap:20px;padding:14px;border-radius:var(--r-card);background:var(--card);box-shadow:inset 0 0 0 1px var(--line)}
+.prod-cover{border-radius:8px;overflow:hidden;aspect-ratio:4/5;background:var(--sand)}
+.prod-cover img{width:100%;height:100%;object-fit:cover}
+.prod-body{display:flex;flex-direction:column;align-items:flex-start;gap:10px;padding:4px 8px 8px}
+.prod-name{font:400 clamp(26px,2.3vw,33px)/1.08 var(--serif);letter-spacing:-.02em;margin-top:6px}
+.prod-desc{color:var(--ink-2);max-width:40ch}
+.prod .ticks{margin:6px 0 14px;font-size:15.5px}
+.prod .btn{margin-top:auto}
+.cover-wall{position:relative;background:var(--ink)}
+.cover-wall::before{content:"";position:absolute;width:34%;aspect-ratio:1;border-radius:50%;background:var(--clay);left:54%;bottom:calc(36% - 12%)}
+.cover-wall::after{content:"";position:absolute;left:0;right:0;bottom:0;height:36%;background:var(--sand);box-shadow:0 -1px 0 rgba(242,234,219,.4)}
+@media (min-width:700px){.prod{grid-template-columns:minmax(0,5fr) minmax(0,7fr);gap:26px;padding:16px}.prod-body{padding:10px 8px 8px 0}}
+@media (min-width:1100px){.prods{grid-template-columns:1fr 1fr}}
+.mini-prods{display:grid;gap:14px}
+.mini{display:grid;grid-template-columns:84px minmax(0,1fr);gap:18px;align-items:center;padding:12px;border-radius:var(--r-card);
+  background:var(--card);box-shadow:inset 0 0 0 1px var(--line);font-family:var(--sans);transition:box-shadow .25s var(--ease)}
+.mini:hover{box-shadow:inset 0 0 0 1px var(--ink)}
+.mini .prod-cover{border-radius:6px}
+.mini-name{display:block;font:400 21px/1.15 var(--serif);letter-spacing:-.01em;color:var(--ink);margin-top:4px}
+.mini .go{margin-top:8px;font-size:14.5px;color:var(--ink)}
+@media (min-width:700px){.mini-prods{grid-template-columns:1fr 1fr}}
+
+/* home: about */
+.about{display:grid;gap:22px}
+.about-lede{font:350 clamp(26px,2.8vw,40px)/1.2 var(--serif);letter-spacing:-.02em;max-width:30ch}
+.about-body{display:grid;gap:18px;justify-items:start}
+.about-body p{color:var(--stone);max-width:56ch}
+@media (min-width:1000px){.about{grid-template-columns:repeat(12,minmax(0,1fr));column-gap:var(--gut);align-items:start}
+  .about-lede{grid-column:1/8}.about-body{grid-column:9/13;padding-top:8px}}
 
 /* footer */
-.foot{background:var(--ink);color:var(--on-dark-2);padding:clamp(64px,8vw,112px) 0 36px;font-size:14px;line-height:1.6}
-.foot a{color:var(--on-dark)}
-.foot-top{display:grid;gap:18px;padding-bottom:40px}
-.foot-mark{font:300 clamp(44px,7.6vw,120px)/.9 var(--serif);letter-spacing:-.045em;color:var(--on-dark);font-variation-settings:"opsz" 72}
-.foot-tag{max-width:34ch;font-size:15px}
-.foot-cols{display:grid;grid-template-columns:1fr 1fr;gap:36px 24px;padding:32px 0 40px;border-top:1px solid var(--rule-dark);border-bottom:1px solid var(--rule-dark)}
-.fcol .label{color:var(--on-dark-2);margin-bottom:14px}
-.fcol li{margin:7px 0;line-height:1.35}
-.foot-legal{display:grid;gap:12px;padding-top:28px;font-size:13px;max-width:92ch}
-.foot-end{display:flex;justify-content:space-between;gap:16px;margin-top:16px}
+.foot{background:var(--ink);color:var(--on-dark-2);padding:clamp(56px,7vw,96px) 0 32px;font-size:15px;line-height:1.6}
+.foot a{color:var(--on-dark);transition:color .2s}
+.foot a:hover{color:var(--clay-soft)}
+.foot-top{display:grid;gap:14px;padding-bottom:36px}
+.foot-mark{font:300 clamp(40px,6vw,84px)/.95 var(--serif);letter-spacing:-.04em;color:var(--on-dark);font-variation-settings:"opsz" 72}
+.foot-tag{max-width:36ch}
+.foot-cols{display:grid;grid-template-columns:1fr 1fr;gap:32px 24px;padding:32px 0;border-top:1px solid var(--line-dark)}
+.fh{font:600 14px/1.3 var(--sans);color:var(--on-dark-2);margin-bottom:10px}
+.fcol li{margin:8px 0;line-height:1.35}
+.foot-legal{display:grid;gap:12px;padding-top:24px;border-top:1px solid var(--line-dark);font-size:13.5px}.foot-legal p:not(.foot-end){max-width:100ch}
+.foot-legal a{text-decoration:underline;text-decoration-color:var(--line-dark);text-underline-offset:.2em}
+.foot-end{display:flex;justify-content:space-between;gap:16px;margin-top:8px}
 @media (min-width:1000px){
   .foot-top{grid-template-columns:repeat(12,minmax(0,1fr));column-gap:var(--gut);align-items:end}
-  .foot-mark{grid-column:1/9}.foot-tag{grid-column:10/13}
+  .foot-mark{grid-column:1/8}.foot-tag{grid-column:9/13}
   .foot-cols{grid-template-columns:repeat(4,minmax(0,1fr));column-gap:var(--gut)}
-  .foot-legal{max-width:none;grid-template-columns:repeat(12,minmax(0,1fr));column-gap:var(--gut)}
-  .foot-legal p{grid-column:1/9}.foot-legal .foot-end{grid-column:1/-1}
 }
 
 /* page heads (setup, guide, about, 404) */
-.page-head{padding-top:clamp(28px,4.4vw,72px);padding-bottom:clamp(32px,4.4vw,64px)}
-.crumbs{display:flex;gap:10px;color:var(--stone);margin-bottom:clamp(24px,3.4vw,48px)}
-.crumbs a{color:var(--ink)}
+.ph{padding-top:clamp(22px,3vw,44px);padding-bottom:clamp(32px,4vw,56px)}
+.ph .crumbs{margin-bottom:clamp(24px,3.4vw,48px)}
 .ph-grid{display:grid;gap:24px}
-.ph-title{font-size:clamp(46px,7.6vw,120px);font-weight:300;letter-spacing:-.04em;line-height:.94;font-variation-settings:"opsz" 72}
-.ph-title em{font-weight:300}
-.ph-dek{font:400 21px/1.42 var(--serif);color:var(--ink-2);max-width:40ch}
-.ph-meta{margin-top:18px;color:var(--stone)}
+.ph-title{font-size:clamp(42px,6.4vw,96px);font-weight:350;letter-spacing:-.04em;line-height:.97;font-variation-settings:"opsz" 72}
+.ph-dek{font:400 clamp(19px,1.6vw,22px)/1.45 var(--serif);color:var(--ink-2);max-width:40ch}
+.ph-aside{display:grid;gap:16px;justify-items:start;align-content:start}
+.disclosure{font-size:13.5px;line-height:1.55;color:var(--stone);max-width:52ch}
+.disclosure strong{color:var(--ink);font-weight:600}
 @media (min-width:1000px){
   .ph-grid{grid-template-columns:repeat(12,minmax(0,1fr));column-gap:var(--gut);align-items:end}
-  .ph-title{grid-column:1/9}.ph-aside{grid-column:9/13;padding-bottom:6px}
+  .ph-title{grid-column:1/8}.ph-aside{grid-column:9/13;padding-bottom:6px}
 }
+.bleed img{width:100%;object-fit:cover;aspect-ratio:4/3}
+@media (min-width:700px){.bleed img{aspect-ratio:16/9}}
+@media (min-width:1000px){.bleed img{aspect-ratio:auto;height:min(64vh,600px);min-height:420px}}
 
-/* shopping list */
-.list-grid{display:grid;padding-top:clamp(48px,6vw,96px);padding-bottom:clamp(48px,6vw,96px)}
-.list-index{display:none}
-.shop-list{border-top:1px solid var(--ink)}
-.item{display:grid;grid-template-columns:44px minmax(0,1fr);column-gap:14px;padding:26px 0 28px;border-bottom:1px solid var(--rule);scroll-margin-top:24px}
-.item-no{font:300 30px/1 var(--serif);color:var(--clay);letter-spacing:-.03em;font-variant-numeric:lining-nums tabular-nums;padding-top:2px}
-.item-name{font-size:clamp(26px,2.4vw,34px);font-weight:400;letter-spacing:-.02em;line-height:1.08}
-.item .model{margin-top:10px}
-.item-why{margin-top:12px;color:var(--ink-2);max-width:52ch;font-size:16.5px;line-height:1.55}
-.item .cta{grid-column:2;justify-self:start;margin-top:14px}
-@media (min-width:700px){
-  .item{grid-template-columns:72px minmax(0,1fr) auto;column-gap:24px;padding:34px 0 36px}
-  .item-no{font-size:40px}
-  .item .cta{grid-column:3;grid-row:1;align-self:start;margin-top:0}
-}
-@media (min-width:1000px){
-  .list-grid{grid-template-columns:repeat(12,minmax(0,1fr));column-gap:var(--gut)}
-  .list-index{display:block;grid-column:1/4;align-self:start;position:sticky;top:32px;padding-top:18px}
-  .shop-list{grid-column:5/13}
-}
-.list-index ol,.toc ol{margin-top:16px;border-left:1px solid var(--rule)}
-.list-index a,.toc a{display:flex;gap:12px;padding:7px 0 7px 16px;margin-left:-1px;border-left:1px solid transparent;font-size:14px;line-height:1.35;color:var(--stone);transition:color .25s,border-color .25s}
-.list-index a:hover,.toc a:hover{color:var(--ink)}
-.list-index a[aria-current],.toc a[aria-current]{color:var(--ink);border-left-color:var(--clay)}
-.ix-n{font:600 11px/1.6 var(--sans);letter-spacing:.08em;color:var(--clay-ink);font-variant-numeric:tabular-nums}
-
-/* related + next */
-.related{display:grid;gap:18px;padding-top:0}
-.rel-list{border-top:1px solid var(--ink)}
-.rel-list a{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:8px 20px;align-items:center;padding:24px 0;border-bottom:1px solid var(--rule)}
-.rel-list .label{grid-column:1/-1;color:var(--stone)}
-.rel-title{font:400 clamp(24px,2.6vw,36px)/1.1 var(--serif);letter-spacing:-.02em;text-wrap:balance}
-.rel-list .arr{font-size:22px;transition:transform .35s var(--ease)}
-.rel-list a:hover .arr{transform:translateX(6px)}
-@media (min-width:1000px){.related{grid-template-columns:repeat(12,minmax(0,1fr));column-gap:var(--gut)}
-  .related>.label{grid-column:1/4;padding-top:6px}.rel-list{grid-column:5/13}}
-.next{padding-block:clamp(56px,7vw,112px)}
-.next-link{display:grid;gap:24px}
-.next-text{display:grid;gap:16px;align-content:center}
-.next-text .label{color:var(--clay-ink)}
-.next-title{font:300 clamp(40px,6vw,92px)/.95 var(--serif);letter-spacing:-.04em;text-wrap:balance;font-variation-settings:"opsz" 72}
-.next-dek{color:var(--stone);max-width:44ch}
-.next-media img{aspect-ratio:3/2}
-@media (min-width:1000px){.next-link{grid-template-columns:repeat(12,minmax(0,1fr));column-gap:var(--gut)}
-  .next-text{grid-column:1/8}.next-media{grid-column:9/13}}
+/* setup page */
+.sintro{display:grid;gap:18px;padding-top:clamp(48px,6vw,88px)}
+.sintro h2{font-size:clamp(26px,2.4vw,34px);letter-spacing:-.02em}
+.sintro-body{display:grid;gap:14px;font:400 19px/1.65 var(--serif);color:var(--ink-2);max-width:62ch;font-variation-settings:"opsz" 16}
+.sintro-body a{text-decoration:underline;text-decoration-color:var(--clay);text-underline-offset:.2em}
+.good{font:500 15.5px/1.5 var(--sans);margin-top:20px;padding-top:16px;border-top:1px solid var(--line);max-width:62ch}
+.good strong{font-weight:600}
+@media (min-width:1000px){.sintro{grid-template-columns:repeat(12,minmax(0,1fr));column-gap:var(--gut)}
+  .sintro h2{grid-column:1/4;padding-top:4px}.sintro-main{grid-column:5/12}}
+.picks{display:grid;padding-top:clamp(48px,6vw,88px);padding-bottom:clamp(40px,5vw,72px)}
+.pindex{display:none}
+.plist-head{display:grid;gap:8px;margin-bottom:22px}
+.plist-head h2{font-size:clamp(30px,3vw,44px);letter-spacing:-.025em}
+.plist{display:grid;gap:14px}
+.pcard{display:grid;gap:18px;padding:22px;border-radius:var(--r-card);background:var(--card);box-shadow:inset 0 0 0 1px var(--line);
+  scroll-margin-top:20px;transition:box-shadow .3s var(--ease)}
+.pcard:hover{box-shadow:inset 0 0 0 1px var(--line-2),var(--shadow)}
+.pcard-top{display:flex;flex-wrap:wrap;gap:8px}
+.pcard-name{font:400 clamp(25px,2.2vw,31px)/1.1 var(--serif);letter-spacing:-.02em;margin-top:14px}
+.pcard-model{font:500 14.5px/1.4 var(--sans);color:var(--stone);margin-top:6px}
+.pcard-why{margin-top:10px;color:var(--ink-2);max-width:54ch;font-size:16.5px;line-height:1.55}
+.pcard .btn{justify-self:start}
+.pcard.lead{background:var(--ink);color:var(--on-dark);box-shadow:none;padding:26px}
+.pcard.lead:hover{box-shadow:var(--shadow)}
+.pcard.lead .tag:not(.tag-clay){background:rgba(242,234,219,.12);color:var(--on-dark)}
+.pcard.lead .pcard-name{font-size:clamp(30px,2.8vw,40px)}
+.pcard.lead .pcard-model{color:var(--on-dark-2)}.pcard.lead .pcard-why{color:var(--on-dark)}
+.start-note{margin-top:16px;padding-top:14px;border-top:1px solid var(--line-dark);color:var(--on-dark-2);font-size:15.5px;line-height:1.55;max-width:54ch}
+.plist-foot{margin-top:18px}
+@media (min-width:700px){.pcard{grid-template-columns:minmax(0,1fr) auto;column-gap:32px;padding:26px 28px;align-items:end}
+  .pcard.lead{padding:34px 32px}}
+@media (min-width:1000px){.picks{grid-template-columns:repeat(12,minmax(0,1fr));column-gap:var(--gut)}
+  .pindex{display:block;grid-column:1/4;position:sticky;top:24px;align-self:start;padding-top:8px}
+  .plist-wrap{grid-column:5/13}}
+.pindex ol,.toc ol{margin-top:12px;border-left:1px solid var(--line)}
+.pindex a,.toc a{display:block;padding:7px 0 7px 16px;margin-left:-1px;border-left:2px solid transparent;font-size:14.5px;line-height:1.35;
+  color:var(--stone);transition:color .2s,border-color .2s}
+.pindex a:hover,.toc a:hover{color:var(--ink)}
+.pindex a[aria-current],.toc a[aria-current]{color:var(--ink);border-left-color:var(--clay)}
+.pindex .meta,.toc .meta{color:var(--ink);font-weight:600}
+.after{display:grid;gap:clamp(56px,7vw,104px);padding-bottom:var(--sec)}
+.block-title{font-size:clamp(28px,2.8vw,40px);letter-spacing:-.025em;margin-bottom:24px}
+.rgrid{display:grid;gap:32px var(--gut)}
+.rcard{display:grid;gap:12px;align-content:start}
+.rcard .media{border-radius:var(--r-img)}
+.rcard img{aspect-ratio:3/2}
+.rcard-title{font:400 clamp(22px,1.9vw,27px)/1.16 var(--serif);letter-spacing:-.015em}
+@media (min-width:700px){.rgrid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.srows li+li{border-top:1px solid var(--line)}
+.srows a{display:grid;grid-template-columns:96px minmax(0,1fr);gap:18px;align-items:center;padding:16px 0}
+.srows li:first-child a{padding-top:0}
+.srows .media{border-radius:6px}
+.srows img{aspect-ratio:4/3}
+.srow-title{display:block;font:400 clamp(22px,2vw,28px)/1.12 var(--serif);letter-spacing:-.018em;margin-bottom:4px}
+@media (min-width:1000px){.after-2{grid-template-columns:repeat(12,minmax(0,1fr));column-gap:var(--gut)}
+  .after-2>:first-child{grid-column:1/8}.after-2>:last-child{grid-column:9/13}
+  .after-2 .rgrid{grid-template-columns:repeat(2,minmax(0,1fr))}}
 
 /* guide page */
 .guide-title{max-width:17ch}
-.gh-row{display:grid;gap:8px;margin-top:clamp(26px,3.4vw,48px);padding-top:22px;border-top:1px solid var(--ink)}
-.gh-dek{font:italic 350 clamp(20px,1.9vw,25px)/1.42 var(--serif);color:var(--ink-2);max-width:44ch}
-.gh-meta .label{color:var(--stone);margin-top:14px}
-.gh-meta .disclosure{margin-top:14px}
-.guide-fig{display:grid}
-.guide-fig img{aspect-ratio:3/2}
-@media (min-width:1000px){
-  .gh-row{grid-template-columns:repeat(12,minmax(0,1fr));column-gap:var(--gut)}
-  .gh-dek{grid-column:1/8}.gh-meta{grid-column:9/13}.gh-meta .label{margin-top:6px}
-  .guide-fig{grid-template-columns:repeat(12,minmax(0,1fr));column-gap:var(--gut)}
-  .guide-fig picture{grid-column:1/11}
-  .guide-fig img{aspect-ratio:16/9}
-  .guide-fig .caption{grid-column:11/13;flex-direction:column;justify-content:flex-end;padding:0 0 4px;border-bottom:1px solid var(--rule);padding-bottom:12px;align-self:end}
-}
-.article-grid{display:grid;padding-top:clamp(48px,6vw,96px);padding-bottom:var(--sec)}
+.gh-row{display:grid;gap:18px;margin-top:clamp(22px,3vw,40px)}
+.gh-dek{font:italic 350 clamp(20px,1.8vw,24px)/1.45 var(--serif);color:var(--ink-2);max-width:46ch}
+.gh-meta{display:grid;gap:10px;align-content:start}
+@media (min-width:1000px){.gh-row{grid-template-columns:repeat(12,minmax(0,1fr));column-gap:var(--gut)}
+  .gh-dek{grid-column:1/8}.gh-meta{grid-column:9/13}}
+.gfig .media{border-radius:var(--r-img)}
+.gfig img{aspect-ratio:3/2}
+@media (min-width:1000px){.gfig img{aspect-ratio:21/9}}
+.article{display:grid;padding-top:clamp(36px,5vw,80px);padding-bottom:var(--sec)}
 .toc{display:none}
-@media (min-width:1000px){
-  .article-grid{grid-template-columns:repeat(12,minmax(0,1fr));column-gap:var(--gut)}
-  .toc{display:block;grid-column:1/4;align-self:start;position:sticky;top:32px;padding-right:12px}
-  .prose{grid-column:4/11}
-}
+.toc-m{margin-bottom:30px;border-radius:var(--r-card);background:var(--card);box-shadow:inset 0 0 0 1px var(--line)}
+.toc-m summary{display:flex;justify-content:space-between;align-items:center;min-height:52px;padding:0 18px;font:600 15.5px/1.3 var(--sans);cursor:pointer;list-style:none}
+.toc-m summary::-webkit-details-marker{display:none}
+.toc-m summary::after{content:"+";font:400 22px/1 var(--sans);color:var(--stone)}
+.toc-m[open] summary::after{content:"\2212"}
+.toc-m ol{padding:0 18px 10px}
+.toc-m a{display:block;padding:11px 0;font-size:15.5px;color:var(--ink-2);border-top:1px solid var(--line)}
+@media (min-width:1000px){.article{grid-template-columns:repeat(12,minmax(0,1fr));column-gap:var(--gut)}
+  .toc{display:block;grid-column:1/4;position:sticky;top:24px;align-self:start;padding-right:12px}
+  .toc-m{display:none}.prose-col{grid-column:4/11}}
 
 /* prose */
-.prose{font:400 19px/1.68 var(--serif);color:var(--ink-2);max-width:68ch;font-variation-settings:"opsz" 16}
+.prose{font:400 19px/1.7 var(--serif);color:var(--ink-2);max-width:68ch;font-variation-settings:"opsz" 16}
 .prose>p+p{margin-top:1.05em}
-.prose>p:first-child{font-size:1.12em;line-height:1.6;color:var(--ink)}
-.prose>p:first-child::first-letter{float:left;font:300 4.3em/.8 var(--serif);color:var(--clay);padding:.07em .09em 0 0;font-variation-settings:"opsz" 72}
-.prose h2{font-size:clamp(28px,2.6vw,36px);font-weight:400;letter-spacing:-.02em;line-height:1.12;color:var(--ink);margin:2.3em 0 .7em;scroll-margin-top:24px}
-.prose h3{font-size:23px;font-style:italic;font-weight:400;color:var(--ink);margin:1.9em 0 .45em}
+.prose>p:first-child{font-size:1.1em;line-height:1.6;color:var(--ink)}
+.prose h2{font-size:clamp(27px,2.4vw,34px);font-weight:400;letter-spacing:-.02em;line-height:1.14;color:var(--ink);margin:2.1em 0 .6em;scroll-margin-top:24px}
+.prose h3{font:italic 400 23px/1.25 var(--serif);color:var(--ink);margin:1.8em 0 .45em}
 .prose>h2+p,.prose>h3+p{margin-top:0}
-.prose p a,.prose li a{text-decoration:underline;text-decoration-thickness:1px;text-underline-offset:.2em;text-decoration-color:var(--clay);transition:color .25s}
-.prose p a:hover,.prose li a:hover{color:var(--clay-ink)}
+.prose p a:not(.go),.prose>ul a{text-decoration:underline;text-decoration-thickness:1px;text-underline-offset:.2em;text-decoration-color:var(--clay);transition:color .2s}
+.prose p a:not(.go):hover,.prose>ul a:hover{color:var(--clay-ink)}
 .prose strong{font-weight:600;color:var(--ink)}
-.prose ul{margin:1.2em 0 1.4em;border-top:1px solid var(--rule)}
-.prose li{position:relative;padding:.75em 0 .75em 28px;border-bottom:1px solid var(--rule)}
-.prose li::before{content:"";position:absolute;left:0;top:1.45em;width:14px;height:1px;background:var(--clay)}
-.pick{display:grid;gap:14px;margin:1.9em 0;padding:22px 22px 18px;background:var(--cream);border-top:1px solid var(--ink);font-family:var(--sans)}
-.pick-kicker{color:var(--clay-ink)}
-.pick-name{font:400 25px/1.12 var(--serif);letter-spacing:-.02em;color:var(--ink);margin-top:10px}
-.pick .model{margin-top:8px}
-.pick-why{font-size:15.5px;line-height:1.55;color:var(--stone);margin-top:10px;max-width:50ch}
-.pick .cta{justify-self:start;color:var(--ink)}
-.pick + p{margin-top:0}
-@media (min-width:700px){.pick{grid-template-columns:minmax(0,1fr) auto;column-gap:32px;padding:26px 28px 24px}
-  .pick .cta{align-self:end}}
+.prose>ul{margin:1.1em 0 1.3em}
+.prose>ul>li{position:relative;padding:.4em 0 .4em 26px}
+.prose>ul>li::before{content:"";position:absolute;left:2px;top:1.2em;width:12px;height:1px;background:var(--clay)}
+.pick{display:grid;gap:16px;margin:1.6em 0;padding:22px;border-radius:var(--r-card);background:var(--card);box-shadow:inset 0 0 0 1px var(--line);font-family:var(--sans)}
+.pick-name{font:400 25px/1.12 var(--serif);letter-spacing:-.02em;color:var(--ink);margin-top:12px}
+.pick-model{font:500 14px/1.4 var(--sans);color:var(--stone);margin-top:4px}
+.pick-why{font-size:16px;line-height:1.55;color:var(--ink-2);margin-top:8px;max-width:48ch}
+.pick .btn{justify-self:start}
+.pick+p{margin-top:0}
+@media (min-width:700px){.pick{grid-template-columns:minmax(0,1fr) auto;column-gap:28px;align-items:end;padding:24px 26px}}
+.quick{margin:1.8em 0 .6em;padding:20px 22px 8px;border-radius:var(--r-card);box-shadow:inset 0 0 0 1px var(--line-2);font-family:var(--sans)}
+.quick-title{font:600 16.5px/1.3 var(--sans);color:var(--ink)}
+.quick-sub{font-size:14.5px;line-height:1.5;color:var(--stone);margin-top:4px}
+.quick-sub a{color:var(--ink);text-decoration:underline;text-decoration-color:var(--clay);text-underline-offset:.2em}
+.quick ol{margin-top:12px}
+.quick li{display:flex;justify-content:space-between;align-items:center;gap:16px;padding:10px 0;border-top:1px solid var(--line)}
+.quick-name{font:500 16px/1.3 var(--sans);color:var(--ink)}
+.quick-model{display:block;font-size:13.5px;font-weight:400;color:var(--stone);margin-top:2px}
+.quick .q{flex:0 0 auto;font:600 14.5px/1.2 var(--sans);color:var(--ink);padding:10px 0;text-decoration:underline;text-decoration-color:var(--clay);text-underline-offset:.22em}
+.quick .q:hover{color:var(--clay-ink)}
 .faq{margin-top:1em}
-.faq h2{margin-bottom:.6em}
-.faq details{border-top:1px solid var(--rule)}
-.faq details:last-of-type{border-bottom:1px solid var(--rule)}
-.faq summary{display:flex;justify-content:space-between;align-items:center;gap:24px;padding:20px 0;cursor:pointer;list-style:none;
+.faq details{border-top:1px solid var(--line)}
+.faq details:last-of-type{border-bottom:1px solid var(--line)}
+.faq summary{display:flex;justify-content:space-between;align-items:center;gap:24px;padding:18px 0;cursor:pointer;list-style:none;
   font:400 21px/1.3 var(--serif);color:var(--ink);letter-spacing:-.01em}
 .faq summary::-webkit-details-marker{display:none}
 .faq summary:hover{color:var(--clay-ink)}
 .faq summary i{position:relative;flex:0 0 14px;height:14px}
-.faq summary i::before,.faq summary i::after{content:"";position:absolute;left:0;top:6.5px;width:14px;height:1px;background:currentColor;transition:transform .35s var(--ease)}
+.faq summary i::before,.faq summary i::after{content:"";position:absolute;left:0;top:6.5px;width:14px;height:1.5px;background:currentColor;transition:transform .35s var(--ease)}
 .faq summary i::after{transform:rotate(90deg)}
 .faq details[open] summary i::after{transform:rotate(0)}
-.faq details p{font:400 16.5px/1.6 var(--sans);color:var(--stone);padding:0 40px 24px 0;max-width:60ch}
-.shop-setups-grid{display:grid;gap:28px;margin-top:8px}
-.shop-setup{display:grid;gap:12px;font-family:var(--sans)}
-.shop-setup img{aspect-ratio:3/2}
-.shop-setup .label{color:var(--stone);margin-top:4px}
-.shop-setup-title{font:400 25px/1.12 var(--serif);letter-spacing:-.02em;color:var(--ink)}
-@media (min-width:700px){.shop-setups-grid{grid-template-columns:1fr 1fr;gap:var(--gut)}}
-.prose .back a{text-decoration:none}
-.back{margin-top:3.2em}
-.prose-plain>p:first-child::first-letter{float:none;font:inherit;color:inherit;padding:0}
+.faq details p{font:400 16.5px/1.6 var(--sans);color:var(--stone);padding:0 40px 22px 0;max-width:60ch}
+.prose .promo,.prose .mini-prods{margin-top:2.2em}
+.prose .block-title{margin:2.1em 0 .7em}
+.back{margin-top:3em}
+.prose-plain>p:first-child{font-size:1em}
+
+/* sticky call to action */
+.dock{position:fixed;z-index:var(--z-dock);left:0;right:0;bottom:0;display:flex;align-items:center;gap:12px;
+  padding:10px var(--pad) calc(10px + env(safe-area-inset-bottom));background:rgba(251,247,240,.95);
+  -webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px);box-shadow:0 -1px 0 var(--line),0 -14px 30px -22px rgba(30,42,38,.45);
+  transform:translateY(115%);visibility:hidden;transition:transform .45s var(--ease),visibility 0s linear .45s}
+.dock.on{transform:none;visibility:visible;transition:transform .45s var(--ease)}
+.dock-text{flex:1;min-width:0;font:600 14.5px/1.3 var(--sans);color:var(--ink)}
+.dock-text small{display:block;font-weight:400;font-size:13px;color:var(--stone);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.dock .btn{min-height:44px;padding:0 16px;font-size:14.5px}
+.dock-x{flex:0 0 auto;display:grid;place-items:center;width:40px;height:40px;margin-right:-8px;border:0;border-radius:var(--r-btn);background:none;
+  color:var(--stone);font:400 24px/1 var(--sans);cursor:pointer;transition:background-color .2s,color .2s}
+.dock-x:hover{color:var(--ink);background:var(--chip)}
+@media (max-width:420px){.dock-text small{display:none}}
+@media (min-width:760px){.dock{left:auto;right:24px;bottom:24px;width:min(520px,calc(100% - 48px));padding:14px 14px 14px 20px;
+  border-radius:var(--r-card);box-shadow:inset 0 0 0 1px var(--line),var(--shadow)}.dock-x{margin-right:0}}
+@media (prefers-reduced-motion:reduce){.dock,.dock.on{transition:none}}
 
 /* 404 */
-.nf-list{margin-top:clamp(48px,6vw,96px);border-top:1px solid var(--ink)}
-.nf-list a{display:flex;gap:18px;align-items:baseline;padding:18px 0;border-bottom:1px solid var(--rule);font:400 clamp(22px,2.4vw,32px)/1.15 var(--serif);letter-spacing:-.02em}
-.nf .ph-aside p+p{margin-top:24px}
+.nf-list{margin-top:clamp(40px,5vw,72px)}
+.nf-list li+li{border-top:1px solid var(--line)}
+.nf-list a{display:block;padding:18px 0;font:400 clamp(22px,2.4vw,32px)/1.15 var(--serif);letter-spacing:-.02em}
 """
 
 # ---- Photo credits by image file (used for captions) ---------------------------------
-CREDIT_IMG = {"Home page": "hero.jpg", "Trading desk": "trading.jpg", "Minimal desk": "minimal.jpg",
-              "Small space": "small.jpg", "Cable management": "cable.jpg"}
-PHOTO_BY = {CREDIT_IMG[label]: (name, pid) for label, name, pid in CREDITS if label in CREDIT_IMG}
+PHOTO_BY = {img: (name, pid) for _, name, pid, img in CREDITS}
 
 # ---- Digital products (Payhip) ------------------------------------------------------
+CHECKLIST_URL = "https://payhip.com/b/XAPfb"
+CHECKLIST_POINTS = ["12 steps, from tangle to tidy", "The short list of what you will need", "Two pages, ready to print"]
 SHOP = [
-    dict(kind="check", kicker="Free download", name="Desk Cable Checklist", cover="Cable Checklist", url="https://payhip.com/b/XAPfb",
-         desc="A printable checklist for getting desk cables under control, one step at a time.", cta="Download free"),
-    dict(kind="guide", kicker="Printable guide", name="The Clean Desk Guide", cover="Clean Desk Guide", url="https://payhip.com/b/3MK0F",
-         desc="A 15-page printable guide to setting up a clean, calm desk.", cta="View on Payhip"),
-    dict(kind="wall", kicker="Digital download", name="Minimalist Wallpaper Pack", cover="Wallpapers", url="https://payhip.com/b/XqrMo",
-         desc="A pack of quiet, minimalist 4K wallpapers for your desktop.", cta="View on Payhip"),
+    dict(kind="check", kicker="Free download", name="Desk Cable Checklist", url=CHECKLIST_URL, img="checklist.jpg",
+         desc="A printable checklist for getting desk cables under control, one step at a time.", points=CHECKLIST_POINTS),
+    dict(kind="guide", kicker="Printable guide", name="The Clean Desk Guide", url="https://payhip.com/b/3MK0F", img="clean-desk.jpg",
+         desc="A 15-page printable guide to setting up a clean, calm desk, from clearing the surface to keeping it that way.",
+         points=["15 printable pages", "Instant download through Payhip"]),
+    dict(kind="wall", kicker="Digital download", name="Minimalist Wallpaper Pack", url="https://payhip.com/b/XqrMo", img=None,
+         desc="Eight quiet wallpapers in forest, sand and terracotta tones, made to match calm, minimal desk setups.",
+         points=["8 designs, each in 4K desktop and phone sizes", "16 image files, instant download"]),
 ]
+PAID = [p for p in SHOP if p["kind"] != "check"]
 
-EDITION = "Autumn 2026 Edition"
 esc = html.escape
 AMZ_REL = 'rel="sponsored nofollow noopener" target="_blank"'
-ARROW = '<span class="arr" aria-hidden="true">&rarr;</span>'
+EXT = '<span class="ext" aria-hidden="true">&#8599;</span>'
 
 
 # ---- Images: responsive web versions + dimensions ----------------------------------------
@@ -737,25 +1019,42 @@ def make_web_images():
     print("made", len(todo), "web images")
 
 
+def srcset(name, root, ext):
+    stem = name.rsplit(".", 1)[0]
+    return ", ".join(f"{root}img/web/{stem}-{x}.{ext} {x}w" for x in widths_for(name))
+
+
 def pic(name, root, alt, sizes, cls="", eager=False):
     """<picture> with WebP + JPEG srcsets. CSS sets the displayed aspect ratio."""
     stem = name.rsplit(".", 1)[0]
     ws = widths_for(name)
     w, h = img_dims(name)
-    srcset = lambda ext: ", ".join(f"{root}img/web/{stem}-{x}.{ext} {x}w" for x in ws)
     fallback = f"{root}img/web/{stem}-{ws[min(1, len(ws) - 1)]}.jpg"
     load = 'loading="eager" fetchpriority="high"' if eager else 'loading="lazy"'
     c = f' class="{cls}"' if cls else ""
-    return (f'<picture><source type="image/webp" srcset="{srcset("webp")}" sizes="{sizes}">'
-            f'<img{c} src="{fallback}" srcset="{srcset("jpg")}" sizes="{sizes}" width="{w}" height="{h}" '
+    return (f'<picture><source type="image/webp" srcset="{srcset(name, root, "webp")}" sizes="{sizes}">'
+            f'<img{c} src="{fallback}" srcset="{srcset(name, root, "jpg")}" sizes="{sizes}" width="{w}" height="{h}" '
             f'alt="{esc(alt)}" {load} decoding="async"></picture>')
 
 
-def credit(img, root=""):
+def preload_tag(name, root, sizes):
+    return (f'<link rel="preload" as="image" type="image/webp" imagesrcset="{srcset(name, root, "webp")}" '
+            f'imagesizes="{sizes}" fetchpriority="high">')
+
+
+def thumb(name, root, alt, px=120):
+    """Small square-ish thumbnail using the smallest web size."""
+    stem = name.rsplit(".", 1)[0]
+    w0 = widths_for(name)[0]
+    return (f'<picture><source type="image/webp" srcset="{root}img/web/{stem}-{w0}.webp"><img src="{root}img/web/{stem}-{w0}.jpg" '
+            f'width="{px}" height="{px}" alt="{esc(alt)}" loading="lazy" decoding="async"></picture>')
+
+
+def credit(img):
     if img not in PHOTO_BY:
         return ""
     name, pid = PHOTO_BY[img]
-    return f'Photograph: <a class="ulink" href="https://unsplash.com/photos/{pid}" rel="nofollow">{esc(name)}</a> / Unsplash'
+    return f'Photo: <a href="https://unsplash.com/photos/{pid}" rel="nofollow">{esc(name)}</a> on Unsplash'
 
 
 # ---- Helpers ---------------------------------------------------------------------------
@@ -779,26 +1078,60 @@ def nice_date(iso):
 
 
 def disclosure_note():
-    return f'<p class="disclosure"><span class="label">Disclosure</span> {esc(DISCLOSURE)}</p>'
+    return f'<p class="disclosure"><strong>Disclosure.</strong> {esc(DISCLOSURE)}</p>'
+
+
+def setup_by(slug):
+    return next(s for s in SETUPS if s["slug"] == slug)
+
+
+def picks_label(s):
+    return f"{len(s['items'])} picks"
+
+
+ARTICLES_BY_DATE = sorted(ARTICLES, key=lambda a: a["date"], reverse=True)
+IMG_ALT = {
+    "hero.jpg": "A dual-monitor desk with plants, warm lamps and a wooden desktop",
+    "trading.jpg": "A trading desk with a monitor on an arm, a laptop on a stand and warm backlighting",
+    "minimal.jpg": "A minimal desk with a leather desk pad, a white mouse and a wooden tray",
+    "small.jpg": "A compact home office desk with a raised monitor in a small room",
+    "cable.jpg": "Cables coiled and clipped to the underside of a desk",
+    "bedroom.jpg": "A small bedroom desk beside a bed, with a laptop and a white chair",
+    "video-call.jpg": "A desk lit by a ring light, with a laptop, a tablet and plants",
+    "standing.jpg": "A white standing desk with a monitor, a desk shelf and plants",
+    "checklist.jpg": "A hand ticking boxes on a handwritten checklist in a notebook",
+    "clean-desk.jpg": "A clean desk with a monitor, speakers and a large desk mat",
+}
 
 
 # ---- Page shell ----------------------------------------------------------------------------
-FONTS = ("https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,300..600;"
-         "1,6..72,300..600&family=Inter+Tight:wght@400;500;600&display=swap")
+FONTS = ("https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,300..500;"
+         "1,6..72,300..500&family=Schibsted+Grotesk:wght@400;500;600&display=swap")
 
-JS = """(function(){var d=document,io='IntersectionObserver' in window,
-rm=window.matchMedia&&matchMedia('(prefers-reduced-motion: reduce)').matches,r=d.querySelectorAll('.reveal');
-if(!io||rm){for(var i=0;i<r.length;i++)r[i].classList.add('in')}else{var o=new IntersectionObserver(function(es){
-es.forEach(function(e){if(e.isIntersecting){e.target.classList.add('in');o.unobserve(e.target)}})},
-{rootMargin:'0px 0px -6% 0px',threshold:0.06});r.forEach(function(e){o.observe(e)})}
-var l=[].slice.call(d.querySelectorAll('[data-spy] a'));if(!l.length)return;
-var t=l.map(function(a){return d.getElementById(a.getAttribute('href').slice(1))}),q=0;
-function spy(){q=0;var y=Math.min(innerHeight*.25,180),k=-1;for(var i=0;i<t.length;i++){if(t[i]&&t[i].getBoundingClientRect().top<y)k=i}
-if(k>-1&&innerHeight+scrollY>=d.documentElement.scrollHeight-4){var lb=t[t.length-1];if(lb&&lb.getBoundingClientRect().top<innerHeight)k=t.length-1}
-l.forEach(function(a,i){if(i===k)a.setAttribute('aria-current','true');else a.removeAttribute('aria-current')})}
-addEventListener('scroll',function(){if(!q){q=1;requestAnimationFrame(spy)}},{passive:true});spy();})();"""
+JS = """(function(){var d=document,IO='IntersectionObserver' in window;
+var links=[].slice.call(d.querySelectorAll('[data-spy] a'));
+if(links.length&&IO){var map=new Map(),seen=new Map(),cur=null;
+links.forEach(function(a){var t=d.getElementById(a.getAttribute('href').slice(1));if(t)map.set(t,a)});
+var set=function(a){if(a===cur)return;cur=a;links.forEach(function(l){if(l.getAttribute('href')===a.getAttribute('href'))l.setAttribute('aria-current','true');else l.removeAttribute('aria-current')})};
+var io=new IntersectionObserver(function(es){es.forEach(function(e){seen.set(e.target,e.isIntersecting)});
+var f=null;map.forEach(function(a,t){if(!f&&seen.get(t))f=a});if(f)set(f)},{rootMargin:'-12% 0px -62% 0px'});
+map.forEach(function(a,t){io.observe(t)})}
+var k=d.getElementById('dock');if(!k||!IO)return;var ok=true;try{ok=sessionStorage.getItem('dock-x')!=='1'}catch(e){}
+var past=false,block=new Set(),st=d.querySelector('[data-dock-start]');
+var up=function(){k.classList.toggle('on',ok&&past&&block.size===0)};
+if(st)new IntersectionObserver(function(es){var e=es[es.length-1];past=!e.isIntersecting&&e.boundingClientRect.top<0;up()}).observe(st);
+var hb=new IntersectionObserver(function(es){es.forEach(function(e){if(e.isIntersecting)block.add(e.target);else block.delete(e.target)});up()});
+[].forEach.call(d.querySelectorAll('[data-dock-hide]'),function(el){hb.observe(el)});
+k.querySelector('.dock-x').addEventListener('click',function(){ok=false;up();try{sessionStorage.setItem('dock-x','1')}catch(e){}});
+})();"""
 
 CSS_VERSION = ""
+
+
+def topbar():
+    return (f'<a class="topbar" href="{CHECKLIST_URL}" rel="noopener" target="_blank">'
+            f'<span class="tb-long">Free printable: the 12-step desk cable checklist. </span><u>Get the free checklist</u>'
+            f'<span class="tb-short">: 12 steps, 2 pages</span> <span aria-hidden="true">&#8599;</span></a>')
 
 
 def masthead(root, current):
@@ -806,34 +1139,56 @@ def masthead(root, current):
              ("shop", "Shop", f"{root}index.html#shop"), ("about", "About", f"{root}disclosure.html")]
     links = "".join(f'<a href="{h}"' + (' aria-current="page"' if k == current else "") + f'>{t}</a>' for k, t, h in items)
     return f"""<a class="skip" href="#main">Skip to content</a>
-<header class="mast"><div class="wrap">
-<div class="mast-top label"><span>Desk setups, home offices &amp; trading desks</span><span>{EDITION}</span></div>
-<div class="mast-main"><a class="wordmark" href="{root}index.html"><i>The</i> Setup Edit</a>
-<nav class="primary" aria-label="Primary">{links}</nav></div></div></header>"""
+{topbar()}
+<header class="mast"><div class="wrap"><a class="wordmark" href="{root}index.html" translate="no"><i>The</i> Setup Edit</a>
+<nav class="primary" aria-label="Primary">{links}</nav></div></header>"""
 
 
 def footer(root):
-    col = lambda title, lis: f'<div class="fcol"><p class="label">{title}</p><ul>{lis}</ul></div>'
-    setups = "".join(f'<li><a class="ulink" href="{root}setups/{s["slug"]}.html">{esc(s["title"])}</a></li>' for s in SETUPS)
-    guides = "".join(f'<li><a class="ulink" href="{root}guides/{a["slug"]}.html">{esc(short_title(a))}</a></li>' for a in ARTICLES)
-    shop = "".join(f'<li><a class="ulink" href="{p["url"]}" rel="noopener" target="_blank">{esc(p["name"])}</a></li>' for p in SHOP)
-    edit = (f'<li><a class="ulink" href="{root}disclosure.html">About &amp; disclosure</a></li>'
-            f'<li><a class="ulink" href="{root}sitemap.xml">Sitemap</a></li>')
-    credits = ", ".join(f'<a class="ulink" href="https://unsplash.com/photos/{i}" rel="nofollow">{esc(n)}</a>' for _, n, i in CREDITS)
-    return f"""<footer class="foot"><div class="wrap">
-<div class="foot-top"><p class="foot-mark"><i>The</i> Setup Edit</p>
-<p class="foot-tag">Curated desk setups, home office ideas and trading desks. Chosen for design, reviews and fit.</p></div>
+    col = lambda title, lis: f'<div class="fcol"><p class="fh">{title}</p><ul>{lis}</ul></div>'
+    setups = "".join(f'<li><a href="{root}setups/{s["slug"]}.html">{esc(s["title"])}</a></li>' for s in SETUPS)
+    guides = "".join(f'<li><a href="{root}guides/{a["slug"]}.html">{esc(short_title(a))}</a></li>' for a in ARTICLES_BY_DATE)
+    shop = "".join(f'<li><a href="{p["url"]}" rel="noopener" target="_blank">{esc(p["name"])}</a></li>' for p in SHOP)
+    edit = (f'<li><a href="{root}disclosure.html">About &amp; disclosure</a></li>'
+            f'<li><a href="{root}sitemap.xml">Sitemap</a></li>')
+    credits = ", ".join(f'<a href="https://unsplash.com/photos/{i}" rel="nofollow">{esc(n)}</a>' for _, n, i, _ in CREDITS)
+    return f"""<footer class="foot" data-dock-hide><div class="wrap">
+<div class="foot-top"><p class="foot-mark" translate="no"><i>The</i> Setup Edit</p>
+<p class="foot-tag">Curated desk setups, home office ideas and trading desks, researched and written by one independent editor.</p></div>
 <div class="foot-cols">{col("Setups", setups)}{col("Guides", guides)}{col("Shop", shop)}{col("The Edit", edit)}</div>
-<div class="foot-legal"><p>{esc(DISCLOSURE)}</p>
-<p>Photos from <a class="ulink" href="https://unsplash.com" rel="nofollow">Unsplash</a> ({credits}). Products shown in photos may differ from the linked items.</p>
-<p class="foot-end"><span>&copy; 2026 The Setup Edit</span><a class="ulink" href="#top">Back to top &uarr;</a></p></div>
+<div class="foot-legal"><p>{esc(DISCLOSURE)} Picks come from research, not hands-on testing.</p>
+<p>Photos from <a href="https://unsplash.com" rel="nofollow">Unsplash</a>: {credits}. Products shown in photos may differ from the linked items.</p>
+<p class="foot-end"><span>&copy; 2026 The Setup Edit</span><a href="#top">Back to top</a></p></div>
 </div></footer>"""
 
 
-def page(title, desc, body, root="", og="img/hero.jpg", path="", current="", extra_head=""):
+def dock(text, sub, href, label, cls="btn", external=True):
+    tgt = ' rel="noopener" target="_blank"' if external else ""
+    return (f'<aside class="dock" id="dock" aria-label="Suggested next step"><p class="dock-text">{text}<small>{sub}</small></p>'
+            f'<a class="{cls}" href="{href}"{tgt}>{label}{EXT if external else ""}</a>'
+            f'<button class="dock-x" type="button" aria-label="Dismiss">&times;</button></aside>')
+
+
+def checklist_dock():
+    return dock("12-step desk cable checklist", "Free, two pages, ready to print", CHECKLIST_URL, "Get the free checklist", "btn btn-clay")
+
+
+def curly(doc):
+    """Typographic apostrophes in visible text only (not in attributes, scripts or styles)."""
+    parts = re.split(r"(<script\b.*?</script>|<style\b.*?</style>)", doc, flags=re.S)
+    fix = lambda m: ">" + re.sub(r"(\w)(?:'|&#x27;)", "\\1\u2019", m.group(1)) + "<"
+    return "".join(p if p.startswith(("<script", "<style")) else re.sub(r">([^<>]+)<", fix, p) for p in parts)
+
+
+def ld(obj):
+    return f'<script type="application/ld+json">{json.dumps(obj, ensure_ascii=False)}</script>'
+
+
+def page(title, desc, body, root="", og="img/hero.jpg", path="", current="", extra_head="", preload="", dock_html="", schema=()):
     url = BASE_URL + path
     og_abs = og if og.startswith("http") else BASE_URL + og
-    return f"""<!doctype html><html lang="en" id="top"><head><meta charset="utf-8">
+    scripts = "".join(ld(s) for s in schema)
+    return curly(f"""<!doctype html><html lang="en" id="top"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>{esc(title)}</title><meta name="description" content="{esc(desc)}">
 <link rel="canonical" href="{url}">
@@ -842,153 +1197,213 @@ def page(title, desc, body, root="", og="img/hero.jpg", path="", current="", ext
 <meta property="og:type" content="{'article' if path.startswith('guides/') else 'website'}"><meta property="og:site_name" content="{SITE_NAME}">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="p:domain_verify" content="77efeace518f495ac7564d61a39f2015"/>
-<meta name="theme-color" content="#F6F1E7">
+<meta name="theme-color" content="#1E2A26">
 <link rel="icon" href="{root}favicon.svg" type="image/svg+xml">
 <link rel="icon" href="{root}img/web/icon-32.png" sizes="32x32" type="image/png">
 <link rel="apple-touch-icon" href="{root}img/web/icon-180.png">
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="{FONTS}" rel="stylesheet">
-<link rel="stylesheet" href="{root}style.css?v={CSS_VERSION}">
-<script>document.documentElement.className+=' js'</script>{extra_head}</head>
+{preload}<link rel="stylesheet" href="{root}style.css?v={CSS_VERSION}">
+<link rel="stylesheet" href="{FONTS}" media="print" onload="this.media='all'"><noscript><link rel="stylesheet" href="{FONTS}"></noscript>
+{extra_head}{scripts}</head>
 <body>{masthead(root, current)}
 <main id="main">{body}</main>
 {footer(root)}
-<script>{JS}</script></body></html>"""
+{dock_html}
+<script>{JS}</script></body></html>""")
+
+
+def breadcrumbs(trail):
+    """trail: [(name, site-relative path, href or None for the current page)]. Returns (visible nav html, BreadcrumbList schema). Paths are site-relative."""
+    items = []
+    for k, (name, path, href) in enumerate(trail):
+        if href:
+            items.append(f'<li><a href="{href}">{esc(name)}</a></li>')
+        else:
+            items.append(f'<li aria-current="page">{esc(name)}</li>')
+    schema = {"@context": "https://schema.org", "@type": "BreadcrumbList", "itemListElement": [
+        {"@type": "ListItem", "position": k, "name": name, "item": BASE_URL + path} for k, (name, path, _) in enumerate(trail, 1)]}
+    return f'<nav class="crumbs" aria-label="Breadcrumb"><ol>{"".join(items)}</ol></nav>', schema
 
 
 # ---- Product blocks ------------------------------------------------------------------------
-PRODUCTS = {a: (n, m, w) for s in SETUPS for n, m, a, w in s["items"]}
+PRODUCTS = dict(EXTRA_PRODUCTS)
+PRODUCTS.update({a: (n, m, w) for s in SETUPS for n, m, a, w in s["items"]})
 
 
-def amazon_cta(asin):
-    return f'<a class="cta" href="{amz(asin)}" {AMZ_REL}>View on Amazon{ARROW}</a>'
+def amazon_btn(asin, name, cls="btn"):
+    return (f'<a class="{cls}" href="{amz(asin)}" {AMZ_REL}>View on Amazon<span class="vh">: {esc(name)}</span> {EXT}</a>')
 
 
 def product_card(match):
     asin = match.group(1)
-    n, m, w = PRODUCTS[asin]  # KeyError here means the ASIN isn't in SETUPS
-    return (f'<aside class="pick" aria-label="{esc(n)}"><div class="pick-body"><p class="label pick-kicker">The pick</p>'
-            f'<p class="pick-name">{esc(n)}</p><p class="model">{esc(m)}</p><p class="pick-why">{esc(w)}</p></div>'
-            f'{amazon_cta(asin)}</aside>')
+    n, m, w = PRODUCTS[asin]  # KeyError here means the ASIN isn't in SETUPS or EXTRA_PRODUCTS
+    return (f'<aside class="pick" aria-label="{esc(n)}"><div class="pick-body"><span class="tag">{ROLE.get(asin, "Pick")}</span>'
+            f'<p class="pick-name">{esc(n)}</p><p class="pick-model">{esc(m)}</p><p class="pick-why">{esc(w)}</p></div>'
+            f'{amazon_btn(asin, n)}</aside>')
+
+
+def checklist_promo(root, hide=True):
+    return f"""<aside class="promo" aria-labelledby="promo-title"{' data-dock-hide' if hide else ''}>
+<span class="media">{pic('checklist.jpg', root, IMG_ALT['checklist.jpg'], '(min-width: 700px) 220px, 100vw')}</span>
+<div class="promo-text"><span class="tag tag-clay">Free printable</span>
+<p class="promo-title" id="promo-title">The desk cable checklist</p>
+<p>Twelve steps from a tangle to a tidy desk, plus the short list of what you will need. Two pages, ready to print.</p>
+<a class="btn btn-clay" href="{CHECKLIST_URL}" rel="noopener" target="_blank">Get the free checklist{EXT}</a></div></aside>"""
+
+
+def prod_cover(p, root):
+    if p["img"]:
+        return f'<span class="prod-cover">{pic(p["img"], root, IMG_ALT[p["img"]], "(min-width: 1100px) 20vw, (min-width: 700px) 40vw, 100vw")}</span>'
+    return '<span class="prod-cover cover-wall" role="img" aria-label="Wallpaper pack artwork: a terracotta sun over a sand horizon on forest green"></span>'
+
+
+def mini_prods(root, heading=True):
+    cards = "".join(f"""<a class="mini" href="{p['url']}" rel="noopener" target="_blank">{prod_cover(p, root)}
+<span><span class="meta">{p['kicker']}</span><span class="mini-name">{esc(p['name'])}</span><span class="go">View on Payhip</span></span></a>"""
+                    for p in PAID)
+    if not heading:
+        return f'<div class="mini-prods">{cards}</div>'
+    return f'<section aria-labelledby="mp-title"><h2 class="block-title" id="mp-title">From the shop</h2><div class="mini-prods">{cards}</div></section>'
 
 
 # ---- Home ------------------------------------------------------------------------------------
-FEATURE_SIZES = ["(min-width: 1000px) 58vw, 100vw", "(min-width: 1000px) 40vw, 100vw",
-                 "(min-width: 1000px) 58vw, 100vw", "(min-width: 1000px) 50vw, 100vw"]
-
-
-def shop_tile(p):
-    art = {
-        "check": '<span class="tile-lines" aria-hidden="true"><i></i><i></i><i></i><i></i></span>',
-        "guide": '<span class="tile-pp" aria-hidden="true">15&thinsp;pp.</span>',
-        "wall": '<span class="tile-horizon" aria-hidden="true"><i></i></span>',
-    }[p["kind"]]
-    return (f'<a class="tile tile-{p["kind"]}" href="{p["url"]}" rel="noopener" target="_blank" tabindex="-1" aria-hidden="true">'
-            f'<span class="tile-brand">The Setup Edit</span>{art}<span class="tile-name">{esc(p.get("cover", p["name"]))}</span></a>')
+BENTO = ["minimal-desk-setup", "trading-desk-setup", "small-space-office", "cable-management"]
+BENTO_SIZES = ["(min-width: 1000px) 55vw, 100vw", "(min-width: 1000px) 38vw, 100vw",
+               "(min-width: 1000px) 38vw, 100vw", "(min-width: 1000px) 55vw, 100vw"]
 
 
 def build_home():
-    total = sum(len(s["items"]) for s in SETUPS)
-    feats = []
-    for i, s in enumerate(SETUPS):
-        href = f"setups/{s['slug']}.html"
-        feats.append(f"""<article class="feature f{i % 4 + 1} reveal">
-<a class="feature-media media" href="{href}" tabindex="-1" aria-hidden="true">{pic(s['img'], '', s['title'], FEATURE_SIZES[i % 4])}</a>
-<div class="feature-text"><p class="no"><span class="label">No.</span><span class="no-n">{i + 1:02d}</span></p>
-<h3 class="feature-title"><a href="{href}">{esc(s['title'])}</a></h3>
-<p class="feature-dek">{esc(s['blurb'])}</p>
-<p class="feature-meta"><span class="label">{len(s['items']):02d} pieces</span><a class="cta" href="{href}">Shop the list{ARROW}</a></p></div>
-</article>""")
-    rows = "".join(f"""<li class="guide-row reveal"><a href="guides/{a['slug']}.html">
-<p class="gr-meta label"><time datetime="{a['date']}">{nice_date(a['date'])}</time><span>{reading_time(a)} min read</span></p>
-<div class="gr-text"><p class="label kicker">{esc(a['eyebrow'])}</p><h3 class="gr-title"><span class="uline">{esc(a['title'])}</span></h3>
-<p class="gr-dek">{esc(a['desc'])}</p></div>
-<div class="gr-thumb media">{pic(a['img'], '', '', '(min-width: 1000px) 22vw, 96px')}</div></a></li>""" for a in ARTICLES)
-    products = "".join(f"""<div class="product">{shop_tile(p)}<div class="product-text">
-<p class="label kicker">{p['kicker']}</p><h3 class="product-name">{esc(p['name'])}</h3><p class="product-desc">{esc(p['desc'])}</p>
-<a class="cta" href="{p['url']}" rel="noopener" target="_blank">{p['cta']}{ARROW}</a></div></div>""" for p in SHOP)
-
-    cover_lines = "".join(f'<li><a href="setups/{s["slug"]}.html"><span class="ix-n">{k:02d}</span><span class="uline">{esc(s["title"])}</span></a></li>'
-                          for k, s in enumerate(SETUPS, 1))
-    body = f"""<section class="cover wrap" aria-labelledby="cover-title">
-<div class="cover-top"><h1 id="cover-title" class="cover-title">A desk you actually <em>want</em> to sit&nbsp;at.</h1>
-<ol class="cover-lines" aria-label="Setups in this edition">{cover_lines}</ol></div>
-<div class="cover-row"><p class="label">In this edition</p>
-<p class="cover-dek">{len(SETUPS)} curated desk setups, {len(ARTICLES)} step-by-step guides and a small shop of printables, for traders, remote workers and anyone who spends the day at a desk.</p>
-<a class="cta" href="#setups">Read the index<span class="arr" aria-hidden="true">&darr;</span></a></div>
+    cards = []
+    for k, slug in enumerate(BENTO):
+        s = setup_by(slug)
+        cards.append(f"""<a class="scard sc{k + 1}" href="setups/{slug}.html">
+<span class="media">{pic(s['img'], '', IMG_ALT[s['img']], BENTO_SIZES[k])}</span>
+<span class="scard-body"><span class="meta">{picks_label(s)}</span><span class="scard-title"><span class="ul">{esc(s['title'])}</span></span>
+<span class="scard-dek">{esc(s['blurb'])}</span><span class="go">Shop the list</span></span></a>""")
+    jump = "".join(f'<a href="setups/{s["slug"]}.html">{thumb(s["img"], "", IMG_ALT[s["img"]], 44)}{esc(s["title"].replace("The ", "", 1))}</a>'
+                   for s in SETUPS)
+    feat, rest = ARTICLES_BY_DATE[0], ARTICLES_BY_DATE[1:]
+    glist = "".join(f"""<li><a href="guides/{a['slug']}.html"><span><span class="meta">{esc(a['eyebrow'])}, {reading_time(a)} min read</span>
+<span class="glist-title"><span class="ul">{esc(a['title'])}</span></span></span>
+<span class="media">{thumb(a['img'], '', IMG_ALT[a['img']], 92)}</span></a></li>""" for a in rest)
+    ticks = "".join(f"<li>{esc(t)}</li>" for t in CHECKLIST_POINTS)
+    prods = "".join(f"""<article class="prod">{prod_cover(p, '')}<div class="prod-body"><span class="tag">{p['kicker']}</span>
+<h3 class="prod-name">{esc(p['name'])}</h3><p class="prod-desc">{esc(p['desc'])}</p>
+<ul class="ticks">{''.join(f'<li>{esc(t)}</li>' for t in p['points'])}</ul>
+<a class="btn" href="{p['url']}" rel="noopener" target="_blank">View on Payhip<span class="vh">: {esc(p['name'])}</span> {EXT}</a></div></article>""" for p in PAID)
+    hero_sizes = "(min-width: 1000px) 40vw, 100vw"
+    body = f"""<section class="wrap hero" aria-labelledby="hero-title" data-dock-start>
+<div class="hero-text"><h1 id="hero-title" class="hero-title">A desk you actually want to sit at.</h1>
+<p class="hero-dek">Curated desk setups and practical guides for home offices, small rooms and trading desks, with every pick one click away.</p>
+<p class="hero-ctas"><a class="btn" href="#setups">Browse the setups</a><a class="tlink" href="{CHECKLIST_URL}" rel="noopener" target="_blank">Get the free checklist <span aria-hidden="true">&#8599;</span></a></p></div>
+<figure class="hero-fig"><span class="media">{pic('hero.jpg', '', IMG_ALT['hero.jpg'], hero_sizes, eager=True)}</span>
+<figcaption class="caption"><span>Two screens, soft lamps and plenty of green.</span><span>{credit('hero.jpg')}</span></figcaption></figure>
 </section>
-<figure class="bleed cover-fig">{pic('hero.jpg', '', 'A dual-monitor desk with plants, warm lamps and a wooden desktop', '100vw', eager=True)}
-<figcaption class="wrap caption"><span><span class="label">On the cover</span> Two screens, soft lamps and plenty of green.</span><span>{credit('hero.jpg')}</span></figcaption></figure>
+<nav class="wrap" aria-label="Jump to a setup"><div class="jump"><span class="meta">Jump to a setup</span>{jump}</div></nav>
 
-<section id="setups" class="wrap section" aria-labelledby="setups-title">
-<header class="sec-head reveal"><p class="label">The Setups</p><h2 id="setups-title" class="sec-title">Four desks, <em>edited</em> down to what matters.</h2>
-<p class="label sec-count">{len(SETUPS):02d} edits &middot; {total} pieces</p></header>
-{''.join(feats)}
+<section id="setups" class="wrap sec" aria-labelledby="setups-title">
+<header class="sec-head"><h2 id="setups-title" class="sec-title">Four desks, edited down to what matters.</h2>
+<p class="sec-dek">Each setup is a short shopping list with a note on why every piece is there, and where to start.</p></header>
+<div class="bento">{''.join(cards)}</div>
 </section>
 
-<section id="guides" class="band band-cream" aria-labelledby="guides-title"><div class="wrap">
-<header class="sec-head reveal"><p class="label">Guides</p><h2 id="guides-title" class="sec-title">Long reads for a <em>better</em> desk.</h2>
-<p class="label sec-count">{len(ARTICLES):02d} guides</p></header>
-<ol class="guide-list">{rows}</ol></div></section>
+<section id="checklist" class="lead-band sec" aria-labelledby="lead-title" data-dock-hide><div class="wrap lead-grid">
+<figure class="lead-fig"><span class="media">{pic('checklist.jpg', '', IMG_ALT['checklist.jpg'], '(min-width: 1000px) 45vw, 100vw')}</span>
+<figcaption class="caption"><span>{credit('checklist.jpg')}</span></figcaption></figure>
+<div class="lead-text"><span class="tag tag-clay">Free printable</span>
+<h2 id="lead-title" class="lead-title">Get your desk cables under control this weekend.</h2>
+<p class="lead-dek">The Desk Cable Checklist turns the method from our cable guides into a list you can tick off, one step at a time.</p>
+<ul class="ticks">{ticks}</ul>
+<a class="btn btn-clay" href="{CHECKLIST_URL}" rel="noopener" target="_blank">Get the free checklist{EXT}</a>
+<p class="meta lead-note">A free PDF, delivered through Payhip.</p></div>
+</div></section>
 
-<section id="shop" class="band band-dark" aria-labelledby="shop-title"><div class="wrap shop-grid">
-<header class="shop-head reveal"><p class="label kicker">The Shop</p><h2 id="shop-title" class="sec-title">Printables &amp; <em>downloads</em></h2>
-<p>Three small things made by The Setup Edit. Instant downloads, delivered through Payhip.</p></header>
-<div class="products reveal">{products}</div></div></section>
+<section id="guides" class="wrap sec" aria-labelledby="guides-title">
+<header class="sec-head"><h2 id="guides-title" class="sec-title">Guides for a better desk.</h2>
+<p class="sec-dek">Step-by-step reads on cables, light, small rooms and trading desks. Each one links to the setups it builds.</p></header>
+<div class="guides"><a class="gfeat" href="guides/{feat['slug']}.html"><span class="media">{pic(feat['img'], '', IMG_ALT[feat['img']], '(min-width: 1000px) 48vw, 100vw')}</span>
+<span><span class="meta">{esc(feat['eyebrow'])}, {reading_time(feat)} min read</span>
+<span class="gfeat-title"><span class="ul">{esc(feat['title'])}</span></span>
+<span class="gfeat-dek">{esc(feat['desc'])}</span></span></a>
+<ol class="glist">{glist}</ol></div>
+</section>
 
-<section id="about" class="wrap section about" aria-labelledby="about-title">
-<p class="label" id="about-title">About the edit</p>
-<div class="about-text reveal"><p class="about-lede">The Setup Edit is a small, independent guide to desks and home offices. Every pick is chosen for its design, its reviews and how well it fits the setup around it.</p>
-<p>Picks come from research, not hands-on testing: I compare the options, read the specs and the reviews, and include the ones that suit each desk. Amazon links are affiliate links, which is how the site pays for itself.</p>
-<a class="cta" href="disclosure.html">About &amp; disclosure{ARROW}</a></div>
+<section id="shop" class="wrap sec sec-rule" aria-labelledby="shop-title">
+<header class="sec-head"><h2 id="shop-title" class="sec-title">Printables from The Setup Edit.</h2>
+<p class="sec-dek">Two small things we made, sold as instant downloads through Payhip. The cable checklist above is free.</p></header>
+<div class="prods">{prods}</div>
+</section>
+
+<section id="about" class="wrap sec sec-rule about" aria-labelledby="about-title">
+<h2 id="about-title" class="about-lede">The Setup Edit is a small, independent guide to desks and home offices.</h2>
+<div class="about-body"><p>Every pick is chosen for its design, its reviews and how well it fits the setup around it. Picks come from research, not hands-on testing: I compare the options, read the specs and the reviews, and include the ones that suit each desk.</p>
+<p>Amazon links are affiliate links, which is how the site pays for itself. As an Amazon Associate I earn from qualifying purchases.</p>
+<a class="go" href="disclosure.html">About &amp; disclosure</a></div>
 </section>"""
-    (OUT / "index.html").write_text(page("The Setup Edit | Desk Setups & Home Office Ideas",
-        "Curated desk setups, home office ideas and trading desk gear, with links to shop every item.", body), encoding="utf-8")
+    schema = [
+        {"@context": "https://schema.org", "@type": "WebSite", "name": SITE_NAME, "url": BASE_URL,
+         "description": "Curated desk setups, home office ideas and trading desk guides."},
+        {"@context": "https://schema.org", "@type": "Organization", "name": SITE_NAME, "url": BASE_URL,
+         "logo": BASE_URL + "img/web/icon-512.png"},
+    ]
+    (OUT / "index.html").write_text(page("The Setup Edit | Desk Setups, Home Office Ideas & Trading Desks",
+        "Curated desk setups, home office ideas and trading desk guides, with a short note on why every item is there and a link to shop it.",
+        body, preload=preload_tag("hero.jpg", "", hero_sizes), dock_html=checklist_dock(), schema=schema), encoding="utf-8")
 
 
 # ---- Setup pages -------------------------------------------------------------------------
 def build_setups():
-    for i, s in enumerate(SETUPS):
+    for s in SETUPS:
         n = len(s["items"])
-        index = "".join(f'<li><a href="#item-{k:02d}"><span class="ix-n">{k:02d}</span>{esc(name)}</a></li>'
-                        for k, (name, _, _, _) in enumerate(s["items"], 1))
-        items = "".join(f"""<li class="item" id="item-{k:02d}"><span class="item-no" aria-hidden="true">{k:02d}</span>
-<div class="item-body"><h2 class="item-name">{esc(name)}</h2><p class="model">{esc(model)}</p><p class="item-why">{esc(why)}</p></div>
-{amazon_cta(asin)}</li>""" for k, (name, model, asin, why) in enumerate(s["items"], 1))
-        rel = [a for a in ARTICLES if s["slug"] in a["setups"]]
-        related = ""
-        if rel:
-            related = "".join(f"""<li><a href="../guides/{a['slug']}.html"><span class="label">{reading_time(a)} min read</span>
-<span class="rel-title"><span class="uline">{esc(a['title'])}</span></span>{ARROW}</a></li>""" for a in rel)
-            related = f"""<section class="wrap section related reveal" aria-labelledby="rel-title">
-<p class="label" id="rel-title">Read the guide{'s' if len(rel) > 1 else ''}</p><ul class="rel-list">{related}</ul></section>"""
-        nxt = SETUPS[(i + 1) % len(SETUPS)]
-        nk = (i + 1) % len(SETUPS) + 1
-        body = f"""<section class="wrap page-head" aria-labelledby="page-title">
-<p class="crumbs label"><a class="ulink" href="../index.html#setups">The Setups</a><span aria-hidden="true">/</span>No. {i + 1:02d}</p>
+        index = "".join(f'<li><a href="#item-{k:02d}">{esc(name)}</a></li>' for k, (name, _, _, _) in enumerate(s["items"], 1))
+        cards = []
+        for k, (name, model, asin, why) in enumerate(s["items"], 1):
+            lead = k == 1
+            tags = (f'<span class="tag tag-clay">Start here</span>' if lead else "") + f'<span class="tag">{ROLE.get(asin, "Pick")}</span>'
+            note = f'<p class="start-note">{esc(s["start"])}</p>' if lead else ""
+            cards.append(f"""<li class="pcard{' lead' if lead else ''}" id="item-{k:02d}"><div><div class="pcard-top">{tags}</div>
+<h3 class="pcard-name">{esc(name)}</h3><p class="pcard-model">{esc(model)}</p><p class="pcard-why">{esc(why)}</p>{note}</div>
+{amazon_btn(asin, name, 'btn btn-light' if lead else 'btn')}</li>""")
+        rel = [a for a in ARTICLES_BY_DATE if s["slug"] in a["setups"]][:4]
+        rel_html = "".join(f"""<a class="rcard" href="../guides/{a['slug']}.html"><span class="media">{pic(a['img'], '../', IMG_ALT[a['img']], '(min-width: 1000px) 28vw, (min-width: 700px) 45vw, 100vw')}</span>
+<span class="meta">{esc(a['eyebrow'])}, {reading_time(a)} min read</span><span class="rcard-title"><span class="ul">{esc(a['title'])}</span></span></a>""" for a in rel)
+        others = [o for o in SETUPS if o is not s]
+        more = "".join(f"""<li><a href="{o['slug']}.html"><span class="media">{thumb(o['img'], '../', IMG_ALT[o['img']], 96)}</span>
+<span><span class="srow-title"><span class="ul">{esc(o['title'])}</span></span><span class="meta">{picks_label(o)}</span></span></a></li>""" for o in others)
+        crumbs, bc = breadcrumbs([("Home", "", "../index.html"), ("Setups", "index.html#setups", "../index.html#setups"),
+                                  (s["title"], f"setups/{s['slug']}.html", None)])
+        item_list = {"@context": "https://schema.org", "@type": "ItemList", "name": s["title"], "description": s["meta"],
+                     "numberOfItems": n, "itemListElement": [
+                         {"@type": "ListItem", "position": k, "name": f"{name} ({model})", "url": amz(asin)}
+                         for k, (name, model, asin, _) in enumerate(s["items"], 1)]}
+        body = f"""<section class="wrap ph" aria-labelledby="page-title">{crumbs}
 <div class="ph-grid"><h1 id="page-title" class="ph-title">{esc(s['title'])}</h1>
-<div class="ph-aside"><p class="ph-dek">{esc(s['blurb'])}</p><p class="label ph-meta">{n:02d} pieces</p>{disclosure_note()}</div></div>
+<div class="ph-aside"><p class="ph-dek">{esc(s['blurb'])}</p><a class="btn" href="#picks">Shop the list<span class="vh"> of {n} picks</span></a>{disclosure_note()}</div></div>
 </section>
-<figure class="bleed setup-fig">{pic(s['img'], '../', s['title'], '100vw', eager=True)}
+<figure class="bleed" data-dock-start>{pic(s['img'], '../', IMG_ALT[s['img']], '100vw', eager=True)}
 <figcaption class="wrap caption"><span>Products shown in photos may differ from the linked items.</span><span>{credit(s['img'])}</span></figcaption></figure>
-<section class="wrap list-grid" aria-label="The shopping list">
-<nav class="list-index" aria-label="Items in this setup"><p class="label">The list &middot; {n:02d}</p><ol data-spy>{index}</ol></nav>
-<ol class="shop-list">{items}</ol>
+<section class="wrap sintro" aria-labelledby="intro-title"><h2 id="intro-title">How this desk works</h2>
+<div class="sintro-main"><div class="sintro-body">{s['intro']}</div><p class="good"><strong>Good for:</strong> {esc(s['good_for'])}</p></div></section>
+<section class="wrap picks" id="picks" aria-labelledby="picks-title">
+<nav class="pindex" aria-label="Picks in this setup"><p class="meta">The list, {n} picks</p><ol data-spy>{index}</ol></nav>
+<div class="plist-wrap"><header class="plist-head"><h2 id="picks-title">The list</h2>
+<p class="meta">Research-based picks, not hands-on tested. Links go to Amazon, and as an Amazon Associate I earn from qualifying purchases.</p></header>
+<ol class="plist">{''.join(cards)}</ol>
+<div class="plist-foot">{checklist_promo('../')}</div></div>
 </section>
-{related}
-<nav class="next band band-cream" aria-label="Next setup"><div class="wrap"><a class="next-link" href="{nxt['slug']}.html">
-<span class="next-text"><span class="label">Next in the edit &middot; No. {nk:02d}</span><span class="next-title"><span class="uline">{esc(nxt['title'])}</span></span>
-<span class="next-dek">{esc(nxt['blurb'])}</span></span>
-<span class="next-media media">{pic(nxt['img'], '../', '', '(min-width: 1000px) 30vw, 100vw')}</span></a></div></nav>"""
+<div class="wrap after after-2">
+<section aria-labelledby="rel-title"><h2 class="block-title" id="rel-title">Read the guides</h2><div class="rgrid">{rel_html}</div></section>
+<section aria-labelledby="more-title"><h2 class="block-title" id="more-title">More setups</h2><ul class="srows">{more}</ul></section>
+</div>"""
         (OUT / "setups" / f"{s['slug']}.html").write_text(
-            page(f"{s['title']} | {SITE_NAME}", s["blurb"], body, root="../", og=f"img/{s['img']}",
-                 path=f"setups/{s['slug']}.html", current="setups"), encoding="utf-8")
+            page(f"{s['title']}: {n} Picks, Item by Item | {SITE_NAME}", s["meta"], body, root="../", og=f"img/{s['img']}",
+                 path=f"setups/{s['slug']}.html", current="setups", preload=preload_tag(s["img"], "../", "100vw"),
+                 dock_html=checklist_dock(), schema=[bc, item_list]), encoding="utf-8")
 
 
 # ---- Guides --------------------------------------------------------------------------------
 def build_guides():
     (OUT / "guides").mkdir(exist_ok=True)
-    titles = {s["slug"]: s["title"] for s in SETUPS}
     for a in ARTICLES:
         toc = []
 
@@ -998,77 +1413,101 @@ def build_guides():
             toc.append((hid, re.sub(r"<[^>]+>", "", text)))
             return f'<h2 id="{hid}">{text}</h2>'
         body_html = re.sub(r"<h2>(.*?)</h2>", h2_id, a["body"])
+        asins = list(dict.fromkeys(re.findall(r"\[\[([0-9A-Z]{10})\]\]", body_html)))
         body_html = re.sub(r"\[\[([0-9A-Z]{10})\]\]", product_card, body_html)
-        toc.append(("faq", "Questions, answered"))
+        main_setup = setup_by(a["setups"][0])
+        rows = "".join(f"""<li><span class="quick-name">{esc(PRODUCTS[x][0])}<span class="quick-model">{esc(PRODUCTS[x][1])}</span></span>
+<a class="q" href="{amz(x)}" {AMZ_REL}>View on Amazon<span class="vh">: {esc(PRODUCTS[x][0])}</span></a></li>""" for x in asins)
+        quick = f"""<aside class="quick" aria-labelledby="quick-title"><p class="quick-title" id="quick-title">The picks in this guide</p>
+<p class="quick-sub">Short on time? Here is everything recommended below. The full list is in <a href="../setups/{main_setup['slug']}.html">{esc(main_setup['title'])}</a>.</p>
+<ol>{rows}</ol></aside>"""
+        body_html = body_html.replace("</p>", "</p>" + quick, 1)
+        toc += [("faq", "Questions, answered"), ("shop-setups", "Shop the setups")]
         toc_html = "".join(f'<li><a href="#{hid}">{esc(t)}</a></li>' for hid, t in toc)
         faq = "".join(f'<details><summary><span>{esc(q)}</span><i aria-hidden="true"></i></summary><p>{esc(ans)}</p></details>'
                       for q, ans in a["faq"])
-        ld = {"@context": "https://schema.org", "@type": "FAQPage", "mainEntity": [
+        faq_ld = {"@context": "https://schema.org", "@type": "FAQPage", "mainEntity": [
             {"@type": "Question", "name": q, "acceptedAnswer": {"@type": "Answer", "text": ans}} for q, ans in a["faq"]]}
         art_ld = {"@context": "https://schema.org", "@type": "Article", "headline": a["title"], "description": a["desc"],
-                  "image": BASE_URL + "img/" + a["img"], "datePublished": a["date"],
-                  "author": {"@type": "Organization", "name": SITE_NAME}, "publisher": {"@type": "Organization", "name": SITE_NAME},
+                  "image": BASE_URL + "img/" + a["img"], "datePublished": a["date"], "dateModified": a["date"],
+                  "author": {"@type": "Organization", "name": SITE_NAME, "url": BASE_URL},
+                  "publisher": {"@type": "Organization", "name": SITE_NAME, "logo": {"@type": "ImageObject", "url": BASE_URL + "img/web/icon-512.png"}},
                   "mainEntityOfPage": BASE_URL + f"guides/{a['slug']}.html"}
-        setup_links = "".join(f"""<a class="shop-setup" href="../setups/{sl}.html"><span class="media">{pic(next(s['img'] for s in SETUPS if s['slug'] == sl), '../', '', '(min-width: 700px) 30vw, 100vw')}</span>
-<span class="label">No. {[s['slug'] for s in SETUPS].index(sl) + 1:02d} &middot; {len(next(s['items'] for s in SETUPS if s['slug'] == sl)):02d} pieces</span>
-<span class="shop-setup-title"><span class="uline">{esc(titles[sl])}</span></span></a>""" for sl in a["setups"])
+        crumbs, bc = breadcrumbs([("Home", "", "../index.html"), ("Guides", "index.html#guides", "../index.html#guides"),
+                                  (short_title(a), f"guides/{a['slug']}.html", None)])
+        setup_cards = "".join(f"""<a class="rcard" href="../setups/{sl}.html"><span class="media">{pic(setup_by(sl)['img'], '../', IMG_ALT[setup_by(sl)['img']], '(min-width: 700px) 30vw, 100vw')}</span>
+<span class="meta">{picks_label(setup_by(sl))}</span><span class="rcard-title"><span class="ul">{esc(setup_by(sl)['title'])}</span></span></a>""" for sl in a["setups"])
+        near = [b for b in ARTICLES_BY_DATE if b is not a and set(b["setups"]) & set(a["setups"])]
+        near += [b for b in ARTICLES_BY_DATE if b is not a and b not in near]
+        keep = "".join(f"""<a class="rcard" href="{b['slug']}.html"><span class="media">{pic(b['img'], '../', IMG_ALT[b['img']], '(min-width: 700px) 30vw, 100vw')}</span>
+<span class="meta">{esc(b['eyebrow'])}, {reading_time(b)} min read</span><span class="rcard-title"><span class="ul">{esc(b['title'])}</span></span></a>""" for b in near[:2])
+        toc_list = f'<ol data-spy>{toc_html}</ol>'
         body = f"""<article>
-<header class="wrap page-head guide-head">
-<p class="crumbs label"><a class="ulink" href="../index.html#guides">Guides</a><span aria-hidden="true">/</span>{esc(a['eyebrow'])}</p>
+<header class="wrap ph guide-head">{crumbs}
 <h1 id="page-title" class="ph-title guide-title">{esc(a['title'])}</h1>
 <div class="gh-row"><p class="gh-dek">{esc(a['desc'])}</p>
-<div class="gh-meta"><p class="label"><time datetime="{a['date']}">{nice_date(a['date'])}</time> &middot; {reading_time(a)} min read</p>{disclosure_note()}</div></div>
+<div class="gh-meta"><p class="meta"><time datetime="{a['date']}">{nice_date(a['date'])}</time>, {reading_time(a)} min read</p>{disclosure_note()}</div></div>
 </header>
-<figure class="wrap guide-fig">{pic(a['img'], '../', a['title'], '(min-width: 1000px) 80vw, 100vw', eager=True)}
+<figure class="wrap gfig" data-dock-start><span class="media">{pic(a['img'], '../', IMG_ALT[a['img']], '(min-width: 1360px) 1250px, 100vw', eager=True)}</span>
 <figcaption class="caption"><span>{credit(a['img'])}</span><span>Products shown in photos may differ from the linked items.</span></figcaption></figure>
-<div class="wrap article-grid">
-<nav class="toc" aria-label="In this guide"><p class="label">In this guide</p><ol data-spy>{toc_html}</ol></nav>
+<div class="wrap article">
+<nav class="toc" aria-label="In this guide"><p class="meta">In this guide</p>{toc_list}</nav>
+<div class="prose-col">
+<details class="toc-m"><summary>In this guide</summary><ol>{toc_html}</ol></details>
 <div class="prose">{body_html}
 <section class="faq" id="faq" aria-labelledby="faq-title"><h2 id="faq-title">Questions, answered</h2>{faq}</section>
-<section class="shop-setups" aria-labelledby="shop-setups-title"><h2 id="shop-setups-title">Shop the setups</h2><div class="shop-setups-grid">{setup_links}</div></section>
-<p class="back"><a class="cta cta-back" href="../index.html#guides"><span class="arr" aria-hidden="true">&larr;</span>All guides</a></p>
-</div></div></article>
-<script type="application/ld+json">{json.dumps(ld)}</script>
-<script type="application/ld+json">{json.dumps(art_ld)}</script>"""
+{checklist_promo('../', hide=False)}
+<section id="shop-setups" aria-labelledby="shop-setups-title" data-dock-hide><h2 id="shop-setups-title">Shop the setups</h2><div class="rgrid">{setup_cards}</div></section>
+<section aria-labelledby="keep-title"><h2 class="block-title" id="keep-title">Keep reading</h2><div class="rgrid">{keep}</div></section>
+{mini_prods('../')}
+<p class="back"><a class="go" href="../index.html#guides">All guides</a></p>
+</div></div></div></article>"""
+        g_dock = dock(esc(main_setup["title"]), f"Every pick from this guide, {picks_label(main_setup)}",
+                      f"../setups/{main_setup['slug']}.html", "Shop the list", external=False)
         (OUT / "guides" / f"{a['slug']}.html").write_text(
             page(f"{a['title']} | {SITE_NAME}", a["desc"], body, root="../", og=f"img/{a['img']}",
-                 path=f"guides/{a['slug']}.html", current="guides"), encoding="utf-8")
+                 path=f"guides/{a['slug']}.html", current="guides",
+                 preload=preload_tag(a["img"], "../", "(min-width: 1360px) 1250px, 100vw"),
+                 dock_html=g_dock, schema=[bc, art_ld, faq_ld]), encoding="utf-8")
 
 
 # ---- About / disclosure and 404 -------------------------------------------------------------------
 def build_disclosure():
-    body = f"""<section class="wrap page-head" aria-labelledby="page-title">
-<p class="crumbs label">The Edit<span aria-hidden="true">/</span>About &amp; disclosure</p>
-<div class="ph-grid"><h1 id="page-title" class="ph-title">About the edit &amp; <em>disclosure</em></h1></div></section>
-<div class="wrap article-grid"><div class="prose prose-plain">
+    crumbs, bc = breadcrumbs([("Home", "", "index.html"), ("About & disclosure", "disclosure.html", None)])
+    body = f"""<section class="wrap ph" aria-labelledby="page-title">{crumbs}
+<div class="ph-grid"><h1 id="page-title" class="ph-title">About the edit &amp; disclosure</h1></div></section>
+<div class="wrap article"><div class="prose-col"><div class="prose prose-plain">
 <p>The Setup Edit is a small, independent guide to desk setups, home offices and trading desks. Picks are chosen for their design, their reviews and how well they fit each setup. Picks come from research rather than hands-on testing: I compare the options and include the ones that suit each desk.</p>
 <h2 id="affiliate-disclosure">Affiliate disclosure</h2>
 <p>{esc(DISCLOSURE)}</p><p>Product picks are chosen for quality, reviews and how well they fit each setup. Prices and availability change, so always check the current details on Amazon before buying.</p>
-<h2 id="privacy">Privacy</h2><p>This site doesn't use its own cookies or collect personal information. Amazon may set cookies when you click an affiliate link, as described in Amazon's own privacy notice.</p>
-<p class="back"><a class="cta cta-back" href="index.html"><span class="arr" aria-hidden="true">&larr;</span>Back to the edit</a></p>
-</div></div>"""
-    (OUT / "disclosure.html").write_text(page(f"About & Disclosure | {SITE_NAME}", "About The Setup Edit, affiliate disclosure and privacy.",
-                                              body, path="disclosure.html", current="about"), encoding="utf-8")
+<h2 id="shop">The shop</h2>
+<p>The Desk Cable Checklist is free. The Clean Desk Guide and the Minimalist Wallpaper Pack are digital products made by The Setup Edit and sold through Payhip, which handles payment and delivery.</p>
+{mini_prods('', heading=False)}
+<h2 id="privacy">Privacy</h2><p>This site doesn't use its own cookies or collect personal information. Amazon may set cookies when you click an affiliate link, as described in Amazon's own privacy notice. Payhip handles any downloads under its own privacy policy.</p>
+<p class="back"><a class="go" href="index.html">Back to the front page</a></p>
+</div></div></div>"""
+    (OUT / "disclosure.html").write_text(page(f"About & Disclosure | {SITE_NAME}",
+        "About The Setup Edit: how picks are chosen (research, not hands-on testing), the Amazon affiliate disclosure, the shop and privacy.",
+        body, path="disclosure.html", current="about", schema=[bc]), encoding="utf-8")
 
 
 def build_404():
     root = "/thesetupedit/"  # 404 can be served at any path, so links are root-relative
-    links = "".join(f'<li><a href="{root}setups/{s["slug"]}.html"><span class="ix-n">{k:02d}</span><span class="uline">{esc(s["title"])}</span></a></li>'
-                    for k, s in enumerate(SETUPS, 1))
-    body = f"""<section class="wrap page-head nf" aria-labelledby="page-title">
-<p class="crumbs label">Error<span aria-hidden="true">/</span>No. 404</p>
-<div class="ph-grid"><h1 id="page-title" class="ph-title">This page was <em>edited out.</em></h1>
+    links = "".join(f'<li><a href="{root}setups/{s["slug"]}.html"><span class="ul">{esc(s["title"])}</span></a></li>' for s in SETUPS)
+    body = f"""<section class="wrap ph nf" aria-labelledby="page-title">
+<div class="ph-grid"><h1 id="page-title" class="ph-title">This page could not be found.</h1>
 <div class="ph-aside"><p class="ph-dek">The link may be old, or the page has moved. Try one of the setups, or start again from the front page.</p>
-<p><a class="cta" href="{root}index.html">Go to the front page{ARROW}</a></p></div></div>
-<ol class="nf-list">{links}</ol></section>"""
+<a class="btn" href="{root}index.html">Go to the front page</a></div></div>
+<ul class="nf-list">{links}</ul></section>"""
     (OUT / "404.html").write_text(page(f"Page not found | {SITE_NAME}", "This page could not be found.", body, root=root),
                                   encoding="utf-8")
 
 
 def build_sitemap():
     today = datetime.date.today().isoformat()
-    paths = [""] + [f"setups/{s['slug']}.html" for s in SETUPS] + [f"guides/{a['slug']}.html" for a in ARTICLES] + ["disclosure.html"]
-    urls = "".join(f"<url><loc>{BASE_URL}{p}</loc><lastmod>{today}</lastmod></url>\n" for p in paths)
+    paths = [("", today)] + [(f"setups/{s['slug']}.html", today) for s in SETUPS] + \
+            [(f"guides/{a['slug']}.html", a["date"]) for a in ARTICLES_BY_DATE] + [("disclosure.html", today)]
+    urls = "".join(f"<url><loc>{BASE_URL}{p}</loc><lastmod>{d}</lastmod></url>\n" for p, d in paths)
     (OUT / "sitemap.xml").write_text('<?xml version="1.0" encoding="UTF-8"?>\n'
         f'<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n{urls}</urlset>\n', encoding="utf-8")
     (OUT / "robots.txt").write_text(f"User-agent: *\nAllow: /\n\nSitemap: {BASE_URL}sitemap.xml\n", encoding="utf-8")
