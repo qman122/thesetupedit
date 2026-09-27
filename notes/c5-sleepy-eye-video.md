@@ -9,10 +9,8 @@ shipped since December 2022.
 - **Audio:** the full soundtrack, transcribed with speech-to-text, came from the copy
   shared on Google Drive. Every measurement and instruction below comes from what he
   says. Timestamps are in brackets.
-- **Pictures:** the Drive copy is audio only. The only pictures seen were the YouTube
-  thumbnail and three still frames. Nothing here comes from watching the install
-  footage, so anything that has to be seen (bracket shapes, exact gap shape) is still
-  unconfirmed.
+- **Pictures:** a second copy of the video (720p, with picture) was shared later. Still
+  frames were pulled from the sections that matter; see "How the lights attach" below.
 - The transcript itself is not in this repo. It is the creator's content; these are
   summary notes.
 
@@ -69,6 +67,38 @@ shipped since December 2022.
     letter "O" on top and facing the windshield [1:04:01–1:05:28].
   - They should only lightly touch. The metal stop carries the load; the black stops
     just keep the lights from fluttering [1:05:41, 1:06:19].
+
+## How the lights attach (seen on video)
+
+- **What the kit is:** each side is a complete replacement for the stock headlight
+  unit. It isn't bulbs that go into the stock housing. Three black cube-shaped projector
+  housings, each with "KNIGHTDRIVETV" on top, sit side by side on one black steel
+  bracket. The wiring harness and plugs hang off the back [0:07:14–0:07:56].
+- **It goes exactly where the stock unit was.** He unbolts the whole stock
+  unit and hands it out of the car [0:17:25–0:18:35]. The kit bracket bolts to the same
+  three points, using the car's own adjusters [0:58:20–1:03:06].
+  - **Outer (fender) side, two bolts.** The kit bracket has a flat black tab with holes.
+    He pushes each bolt through from behind, holds it with his thumb, and adds a lock
+    washer and nut on the front [0:59:11–1:00:36]. The long threaded rod of the
+    up/down adjuster runs just above this point.
+  - **Inner (hood) side, one bolt.** This is the car's silver cast left/right adjuster
+    pad, which has two holes. A stud on the kit goes through the **upper** hole, then a
+    lock washer and nut [1:01:39–1:02:15].
+  - **Top: the 10 mm nut** on the up/down adjuster goes back on last [1:02:54].
+- **Once installed,** the three cubes sit in the headlight well directly under the
+  headlight door's frame. The cube tops are close to the door's underside
+  [1:02:32, 1:07:32].
+- **From the front,** with the stock bezel off and the door in the sleepy position,
+  there's an open rounded-rectangle hole in the bodywork. The three lit cubes show at the
+  bottom of it, and the door's gray frame and linkage are visible above them
+  [0:53:16]. That exposed space around and above the cubes is the space a shroud would
+  fill.
+- **The stock bezel** is the black plastic surround around the stock headlight, just
+  under the door's front edge. It unclips by pulling it forward and rotating it down
+  [0:13:01–0:13:13].
+- **The metal stops** are two flat steel plates. Each has a closed slot at the top and
+  an open slot at the bottom, with a bolt and nut already fitted. The two black rubber
+  stabilizing stops are small squares [0:07:28–0:07:35].
 
 ## Mounting the light assembly
 
@@ -136,8 +166,9 @@ shipped since December 2022.
    The front opening should be the same on both, so one shroud probably fits both; this
    isn't confirmed.
 
-## Still unknown (needs the picture)
+## Still unknown (needs measurements from the car)
 
-- The exact shape and size of the front gap, and how the projector row sits in it.
+- The exact size of the front opening, and where the three cubes sit in it.
 - Where the stock bezel screws and clip are, and their spacing.
-- How much room there is between the lenses and the door edge.
+- The gap between the cube tops and the underside of the door, and between the cubes
+  and the body opening. The video shows these gaps are small but gives no numbers.
