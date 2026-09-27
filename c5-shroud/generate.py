@@ -51,9 +51,9 @@ class Params:
     # car's fender arm and aiming pad. M6 bolts go through the car part, then the wall.
     mount_wall_y: float = -95.0   # back face of the wall, behind the pod faces (ESTIMATE)
     mount_wall_t: float = 6.0
-    mount_wall_z0: float = -12.0  # bottom of the wall relative to the floor top
-    mount_hole_d: float = 6.6     # M6 clearance
-    tab_margin: float = 16.0      # wall material past the outermost slots
+    mount_wall_z0: float = -5.0   # bottom of the tabs: flush with the floor bottom, clear of the arm's pivot bolt
+    mount_hole_d: float = 6.3     # snug on an M6 bolt so it stays put while you line things up
+    tab_margin: float = 6.0       # plastic left around the slots (kept small to clear parts next to the holes)
     cable_hole_d: float = 22.0    # one pass-through per pod for the pigtail and plug
 
     # --- stock mounting points: owner's tape measurements (approximate) ---
@@ -62,8 +62,8 @@ class Params:
     span_b: float = 222.3         # B: across the car, pad upper hole to arm hole 4 (8.75 in)
     pad_above_arm_d: float = 19.3  # D: pad upper hole sits this much above arm hole 4 (0.76 in)
     arm4_above_floor: float = 14.0  # arm hole 4 height above the floor top (sets pod height)
-    arm_slot_len: float = 20.0    # arm holes: side-to-side slots, +/- 6.7 mm for error in B
-    pad_slot_len: float = 14.5    # pad holes: up-down slots, +/- 4 mm for error in D
+    arm_slot_len: float = 13.7    # arm holes: side-to-side slots, +/- 3.7 mm for error in B
+    pad_slot_len: float = 9.9     # pad holes: up-down slots, +/- 1.8 mm for error in D
     nut_r: float = 7.5            # M6 flange nut / washer radius, for clearance checks
 
     # --- front opening: owner's measurement ---
@@ -76,7 +76,8 @@ class Params:
     shroud_margin_bot: float = 25.0  # below the floor; owner says there's plenty of room
     shroud_r: float = 14.0        # outer corner radius
     shroud_return: float = 12.0   # depth of the lip that wraps back from the face
-    window_clear: float = 0.8     # clearance around each pod bezel
+    window_clear: float = 1.3     # clearance around each pod bezel (0.8 was too tight on the fit test)
+    window_ladder: tuple = (1.0, 1.3, 1.6, 2.0)  # clearances on the window fit test, 1-4 notches
     shroud_tab_screw_d: float = 3.4  # M4 self-tapping into the carrier floor
     shroud_gap: float = 0.5       # air gap between pod faces and the back of the shroud face
     shroud_tab_slot: float = 16.0  # fore-aft slot in each shroud tab, follows the pod slots
@@ -157,6 +158,30 @@ def wall_extent(p):
     return x0, x1, p.mount_wall_z0, top
 
 
+def ears(p):
+    """(x0, x1, z0, z1) of the two mounting tabs: one around the arm slots, one around the pad slots."""
+    out = []
+    for want in ("x", "z"):
+        xs0, xs1, zs1 = [], [], []
+        for (_, x, z, axis) in mount_points(p):
+            if axis != want:
+                continue
+            hx = (p.arm_slot_len if axis == "x" else p.mount_hole_d) / 2
+            hz = (p.pad_slot_len if axis == "z" else p.mount_hole_d) / 2
+            xs0.append(x - hx - p.tab_margin)
+            xs1.append(x + hx + p.tab_margin)
+            zs1.append(z + hz + p.tab_margin)
+        out.append((min(xs0), max(xs1), p.mount_wall_z0, max(zs1)))
+    return out          # [arm tab, pad tab]
+
+
+def ear_section(x0, x1, z0, z1, r=5.0):
+    """Tab outline: rounded top corners, square bottom where it meets the floor."""
+    top = rrect(x1 - x0, z1 - z0, r).translate([(x0 + x1) / 2, (z0 + z1) / 2])
+    bottom = CS.square([x1 - x0, (z1 - z0) / 2]).translate([x0, z0])
+    return top + bottom
+
+
 def slot_y(w, length, axis, y0, y1, x, z):
     """Slot through a plate in the XZ plane, long along X or Z."""
     if axis == "x":
@@ -179,7 +204,9 @@ def carrier(p):
     parts.append(box(-half, half, y_back, y_front, -p.floor_t, 0))
     # stiffening lips under the front and rear edges
     parts.append(box(-half, half, y_front - p.wall_t, y_front, -p.floor_t - p.lip_h, 0))
-    parts.append(box(-half, half, y_back, y_back + p.wall_t, -p.floor_t - p.lip_h, 0))
+    arm_ear, pad_ear = ears(p)
+    lip_x0, lip_x1 = sorted([pad_ear[1] + 2, arm_ear[0] - 14])   # stays clear of the pivot bolt under arm hole 4
+    parts.append(box(lip_x0, lip_x1, y_back, y_back + p.wall_t, -p.floor_t - p.lip_h, 0))
 
     # locating ribs: two end cheeks plus two dividers
     for x in [-half + p.wall_t / 2, half - p.wall_t / 2]:
@@ -191,22 +218,18 @@ def carrier(p):
         parts.append(box(x - p.wall_t / 2, x + p.wall_t / 2,
                          -p.pod_depth + 5, y_front, 0, p.divider_h))
 
-    # mounting wall behind the pods
-    wx0, wx1, wz0, wz1 = wall_extent(p)
-    wall_sec = CS.square([wx1 - wx0, wz1 - wz0]).translate([wx0, wz0])
-    parts.append(plate_xz(wall_sec, y_back + p.mount_wall_t, p.mount_wall_t))
-    # floor extension out to the wall ends, so the tabs are braced at the bottom
-    parts.append(box(wx0, wx1, y_back, y_back + p.mount_wall_t + 10, -p.floor_t, 0))
-
-    # gussets tying the wall to the floor, in the gaps between pods
-    gx = [pod_x(p)[i] + (p.pod_body_w + p.pod_gap) / 2 for i in range(2)]
-    g_len = 20.0
-    g_h = 40.0
-    tri = CS([[[0, 0], [g_len, 0], [0, g_h]]])        # (Y offset, Z) profile
-    for x in gx:
-        # profile X -> world Y, profile Y -> world Z, extrusion -> world X
+    # mounting tabs behind the pods, one at the arm and one at the pad; the middle stays open
+    for (x0, x1, z0, z1) in (arm_ear, pad_ear):
+        parts.append(plate_xz(ear_section(x0, x1, z0, z1), y_back + p.mount_wall_t, p.mount_wall_t))
+        # floor under the tab, wide enough that the side cheek sits fully on it
+        parts.append(box(x0 - p.wall_t, x1 + p.wall_t, y_back, y_back + p.mount_wall_t + 22, -p.floor_t, 0))
+    # side cheeks on the outboard edge of each tab: outside the pod row and clear of the nuts
+    cheek_len = 20.0
+    for (x0, x1, _, z1) in (arm_ear, pad_ear):
+        tri = CS([[[0, 0], [cheek_len, 0], [0, z1 - 8]]])     # (Y offset, Z) profile
+        xc = x1 - 1 if x1 > 0 else x0 - p.wall_t + 1          # outboard edge, 1 mm into the tab
         g = M.extrude(tri, p.wall_t).transform(
-            [[0, 0, 1, x - p.wall_t / 2],
+            [[0, 0, 1, xc],
              [1, 0, 0, y_back + p.mount_wall_t],
              [0, 1, 0, 0]])
         parts.append(g)
@@ -222,9 +245,6 @@ def carrier(p):
     for x in pod_x(p):
         # bracket bolt slot under each pod
         cuts.append(slot_z(p.pod_bolt_d, p.pod_slot_len, -p.floor_t - 1, 1, x, p.pod_bolt_y))
-        # cable pass-through in the wall, centred behind each pod
-        cuts.append(cyl_y(p.cable_hole_d, y_back - 1, y_back + p.mount_wall_t + 1,
-                          x, p.pod_body_h / 2))
     for (_, hx, hz, axis) in mount_points(p):
         ln = p.arm_slot_len if axis == "x" else p.pad_slot_len
         cuts.append(slot_y(p.mount_hole_d, ln, axis, y_back - 1, y_back + p.mount_wall_t + 1, hx, hz))
@@ -236,8 +256,6 @@ def carrier(p):
     for (hx, hy) in splice_floor_holes(p):
         cuts.append(cyl_z(p.splice_screw_d, -p.floor_t - 1, 1, hx, hy))
         cuts.append(M.cylinder(2.3, p.splice_screw_d / 2, 4.2).translate([hx, hy, -2.3 + 0.001]))
-    for (hx, hz) in splice_wall_holes(p):
-        cuts.append(cyl_y(p.splice_screw_d, y_back - 1, y_back + p.mount_wall_t + 1, hx, hz))
     return M.batch_boolean([body] + cuts, m3d.OpType.Subtract)
 
 
@@ -325,26 +343,37 @@ def shroud(p):
 
 
 def fit_test(p):
-    """Quick print: one shroud window in a 2 mm plate, to check the pod bezel fits."""
-    win = rrect(p.pod_face_w + 2 * p.window_clear, p.pod_face_h + 2 * p.window_clear,
-                p.pod_face_r + p.window_clear)
-    plate = rrect(p.pod_face_w + 24, p.pod_face_h + 24, 8) - win
-    return M.extrude(plate, 2.0)
+    """Quick print: four windows with different clearances around the pod bezel.
+    The number of notches on each window's top edge is its position in window_ladder."""
+    cells = []
+    for n, c in enumerate(p.window_ladder):
+        ww, wh = p.pod_face_w + 2 * c, p.pod_face_h + 2 * c
+        cw, ch = p.pod_face_w + 2 * max(p.window_ladder) + 16, p.pod_face_h + 2 * max(p.window_ladder) + 16
+        cell = rrect(cw, ch, 6) - rrect(ww, wh, p.pod_face_r + c)
+        for k in range(n + 1):
+            cell = cell - CS.square([3, 4]).translate([-cw / 2 + 6 + k * 6, ch / 2 - 3])
+        cx, cy = (n % 2) * (cw - 1), (n // 2) * (ch - 1)   # overlap 1 mm so it prints as one piece
+        cells.append(cell.translate([cx, cy]))
+    return M.extrude(CS.batch_boolean(cells, m3d.OpType.Add), 2.0)
 
 
 def fit_test_mount(p):
-    """Quick print: a 3 mm copy of the mounting wall, to check the slots line up on the car."""
-    x0, x1, z0, z1 = wall_extent(p)
-    plate = CS.square([x1 - x0, z1 - z0]).translate([x0, z0])
-    slots = []
-    for (_, x, z, axis) in mount_points(p):
-        ln = p.arm_slot_len if axis == "x" else p.pad_slot_len
-        w = p.mount_hole_d
-        sec = CS.square([ln - w, w] if axis == "x" else [w, ln - w], center=True)
-        slots.append(sec.offset(w / 2, m3d.JoinType.Round).translate([x, z]))
-    for sec in slots:
-        plate = plate - sec
-    return M.extrude(plate, 3.0)
+    """Quick print: the two mounting tabs as flat 3 mm pieces, laid side by side.
+    Checks the slots line up with the arm (A) and the pad (H) without anything in between."""
+    pieces = []
+    for (x0, x1, z0, z1) in ears(p):
+        sec = ear_section(x0, x1, z0, z1)
+        for (_, x, z, axis) in mount_points(p):
+            ln = p.arm_slot_len if axis == "x" else p.pad_slot_len
+            w = p.mount_hole_d
+            sl = CS.square([ln - w, w] if axis == "x" else [w, ln - w], center=True)
+            sec = sec - sl.offset(w / 2, m3d.JoinType.Round).translate([x, z])
+        pieces.append(sec)
+    arm, pad = pieces
+    # move the pad piece next to the arm piece
+    ab, pb = arm.bounds(), pad.bounds()
+    pad = pad.translate([ab[0] - 10 - pb[2], 0])
+    return M.extrude(arm + pad, 3.0)
 
 
 def spacers(p):
@@ -458,8 +487,7 @@ if __name__ == "__main__":
         a, b = ss.split_by_plane([sgn, 0, 0], split_x(P))
         save(print_orient_shroud(b), os.path.join(sd, f"shroud_{side}_A.stl"))
         save(print_orient_shroud(a), os.path.join(sd, f"shroud_{side}_B.stl"))
-    fp, wp = splice_plates(P)
+    fp, _ = splice_plates(P)
     save(fp, os.path.join(sd, "splice_floor_x2.stl"))
-    save(wp, os.path.join(sd, "splice_wall_x2.stl"))
     save(shroud_splice(P), os.path.join(sd, "shroud_splice_x2.stl"))
     preview(P, os.path.join(here, "preview", "assembly.png"))

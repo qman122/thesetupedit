@@ -1,4 +1,4 @@
-# C5 sleepy-eye pod carrier and shroud (v2)
+# C5 sleepy-eye pod carrier and shroud (v3)
 
 For a 2000 C5 Corvette with the headlight door stops already fitted, holding three
 2.9 × 1.8 in dual-lens LED pods per side. Like the KnightDriveTV kit, each side is one
@@ -7,21 +7,22 @@ hood-side aiming pad), plus a front shroud that frames the three pods. The geome
 original design; see `../notes/c5-sleepy-eye-video.md` for the install video notes it follows.
 
 ![assembly preview](preview/assembly.png)
-![mounting wall from behind](preview/rear.png)
+![mounting tabs from behind](preview/rear.png)
 
 ## Measurements used
 
 Taken with a tape on the car. The owner says they're approximate, so every mounting hole
-is a slot.
+is a short slot, sized snug (6.3 mm) on an M6 bolt so the bolt stays put while you line up.
 
 | | Measurement | Value | Adjustment built in |
 |---|---|---|---|
 | A | Fender arm, hole 1 to hole 4 | 1.7 in (43.2 mm) | — |
 | H | Aiming pad, upper hole to lower hole | 0.8 in (20.3 mm) | — |
-| B | Across the car, pad upper hole to arm hole 4 | 8.75 in (222.3 mm) | arm slots ±6.7 mm side to side |
-| D | Pad upper hole above arm hole 4 | 0.76 in (19.3 mm) | pad slots ±4 mm up and down |
+| B | Across the car, pad upper hole to arm hole 4 | 8.75 in (222.3 mm) | arm slots ±3.7 mm side to side |
+| D | Pad upper hole above arm hole 4 | 0.76 in (19.3 mm) | pad slots ±1.8 mm up and down |
 | C | Pad face vs arm face, front to back | unknown | printed spacer washers, 2 / 4 / 6 mm |
 | F | Front opening width | 11 in (279.4 mm) | shroud is 269.4 mm, 5 mm clear each side |
+| — | Shroud windows | pod face + 1.3 mm each side | 0.8 mm was too tight on the first fit test |
 | — | Pods | 2.9 × 1.8 × 2.8 in | pod slots: 22 mm forward, 10 mm back |
 | — | Mounting bolts | M6 × 1.0, 10 mm flange nuts | — |
 
@@ -29,32 +30,46 @@ is a slot.
 the pod height relative to the holes (arm hole 4 is 14 mm above the carrier floor). The
 long pod slots and the shroud's slotted tabs take up the fore-aft part of that.
 
+## What changed in v3
+
+- **The back is two small tabs instead of a full wall.** On the first mount test, the
+  plastic around the holes hit parts of the car, so the bolts couldn't line up. Each tab
+  now leaves only about 6 mm of plastic around its slots, and the middle is open.
+  - The pad tab stops below the square aim adjuster.
+  - Nothing near the arm reaches the pivot bolt below hole 4.
+- **The bolt holes are snug and the slots shorter.** 6.3 mm for M6 bolts; the spacing
+  checked out.
+- **The shroud windows are a little bigger:** 1.3 mm of gap around each pod face instead of 0.8.
+
 ## Checks
 
-`python3 check.py` runs 38 checks. They all pass:
+`python3 check.py` runs 40 checks. They all pass:
 
 - The hole spacing matches A, H, B and D.
 - Every slot is open, with solid material past its ends.
 - A 15 mm flange nut at either end of every slot clears the carrier and the pods.
 - The pods clear the carrier across their whole slot travel, and there's always at least
-  7 mm behind them for the wiring (18 mm in the default position).
+  7 mm behind them for the wiring.
 - The pods clear the shroud, which clears the carrier.
 - The shroud fits the opening.
+- The carrier stays clear of the arm's pivot bolt and the pad's square adjuster, and the
+  middle of the back is open.
 - The driver part is a true mirror of the passenger part.
 - Every STL is one watertight solid lying flat on the bed.
 
 ## Print order
 
-1. `stl/fit_test_mount_driver.stl` (3 mm plate, about 1 hour). Hold it against the arm
-   and pad and push M6 bolts through. If all four line up, the real carrier will.
-2. `stl/fit_test_window.stl` (already passed).
-3. `stl/carrier_driver.stl` and `stl/carrier_passenger.stl`: stand on the back of the wall,
-   already oriented.
-4. `stl/shroud_driver.stl` and `stl/shroud_passenger.stl`: face down.
-5. `stl/spacer_washers.stl`: only if the carrier doesn't sit flat against both the arm and
-   the pad.
+1. `stl/fit_test_window.stl` (about 20 minutes). It has four windows: 1, 2, 3 or 4 notches
+   on the top edge means 1.0, 1.3, 1.6 or 2.0 mm of gap around the pod face. Find the
+   smallest one the pod drops through easily. The shroud uses the 2-notch size (1.3 mm)
+   unless you say otherwise.
+2. `stl/fit_test_mount_driver.stl` (about 20 minutes, two small flat tabs). Bolt the taller
+   tab to the arm (holes 1 and 4) and the shorter one to the aiming pad (both holes).
+   The bolts should go through snugly without forcing.
+3. `stl/carrier_driver.stl` and `stl/shroud_driver.stl`, then the passenger pair.
+4. `stl/spacer_washers.stl`: only if a tab doesn't sit flat against the arm or the pad.
 
-`stl/split/` has the same parts cut in two with splice plates, for small beds.
+`stl/split/` has the same parts cut in two, joined with a floor splice plate, for small beds.
 
 **Material:** ASA or ABS is best; PETG works. Don't use PLA, which softens in a hot engine
 bay. Use 4 walls, 40% gyroid infill, and 6 top and bottom layers.

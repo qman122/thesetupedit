@@ -93,6 +93,17 @@ check(f"shroud width {sw:.1f} mm fits the {P.opening_w:.1f} mm opening",
       sw <= P.opening_w - 2 * P.opening_side_clear + 0.01,
       f"{(P.opening_w - sw) / 2:.1f} mm clear each side")
 
+# 7b. keep clear of the car parts next to the holes (seen in the owner's photos)
+z4 = pts["arm hole 4"][1]
+ax = pts["arm hole 4"][0]
+pivot_zone = g.box(ax - 20, ax + 20, y_back - 5, y_back + t + 30, z4 - 45, z4 - 20)
+check("nothing reaches the arm's pivot bolt, 20+ mm below hole 4", overlap(carrier, pivot_zone) < 1e-6)
+pu = pts["pad upper"]
+square_zone = g.box(pu[0] - 15, pu[0] + 15, y_back - 5, y_back + t + 30, pu[1] + 13, pu[1] + 45)
+check("nothing reaches the pad's square adjuster, 13+ mm above the upper hole", overlap(carrier, square_zone) < 1e-6)
+mid = g.box(-60, 60, y_back - 5, y_back + t, 5, 80)
+check("the middle of the back is open (no wall between the tabs)", overlap(carrier, mid) < 1e-6)
+
 # 8. driver part is the mirror: arm on -X
 drv = g.mirror_x(carrier)
 arm_x = pts["arm hole 4"][0]
@@ -107,7 +118,8 @@ for f in sorted(glob.glob(os.path.join(here, "stl", "**", "*.stl"), recursive=Tr
     flat = tm.bounds[0][2] == 0 and tm.area_faces[(tm.face_normals[:, 2] < -0.99)
                                                   & (tm.triangles_center[:, 2] < 0.01)].sum() > 50
     parts = len(M(m3d.Mesh(tm.vertices.astype("float32"), tm.faces.astype("uint32"))).decompose())
-    ok = tm.is_watertight and tm.volume > 0 and flat and (parts == 1 or "spacer" in name)
+    multi = "spacer" in name or "fit_test_mount" in name      # printed as separate pieces on purpose
+    ok = tm.is_watertight and tm.volume > 0 and flat and (parts == 1 or multi)
     check(f"{name}: watertight, flat on the bed, {parts} piece(s)", ok)
 
 print(f"\n{sum(results)}/{len(results)} checks passed")
