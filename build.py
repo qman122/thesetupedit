@@ -93,6 +93,17 @@ EXTRA_PRODUCTS = {
     "B07HFDJCSL": ("Clamp-On Keyboard Tray", "Under-desk clamp keyboard tray", "Adds a lower surface for the keyboard, and clamps on without drilling."),
     "B0C3HCD34R": ("Noise-Cancelling Headphones", "Wireless ANC headphones", "Turns down a shared room so you can focus or take a call."),
     "B0B6P9J3J5": ("Monitor Light Bar", "LED monitor light bar", "Lights the desk from above the screen, without glare on the display."),
+    "B07DBXZZN3": ("Wireless Charging Stand", "Upright wireless phone charger", "Charges a phone standing up, so it stays readable and off the desk surface."),
+    "B08S2RSJR4": ("Walnut Headphone Stand", "Walnut and aluminum headphone stand", "A warm wood stand that gives headphones a proper place on the desk."),
+    "B085TFF7M1": ("1080p Webcam", "Full HD USB webcam", "A clear step up from a built-in laptop camera, and it clips on top of a monitor."),
+    "B0G7RDYJFY": ("Warm Desk Lamp", "Warm-light desk lamp", "Soft, warm light for evening work, without the glare of an overhead light."),
+    "B096WZXKZP": ("Smart Light Bars", "RGB smart light bars (pair)", "Colored light behind the monitor for an evening glow, controlled from a phone."),
+    "B0791H74NT": ("Compact Desk Speakers", "USB-powered desk speakers", "Small enough for a compact desk, and powered from a USB port."),
+    "B087Z6LSHW": ("Multi-Device Mouse", "Wireless mouse for up to 3 devices", "Switches between a laptop, a desktop and a tablet at the press of a button."),
+    "B0BXP2ZTWB": ("Desk Clamp Power Strip", "Clamp-on power strip with USB-C", "Puts outlets and USB-C charging at the desk edge, where you actually need them."),
+    "B001E1Y5O6": ("Reusable Cable Ties", "Hook-and-loop cable ties", "Bundle cables neatly, then undo them again when something moves."),
+    "0471770884": ("Reminiscences of a Stock Operator", "Book by Edwin Lef\u00e8vre", "The classic trading memoir, loosely based on the life of Jesse Livermore."),
+    "0735200661": ("Technical Analysis of the Financial Markets", "Book by John J. Murphy", "The standard reference on reading charts, thorough enough to keep on the desk."),
 }
 
 # Short role tag shown on each product card.
@@ -108,7 +119,9 @@ ROLE = {
     "B07VKJKFN2": "Greenery", "B099596F3B": "Greenery",
     "B09J5HH2LR": "Cables", "B071FXZBMV": "Cables",
     "B01L3LL95O": "Audio", "B0C3HCD34R": "Audio", "B01559O0WY": "Air", "B09GTRVJQM": "Air",
-    "0735201447": "Reading", "1535585951": "Reading",
+    "0735201447": "Reading", "1535585951": "Reading", "0471770884": "Reading", "0735200661": "Reading",
+    "B07DBXZZN3": "Charging", "B0BXP2ZTWB": "Power", "B08S2RSJR4": "Storage", "B085TFF7M1": "Camera",
+    "B0G7RDYJFY": "Light", "B096WZXKZP": "Light", "B0791H74NT": "Audio", "B087Z6LSHW": "Input", "B001E1Y5O6": "Cables",
 }
 
 # Photo credits: (used for, photographer, Unsplash photo id, image file in img/)
@@ -523,6 +536,163 @@ ARTICLES = [
              ("How do I make a small desk work in a bedroom?", "Raise the screen on a stand or riser, use a clamp-on keyboard tray for extra depth, and move storage to floating shelves above the desk."),
              ("What lighting is best for a bedroom desk?", "A monitor light bar lights the desk surface without lighting the whole room, which helps if someone else is sleeping. Add a front light for video calls."),
              ("How do I separate work and sleep in one room?", "Face the desk away from the bed, keep work items in one tray or drawer, and do a short reset at the end of each day."),
+         ]),
+    dict(slug="gift-ideas-for-traders", img="trading.jpg", eyebrow="Gift guide", date="2026-09-27",
+         title="Gift Ideas for Traders: Desk Upgrades and Books They Will Use",
+         desc="Gift ideas for traders and investors: monitor arms, a screen light bar, an ergonomic mouse, noise-cancelling headphones and the trading books worth owning.",
+         setups=["trading-desk-setup", "minimal-desk-setup"],
+         body="""
+<p>Traders are hard to shop for. They already have the screens and the software, and they have opinions about both. The gifts that land are the ones that make long sessions at the desk easier, or the books they keep meaning to read. Everything below fits one of those two groups, and none of it depends on which market or platform they trade.</p>
+
+<h2>For the trader with too many screens</h2>
+<p>If their monitors sit on the stock stands, a monitor arm is the gift that changes the desk the most. Two screens float at the same height, and the space underneath opens up for notes, a keyboard and a coffee.</p>
+[[B07T5SY43L]]
+<p>Check two things before you buy: the size and weight of their monitors against the arm's limits, and that the back of each screen has the standard mounting holes. Most monitors do, but it only takes a minute to check.</p>
+
+<h2>For the trader who works late</h2>
+<p>Evening and overnight sessions are where eye strain builds up. A monitor light bar sits on top of the screen and lights the desk below it, with no glare on the display. It is one of those gifts people did not know they wanted.</p>
+[[B076VNFZJG]]
+<p>Bias lighting behind the monitor softens the contrast between a bright screen and a dark room. It is inexpensive, powered from USB and takes a few minutes to fit.</p>
+[[B01LG99NW4]]
+
+<h2>For the trader who clicks all day</h2>
+<p>A trading day is thousands of clicks and a lot of scrolling through charts. An ergonomic mouse with a fast scroll wheel is a small upgrade they will notice every single day.</p>
+[[B0B11LJ69K]]
+<p>Noise-cancelling headphones help in a shared home, and they make market-open calls and webinars easier to follow.</p>
+[[B0C3HCD34R]]
+
+<h2>For the desk itself</h2>
+<p>An upright wireless charger keeps a phone readable for alerts and two-factor codes without adding another cable to the desk.</p>
+[[B07DBXZZN3]]
+
+<h2>Books for traders</h2>
+<p>Books make good gifts for traders because the best ones are about discipline and process rather than a particular strategy. Start with the psychology classic.</p>
+[[0735201447]]
+<p>For someone just getting into day trading, this is a practical introduction to tools, setups and risk management.</p>
+[[1535585951]]
+<p>The memoir that most traders end up reading at some point, and one they will want to keep on the shelf.</p>
+[[0471770884]]
+<p>For the trader who reads charts all day, the standard reference on technical analysis.</p>
+[[0735200661]]
+
+<h2>How to choose</h2>
+<ul>
+<li><strong>Check their current desk first.</strong> A monitor arm is a big upgrade on stock stands and a duplicate on a desk that already has one.</li>
+<li><strong>Pick one problem.</strong> Eye strain in the evening, a cramped desk and long days of clicking each have a clear gift.</li>
+<li><strong>Books are the safe choice.</strong> They fit every desk, and a classic is welcome even for experienced traders.</li>
+</ul>
+<p>The full desk these picks come from is in <a href="../setups/trading-desk-setup.html">The Trading Desk Setup</a>, and <a href="how-to-build-a-trading-desk-setup.html">how to build a trading desk setup</a> covers how the pieces fit together.</p>
+""",
+         faq=[
+             ("What is a good gift for a trader?", "Something that makes long sessions easier, like a monitor arm, a monitor light bar or an ergonomic mouse, or a classic book such as Trading in the Zone."),
+             ("What books should a new trader read?", "Trading in the Zone by Mark Douglas for psychology, How to Day Trade for a Living by Andrew Aziz as a practical introduction, and Reminiscences of a Stock Operator as the classic memoir."),
+             ("Will a monitor arm fit their monitors?", "Most monitors have standard VESA mounting holes on the back. Check the screen size and weight against the arm's listed limits before you buy."),
+             ("What is a good small gift for a trader?", "Bias lighting for the back of the monitor, an upright wireless charger or one of the trading books are all small, useful gifts."),
+         ]),
+    dict(slug="work-from-home-gift-ideas", img="hero.jpg", eyebrow="Gift guide", date="2026-09-27",
+         title="Work From Home Gift Ideas That Upgrade Their Desk",
+         desc="Gift ideas for people who work from home: desk upgrades for better light, clearer video calls, a calmer desk and more comfortable long days.",
+         setups=["minimal-desk-setup", "small-space-office"],
+         body="""
+<p>The best gift for someone who works from home is one they will use every working day. Most home desks have the same few gaps: poor light in the evening, a laptop camera on calls, a cluttered surface and a setup that gets uncomfortable by mid-afternoon. Each section below closes one of those gaps.</p>
+
+<h2>Better light</h2>
+<p>Most home offices depend on a ceiling light and a window. A monitor light bar lights the desk without glare on the screen, and it takes no desk space at all.</p>
+[[B0B6P9J3J5]]
+<p>For a cozier evening desk, a warm desk lamp does what the overhead light cannot. Light bars behind the monitor add a soft glow that makes the desk feel finished.</p>
+[[B0G7RDYJFY]]
+[[B096WZXKZP]]
+
+<h2>Clearer video calls</h2>
+<p>A laptop camera is usually the weakest part of a work-from-home setup. A 1080p webcam that clips onto a monitor is a visible upgrade on the very next call.</p>
+[[B085TFF7M1]]
+<p>If their calls happen in a shared space, noise-cancelling headphones help them focus and hear the call clearly.</p>
+[[B0C3HCD34R]]
+
+<h2>A calmer desk</h2>
+<p>A leather desk pad is the fastest way to make a desk look put together. It defines the working area and softens the surface under the keyboard and mouse.</p>
+[[B082F5ZLS5]]
+<p>A compact wireless keyboard frees up room for the mouse and removes one more cable. A headphone stand gives headphones a place to live instead of the desk surface.</p>
+[[B0CNT61VMZ]]
+[[B08S2RSJR4]]
+
+<h2>More comfortable long days</h2>
+<p>If they work from a laptop, a stand lifts the screen closer to eye level. Pair it with an external keyboard and mouse.</p>
+[[B08BRCT4JH]]
+<p>A mouse that switches between three devices is useful for anyone with a work laptop and a personal computer on the same desk.</p>
+[[B087Z6LSHW]]
+<p>A footrest is the comfort upgrade nobody sees, and it fixes a chair or desk that is not quite the right height.</p>
+[[B07PGLBCFG]]
+
+<h2>A little extra</h2>
+<p>Compact speakers are a nice upgrade from laptop audio for music during the day, and they run from a USB port.</p>
+[[B0791H74NT]]
+
+<h2>How to choose</h2>
+<ul>
+<li><strong>Look at their desk on a video call.</strong> Dim light or a grainy camera point straight to a gift.</li>
+<li><strong>Smaller is safer.</strong> Pads, lamps and stands fit almost any desk. Furniture is best left to the person who will sit at it.</li>
+<li><strong>Match the materials.</strong> Warm wood and leather suit most desks, and black or white is the safe choice for gadgets.</li>
+</ul>
+<p>Every piece of a calm, minimal desk is in <a href="../setups/minimal-desk-setup.html">The Clean Minimal Desk</a>. For lighting in more depth, see <a href="how-to-light-a-desk-for-video-calls.html">how to light a desk for video calls</a>.</p>
+""",
+         faq=[
+             ("What is a good gift for someone who works from home?", "A desk upgrade they will use daily: a monitor light bar, a 1080p webcam for calls, a leather desk pad or a laptop stand."),
+             ("What gift helps with video calls?", "A 1080p webcam that clips onto the monitor is the biggest improvement over a laptop camera. Good front light helps too."),
+             ("What is a thoughtful gift for a home office?", "Something that fixes a daily annoyance, such as poor evening light, a cluttered desk or an uncomfortable laptop height."),
+             ("Is furniture a good work-from-home gift?", "Usually not as a surprise. Chairs and desks depend on the person's height and space, so smaller desk upgrades are the safer choice."),
+         ]),
+    dict(slug="desk-stocking-stuffers", img="clean-desk.jpg", eyebrow="Gift guide", date="2026-09-27",
+         title="Desk Stocking Stuffers: Small Gifts for a Better Desk",
+         desc="Small desk gifts and stocking stuffers: cable clips, cable ties, a wrist rest, a desk tray, faux plants, a wireless charger and more for anyone with a desk.",
+         setups=["cable-management", "minimal-desk-setup"],
+         body="""
+<p>Small gifts work best when they solve a small, daily annoyance. Cables that slide off the desk, a phone that is always face down, loose keys and pens with nowhere to go. Everything here is small enough for a stocking and useful enough to stay on the desk long after the holidays.</p>
+
+<h2>For the cable mess</h2>
+<p>Adhesive cable clips stick along the desk edge and hold charging cables in place, so they stop falling down the back of the desk.</p>
+[[B071FXZBMV]]
+<p>Reusable hook-and-loop ties bundle cables neatly, and undo just as easily when something moves.</p>
+[[B001E1Y5O6]]
+<p>For a bigger fix, the <a href="../setups/cable-management.html">Cable Management Kit</a> covers the under-desk tray, and the free checklist below walks through the whole job.</p>
+
+<h2>For the phone</h2>
+<p>An upright wireless charger keeps a phone readable and off the desk surface, and it ends the search for the charging cable.</p>
+[[B07DBXZZN3]]
+
+<h2>For the small things</h2>
+<p>A bamboo tray gives keys, pens and small gadgets one place to live, which does more for a tidy desk than it sounds like it should.</p>
+[[B00KAZ12OS]]
+<p>A headphone stand gets headphones off the desk and keeps them within reach.</p>
+[[B01GJQ7N94]]
+
+<h2>For comfort</h2>
+<p>A walnut wrist rest supports the wrists while typing and adds warm wood to the desk.</p>
+[[B09DPGVPG1]]
+<p>A clip-on fan clamps to a shelf or the desk edge and moves air without taking any floor space.</p>
+[[B01559O0WY]]
+
+<h2>For a bit of green</h2>
+<p>Mini faux plants bring warmth to a desk or a shelf, with nothing to water and nothing to forget about.</p>
+[[B099596F3B]]
+
+<h2>For the whole desk</h2>
+<p>A felt desk mat is a slightly bigger gift that changes the look of the whole desk. It is soft under the keyboard and mouse, and quiet too.</p>
+[[B096S2Z9Q7]]
+
+<h2>How to choose</h2>
+<ul>
+<li><strong>Solve one annoyance.</strong> Cables, a phone or clutter each have a clear small gift.</li>
+<li><strong>Stick to neutral colors.</strong> Wood, black and white fit almost any desk.</li>
+<li><strong>Pair two small things.</strong> Cable clips with cable ties, or a tray with a plant, make a complete little gift.</li>
+</ul>
+<p>For more ways to tidy a desk, read <a href="cable-management-101-hide-desk-cables.html">cable management 101</a> and the <a href="minimalist-desk-setup-essentials.html">minimalist desk essentials</a>.</p>
+""",
+         faq=[
+             ("What are good desk stocking stuffers?", "Cable clips, reusable cable ties, a wireless charging stand, a small organizer tray, a wrist rest and mini faux plants are all small and useful."),
+             ("What is a small gift for someone with a messy desk?", "Cable clips and cable ties together fix the most visible mess, and a small tray gives loose items one place to go."),
+             ("What small gift suits a minimal desk?", "Warm materials suit a minimal desk best: a walnut wrist rest, a bamboo tray or a felt desk mat."),
+             ("Are desk gadgets good stocking stuffers?", "Yes, when they fix a daily annoyance. A wireless charging stand and cable clips are used every day."),
          ]),
 ]
 
