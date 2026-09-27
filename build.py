@@ -126,7 +126,7 @@ ROLE = {
 
 # Photo credits: (used for, photographer, Unsplash photo id, image file in img/)
 CREDITS = [
-    ("Home page", "Roberto Nickson", "Gvm2wM3V5PA", "hero.jpg"), ("Trading desk", "João Inácio", "Wk_6p1TuhRE", "trading.jpg"),
+    ("Home page", "Roberto Nickson", "Gvm2wM3V5PA", "hero.jpg"), ("Trading desk", "Jakub Żerdzicki", "Ata9YsB2Qu8", "trading.jpg"),
     ("Minimal desk", "Muhammet Sain", "_g0SLFllfBY", "minimal.jpg"), ("Small space", "Behnam Norouzi", "j3b15qP-ckc", "small.jpg"),
     ("Cable management", "Bedirhan Gül", "I_3D0pVrMhY", "cable.jpg"),
     ("Bedroom guide", "Aleksandra Dementeva", "GzR2KS4ABYA", "bedroom.jpg"),
@@ -1263,7 +1263,7 @@ def picks_label(s):
 ARTICLES_BY_DATE = sorted(ARTICLES, key=lambda a: a["date"], reverse=True)
 IMG_ALT = {
     "hero.jpg": "A dual-monitor desk with plants, warm lamps and a wooden desktop",
-    "trading.jpg": "A trading desk with a monitor on an arm, a laptop on a stand and warm backlighting",
+    "trading.jpg": "A trading desk with candlestick charts on a large monitor, a laptop on a stand, a tablet and a compact mechanical keyboard",
     "minimal.jpg": "A minimal desk with a leather desk pad, a white mouse and a wooden tray",
     "small.jpg": "A compact home office desk with a raised monitor in a small room",
     "cable.jpg": "Cables coiled and clipped to the underside of a desk",
