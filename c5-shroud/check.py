@@ -1,0 +1,114 @@
+"""Sanity checks for the C5 pod carrier and shroud. Run: python3 check.py
+
+Checks the measured hole spacing, that bolts, nuts, pods and the shroud don't collide
+anywhere in their adjustment range, that the shroud fits the opening, and that every
+printable part is one clean solid.
+"""
+
+import glob
+import os
+
+import manifold3d as m3d
+import trimesh
+
+import generate as g
+
+P = g.P
+M = g.M
+results = []
+
+
+def check(name, ok, detail=""):
+    results.append(ok)
+    print(f"{'PASS' if ok else 'FAIL'}  {name}" + (f"  ({detail})" if detail else ""))
+
+
+def overlap(a, b):
+    return (a ^ b).volume()
+
+
+carrier, shroud, pods = g.carrier(P), g.shroud(P), g.pod_dummy(P)
+y_back, t = P.mount_wall_y, P.mount_wall_t
+pts = {n: (x, z, ax) for (n, x, z, ax) in g.mount_points(P)}
+
+# 1. hole spacing matches the tape measurements
+a = pts["arm hole 1"][1] - pts["arm hole 4"][1]
+h = pts["pad upper"][1] - pts["pad lower"][1]
+b = pts["arm hole 4"][0] - pts["pad upper"][0]
+d = pts["pad upper"][1] - pts["arm hole 4"][1]
+for label, got, want in [("A arm hole 1-4", a, 43.2), ("H pad upper-lower", h, 20.3),
+                         ("B across, pad upper to arm 4", b, 222.3),
+                         ("D pad upper above arm 4", d, 19.3)]:
+    check(f"{label} = {got:.1f} mm", abs(got - want) < 0.05, f"measured {want} mm")
+
+# 2. every slot is open through the wall, and solid just past its ends
+for n, (x, z, ax) in pts.items():
+    ln = P.arm_slot_len if ax == "x" else P.pad_slot_len
+    travel = (ln - P.mount_hole_d) / 2
+    probe_open = []
+    for s in (-travel, 0, travel):
+        px, pz = (x + s, z) if ax == "x" else (x, z + s)
+        probe_open.append(overlap(carrier, g.cyl_y(P.mount_hole_d - 1, y_back - 1, y_back + t + 1, px, pz)))
+    past = travel + P.mount_hole_d / 2 + 2.5
+    px, pz = (x + past, z) if ax == "x" else (x, z + past)
+    solid = overlap(carrier, g.cyl_y(2, y_back + 0.5, y_back + t - 0.5, px, pz))
+    check(f"{n}: M6 slot open through the wall, +/-{travel:.1f} mm travel",
+          max(probe_open) < 1e-6 and solid > 1, f"at x={x:.1f} z={z:.1f}")
+
+# 3. nuts on the front of the wall clear the carrier and the pods at both slot ends
+for n, (x, z, ax) in pts.items():
+    ln = P.arm_slot_len if ax == "x" else P.pad_slot_len
+    travel = (ln - P.mount_hole_d) / 2
+    worst = 0.0
+    for s in (-travel, travel):
+        px, pz = (x + s, z) if ax == "x" else (x, z + s)
+        nut = g.cyl_y(2 * P.nut_r, y_back + t + 0.01, y_back + t + 8, px, pz)
+        worst = max(worst, overlap(carrier, nut), overlap(pods, nut))
+    check(f"{n}: 15 mm flange nut clears carrier and pods", worst < 1e-6)
+
+# 4. pods sit clear of the carrier across their whole fore-aft slot travel,
+#    and there's always room behind them for the pigtail and plug
+half = (P.pod_slot_len - P.pod_bolt_d) / 2
+fwd = (P.pod_bolt_y + half) - P.pod_bolt_nominal_y
+back = P.pod_bolt_nominal_y - (P.pod_bolt_y - half)
+worst = max(overlap(carrier, pods.translate([0, s, 0])) for s in (-back, 0, fwd))
+gap_nominal = -P.pod_depth - (y_back + t)
+gap_min = gap_nominal - back
+check(f"pods clear the carrier from {back:.1f} mm back to {fwd:.1f} mm forward", worst < 1e-6)
+check(f"cable room behind the pods: {gap_nominal:.1f} mm default, {gap_min:.1f} mm at full rearward",
+      gap_min >= 5 and gap_nominal >= 15)
+
+# 5. pods and shroud don't touch, and each pod face sits inside its window
+check("pods clear the shroud", overlap(pods, shroud) < 1e-6)
+check(f"window clearance {P.window_clear} mm per side around each pod face", P.window_clear > 0.3)
+
+# 6. shroud and carrier only touch at the screw tabs
+ov = overlap(shroud, carrier)
+check("shroud and carrier don't overlap", ov < 1e-3, f"overlap {ov:.4f} mm^3")
+
+# 7. shroud fits the 11 in opening
+sb = shroud.bounding_box()
+sw = sb[3] - sb[0]
+check(f"shroud width {sw:.1f} mm fits the {P.opening_w:.1f} mm opening",
+      sw <= P.opening_w - 2 * P.opening_side_clear + 0.01,
+      f"{(P.opening_w - sw) / 2:.1f} mm clear each side")
+
+# 8. driver part is the mirror: arm on -X
+drv = g.mirror_x(carrier)
+arm_x = pts["arm hole 4"][0]
+open_drv = overlap(drv, g.cyl_y(P.mount_hole_d - 1, y_back - 1, y_back + t + 1, -arm_x, pts["arm hole 4"][1]))
+check("driver carrier has the arm slots on the other side", open_drv < 1e-6)
+
+# 9. every exported STL is one watertight solid lying flat on the bed
+here = os.path.dirname(os.path.abspath(__file__))
+for f in sorted(glob.glob(os.path.join(here, "stl", "**", "*.stl"), recursive=True)):
+    tm = trimesh.load(f)
+    name = os.path.relpath(f, here)
+    flat = tm.bounds[0][2] == 0 and tm.area_faces[(tm.face_normals[:, 2] < -0.99)
+                                                  & (tm.triangles_center[:, 2] < 0.01)].sum() > 50
+    parts = len(M(m3d.Mesh(tm.vertices.astype("float32"), tm.faces.astype("uint32"))).decompose())
+    ok = tm.is_watertight and tm.volume > 0 and flat and (parts == 1 or "spacer" in name)
+    check(f"{name}: watertight, flat on the bed, {parts} piece(s)", ok)
+
+print(f"\n{sum(results)}/{len(results)} checks passed")
+raise SystemExit(0 if all(results) else 1)

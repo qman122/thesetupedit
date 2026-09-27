@@ -1,69 +1,85 @@
-# C5 sleepy-eye pod carrier and shroud (v1, first fit)
+# C5 sleepy-eye pod carrier and shroud (v2)
 
 For a 2000 C5 Corvette with the headlight door stops already fitted, holding three
 2.9 × 1.8 in dual-lens LED pods per side. Like the KnightDriveTV kit, each side is one
-carrier that bolts where the stock headlight unit bolted, plus a front shroud that
-frames the three pods. The geometry is an original design; see
-`../notes/c5-sleepy-eye-video.md` for the install video notes it follows.
+carrier that bolts to the stock headlight mounting points (the fender-side arm and the
+hood-side aiming pad), plus a front shroud that frames the three pods. The geometry is an
+original design; see `../notes/c5-sleepy-eye-video.md` for the install video notes it follows.
 
 ![assembly preview](preview/assembly.png)
+![mounting wall from behind](preview/rear.png)
 
-## What's measured and what's estimated
+## Measurements used
 
-| Dimension | Value | Source |
-|---|---|---|
-| Pod size (W × H × D) | 73.7 × 45.7 × 71.1 mm (2.9 × 1.8 × 2.8 in) | the pods' product listing |
-| Pod bracket bolt | M8 or 5/16 in, in a 24 mm fore-aft slot | photos; the slot absorbs the difference |
-| Mounting wall, behind the pod faces | 95 mm | **estimate** |
-| Stock headlight bolt positions | **not published anywhere** | the wall is left blank to drill (see below) |
+Taken with a tape on the car. The owner says they're approximate, so every mounting hole
+is a slot.
 
-No public source gives the C5 headlight mounting bolt spacing, so the carrier has a solid
-**mounting wall** behind the pods. You drill it to match your car.
+| | Measurement | Value | Adjustment built in |
+|---|---|---|---|
+| A | Fender arm, hole 1 to hole 4 | 1.7 in (43.2 mm) | — |
+| H | Aiming pad, upper hole to lower hole | 0.8 in (20.3 mm) | — |
+| B | Across the car, pad upper hole to arm hole 4 | 8.75 in (222.3 mm) | arm slots ±6.7 mm side to side |
+| D | Pad upper hole above arm hole 4 | 0.76 in (19.3 mm) | pad slots ±4 mm up and down |
+| C | Pad face vs arm face, front to back | unknown | printed spacer washers, 2 / 4 / 6 mm |
+| F | Front opening width | 11 in (279.4 mm) | shroud is 269.4 mm, 5 mm clear each side |
+| — | Pods | 2.9 × 1.8 × 2.8 in | pod slots: 22 mm forward, 10 mm back |
+| — | Mounting bolts | M6 × 1.0, 10 mm flange nuts | — |
 
-## Print list
+**Still estimated:** how far back the mounting wall sits behind the pod faces (95 mm) and
+the pod height relative to the holes (arm hole 4 is 14 mm above the carrier floor). The
+long pod slots and the shroud's slotted tabs take up the fore-aft part of that.
 
-From `stl/`, already oriented for printing:
+## Checks
 
-- `carrier_driver.stl` and `carrier_passenger.stl` (284 × 92 × 75 mm): they stand on the back of the wall.
-- `shroud_driver.stl` and `shroud_passenger.stl` (256 × 72 × 27 mm): face down.
+`python3 check.py` runs 38 checks. They all pass:
 
-`stl/split/` has the same parts cut in two with splice plates, in case you ever need to
-print on a smaller bed.
+- The hole spacing matches A, H, B and D.
+- Every slot is open, with solid material past its ends.
+- A 15 mm flange nut at either end of every slot clears the carrier and the pods.
+- The pods clear the carrier across their whole slot travel, and there's always at least
+  7 mm behind them for the wiring (18 mm in the default position).
+- The pods clear the shroud, which clears the carrier.
+- The shroud fits the opening.
+- The driver part is a true mirror of the passenger part.
+- Every STL is one watertight solid lying flat on the bed.
 
-Print `stl/fit_test_window.stl` first (about 15 minutes). Your pod's face should drop
-through the window with a little play.
+## Print order
 
-**Material:** ASA or ABS is best, since it sits near hot LEDs behind the grille; PETG
-works. Don't use PLA, which softens in a hot engine bay. Use 4 walls, 40% gyroid
-infill, and 6 top and bottom layers.
+1. `stl/fit_test_mount_driver.stl` (3 mm plate, about 1 hour). Hold it against the arm
+   and pad and push M6 bolts through. If all four line up, the real carrier will.
+2. `stl/fit_test_window.stl` (already passed).
+3. `stl/carrier_driver.stl` and `stl/carrier_passenger.stl`: stand on the back of the wall,
+   already oriented.
+4. `stl/shroud_driver.stl` and `stl/shroud_passenger.stl`: face down.
+5. `stl/spacer_washers.stl`: only if the carrier doesn't sit flat against both the arm and
+   the pad.
+
+`stl/split/` has the same parts cut in two with splice plates, for small beds.
+
+**Material:** ASA or ABS is best; PETG works. Don't use PLA, which softens in a hot engine
+bay. Use 4 walls, 40% gyroid infill, and 6 top and bottom layers.
 
 ## Hardware (per side)
 
-- 3 × the bolts that came with the pods' brackets, with washers and nylon lock nuts,
-  through the floor slots
-- The stock headlight bolts and nuts, into the holes you drill in the mounting wall
-- 2 × M4 × 16 self-tapping screws, shroud tabs into the carrier bosses
-- Split version only: 4 × M4 × 12 flat-head screws and nylon lock nuts for the floor splice,
-  4 × M4 × 16 pan-head screws and nylon lock nuts for the wall splice, and epoxy (or acetone
-  for ABS/ASA) for the shroud splice strip
+- 4 × M6 × 1.0 × 20 mm bolts and 10 mm flange nuts (the stock headlight bolts work)
+- 3 × M6 bolts, washers and nylon lock nuts for the pods, through the floor slots
+- 2 × M4 × 16 self-tapping screws for the shroud tabs
 
-## Fitting it
+## Fitting
 
-1. Bolt the three pods to the carrier floor through the slots, with lenses flush with the
-   front edge, and feed the pigtails through the holes in the wall.
-2. Take the stock headlight unit you removed. Hold its mounting tabs against the back
-   of the carrier's wall with its lens lined up with the pod row. Mark the holes, then
-   drill 6.5 mm.
-3. Bolt the carrier in exactly as the video does: the two outer bolts, then the inner
-   stud through the upper hole of the aiming pad, then the 10 mm nut on the up/down
-   adjuster.
-4. Cycle the lights and check the pods clear the door and bodywork all the way up and down.
-5. Screw the shroud on from underneath with the two M4 screws.
+1. With the headlight door up, hold the carrier in front of the arm and the pad. Push the bolts
+   through from behind the arm (holes 1 and 4) and the pad (both holes), then through the
+   carrier's slots, and add the flange nuts on the front. Leave them finger tight.
+2. If there's a gap at the arm or the pad, fill it with spacer washers.
+3. Bolt the pods on through the floor slots. Slide them forward or back so the lenses sit
+   where you want them in the opening, then tighten.
+4. Screw the shroud on from underneath. Its slotted tabs follow the pods forward or back.
+5. Cycle the lights slowly by hand with the motor knob and check nothing touches the door
+   or the body, then tighten everything.
 6. Aim the lights with the stock adjusters.
 
 ## Changing the design
 
-Every dimension is a setting at the top of `generate.py`. Change a number, then run
-`python3 generate.py`; it needs the `manifold3d`, `trimesh`, `numpy` and `matplotlib`
-Python packages. Once the stock bolt positions are measured, put them in
-`mount_holes` and the holes come pre-drilled.
+Every dimension is a setting at the top of `generate.py`. Change a number, run
+`python3 generate.py`, then `python3 check.py`. It needs the `manifold3d`, `trimesh`,
+`numpy` and `matplotlib` Python packages.
