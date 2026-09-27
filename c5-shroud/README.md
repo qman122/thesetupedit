@@ -1,7 +1,7 @@
 # C5 sleepy-eye pod carrier and shroud (v1, first fit)
 
 For a 2000 C5 Corvette with the headlight door stops already fitted, holding three
-3 in × 2 in dual-lens LED pods per side. Like the KnightDriveTV kit, each side is one
+2.9 × 1.8 in dual-lens LED pods per side. Like the KnightDriveTV kit, each side is one
 carrier that bolts where the stock headlight unit bolted, plus a front shroud that
 frames the three pods. The geometry is an original design; see
 `../notes/c5-sleepy-eye-video.md` for the install video notes it follows.
@@ -12,9 +12,7 @@ frames the three pods. The geometry is an original design; see
 
 | Dimension | Value | Source |
 |---|---|---|
-| Pod front face | 76 × 48 mm (3 × 1⅞ in) | owner's photos, tape measure |
-| Pod body | 80 × 52 mm | owner's photos, estimated |
-| Pod depth, face to back of fins | 65 mm | **estimate** |
+| Pod size (W × H × D) | 73.7 × 45.7 × 71.1 mm (2.9 × 1.8 × 2.8 in) | the pods' product listing |
 | Pod bracket bolt | M8 or 5/16 in, in a 24 mm fore-aft slot | photos; the slot absorbs the difference |
 | Mounting wall, behind the pod faces | 95 mm | **estimate** |
 | Stock headlight bolt positions | **not published anywhere** | the wall is left blank to drill (see below) |
@@ -24,17 +22,13 @@ No public source gives the C5 headlight mounting bolt spacing, so the carrier ha
 
 ## Print list
 
-**If your bed is 310 mm or wider,** print from `stl/`:
+From `stl/`, already oriented for printing:
 
-- `carrier_driver.stl` and `carrier_passenger.stl`: they stand on the back of the wall,
-  already oriented.
-- `shroud_driver.stl` and `shroud_passenger.stl`: face down.
+- `carrier_driver.stl` and `carrier_passenger.stl` (284 × 92 × 75 mm): they stand on the back of the wall.
+- `shroud_driver.stl` and `shroud_passenger.stl` (256 × 72 × 27 mm): face down.
 
-**If your bed is smaller (most 220–256 mm printers),** print from `stl/split/`:
-
-- `carrier_{driver,passenger}_A.stl` and `_B.stl`
-- `shroud_{driver,passenger}_A.stl` and `_B.stl`
-- Two each of `splice_floor_x2.stl`, `splice_wall_x2.stl` and `shroud_splice_x2.stl`
+`stl/split/` has the same parts cut in two with splice plates, in case you ever need to
+print on a smaller bed.
 
 Print `stl/fit_test_window.stl` first (about 15 minutes). Your pod's face should drop
 through the window with a little play.

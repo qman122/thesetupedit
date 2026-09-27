@@ -25,13 +25,13 @@ CS = m3d.CrossSection
 
 @dataclass
 class Params:
-    # --- LED pod (measured from the owner's photos; confirm with calipers) ---
-    pod_face_w: float = 76.0      # front bezel width (3.0 in)
-    pod_face_h: float = 48.0      # front bezel height (1 7/8 in)
+    # --- LED pod: listed size 2.9 x 1.8 x 2.8 in (W x H x D) ---
+    pod_face_w: float = 73.7      # front bezel width (2.9 in)
+    pod_face_h: float = 45.7      # front bezel height (1.8 in)
     pod_face_r: float = 6.0       # front bezel corner radius
-    pod_body_w: float = 80.0      # widest point of the finned body
-    pod_body_h: float = 52.0      # tallest point of the finned body
-    pod_depth: float = 65.0       # lens face to back of the fins (ESTIMATE)
+    pod_body_w: float = 74.5      # body width, listed width plus a little room
+    pod_body_h: float = 46.5      # body height, listed height plus a little room
+    pod_depth: float = 71.1       # front to back (2.8 in)
     pod_gap: float = 6.0          # space between neighbouring pods
     pod_bolt_d: float = 8.6       # slot width for the pod bracket bolt (M8 or 5/16 in)
     pod_bolt_y: float = -30.0     # slot centre, measured back from the pod face
