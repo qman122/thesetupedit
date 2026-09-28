@@ -94,7 +94,8 @@ stock bezel is held three ways, and so is this one:
     Each end now gets such an ear as a separate print (`stl/ear_hood_*.stl`,
     `stl/ear_fender_*.stl`):
     - It lies 0.8 mm outside the door's flange, following its shape from the owner's model
-      (`cover_sides.json`), and covers the whole flange up to 6 mm under the door's edge.
+      (`cover_sides.json`). It covers the whole flange, from the door's painted edge (8 mm under
+      the top of the door's side) down to the bezel's flat bottom, with no gap to the door.
     - Its front bends in to meet the side of the bezel face.
     - It has a clearance hole (6.5 mm) at every hole in the flange, flush with its face (a
       boss fills any gap behind it). Cut through the holes: `diagrams/ear_sections.png`.
@@ -166,6 +167,21 @@ get set from them.
 
 **Fit on the car:** it's 269 mm wide in the 279 mm opening. Cycle the door slowly by hand
 and check the lip and wings don't touch anything as it goes down into the pocket.
+
+## What changed in v8: marked up by the owner
+
+- **Flat bottom:** everything below a straight line just under the light slot is cut off.
+  - The sagging chin is gone: `bottom_sag` is 0.
+  - The bottom is level at z = -18 at both ends (`bezel_h_*` = 79.6). Before, it was
+    -38 at the hood end, -16 at the fender end, and 8 mm lower again in the middle.
+  - -18 is as high as it can go: the carrier's lip comes down to -13 and the bezel's
+    screw tabs under it to -16, so it still hides them.
+  - The lower corners are 12 mm (`corner_r`) and the roll-back at the bottom is 8 mm
+    (`face_tuck`).
+- **Ears fill the gap:**
+  - Each ear runs up to the door's painted edge, back past the rear screw, and down to
+    the same flat bottom.
+  - Its back edge rises in a straight line to the rear screw, as marked.
 
 ## What changed in v7: fitted to the headlight doors
 

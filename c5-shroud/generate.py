@@ -93,8 +93,9 @@ class Params:
     # screws to the carrier. It is taller at the hood end than at the fender end.
     shroud_t: float = 3.0         # thinnest wall (at the shallow side of each tunnel)
     shroud_margin_top: float = 8.0   # bezel top (the cover's underside) above the pod tops (ESTIMATE)
-    bezel_h_hood: float = 100.0   # front height at the hood end, top of the blade to the bottom of the lip (ESTIMATE)
-    bezel_h_fender: float = 78.0  # front height at the fender end; the lip rises toward the fender (ESTIMATE)
+    bezel_h_hood: float = 79.6    # front height at the hood end, top of the blade to the bottom (flat bottom at z = -18,
+                                  # just under the carrier's lip and the screw tabs, as the owner marked it)
+    bezel_h_fender: float = 79.6  # same at the fender end: the bottom is level
     bezel_travel: float = 16.0    # the bezel's screw slots let it slide this far forward of the pods (never back)
     # KnightDriveTV-style open frame: a floor shelf just under the pods, and a thin round post
     # with flared ends in front of each gap between pods, set back from the front edge
@@ -112,8 +113,8 @@ class Params:
     mouth_wrap: float = 9.0       # ...and this much at the ends, so the ends curve round instead of a flat side
     front_bow: float = 12.0       # the face bows forward this much in the middle, following the nose
     face_belly: float = 7.0       # seen from the side, the face swells forward this much halfway down...
-    face_tuck: float = 12.0       # ...and rolls back this much at its lower edge, like a chin
-    bottom_sag: float = 8.0       # the lower edge curves down this much in the middle instead of a straight line
+    face_tuck: float = 8.0        # ...and rolls back this much at its lower edge
+    bottom_sag: float = 0.0       # the lower edge is straight (the owner cut off the sagging chin)
     slot_smile: float = 5.0       # the slot's lower lip dips this much in the middle at the front edge
     edge_r: float = 2.6           # rolled edge right round the outside of the face
     face_t: float = 3.0           # the face is a shell this thick, with the slot cut through it
@@ -144,7 +145,7 @@ class Params:
     lip_follow: float = 1.0       # 1 = follow the door's lip as measured, 0 = level top
     lip_roll: float = 0.0         # extra tilt of the top toward the fender, degrees (+ = fender end lower)
     rim_r: float = 3.0            # the rolled rim round the slot is a tube this radius (6 mm lip)
-    corner_r: float = 28.0        # bottom corners of the outline, sweeping up into the sides
+    corner_r: float = 12.0        # bottom corners of the outline
     end_wall_x: float = 123.0     # end walls of the frame start this far out (just past the outer pods)
     wing_t: float = 3.0           # side wings (ears)
     wing_screw_y: float = -54.0   # M4 screw through each wing into a boss on the carrier
@@ -152,7 +153,7 @@ class Params:
     # The wings are full side walls like the stock ears: they run back past the pods to
     # just in front of the arm and the pad, and down over the carrier.
     wing_back_y: float = -90.0    # rear edge of the wings (the arm and pad faces are at -95)
-    wing_back_z: float = -20.0    # bottom of the wings at their rear edge (under the carrier's tabs)
+    wing_back_z: float = -18.0    # bottom of the wings at their rear edge, level with the face's bottom
     wing_r: float = 10.0          # rounded rear corners
     access_hole_d: float = 28.0   # hood-end wing: hole to reach the aiming adjuster, like the stock ear
     access_hole_yz: tuple = (-72.0, 38.0)
@@ -162,7 +163,7 @@ class Params:
     # owner's model of the doors (cover_sides.json, from cover_scan.py), and print as separate parts.
     ear_t: float = 3.0
     ear_gap: float = 0.8          # between the ear and the door
-    ear_top_gap: float = 6.0      # ear's top edge this far under the top of the door's side
+    ear_top_gap: float = 8.0      # ear's top edge this far under the top of the door's side: up to its painted edge, no gap
     ear_hole_d: float = 6.5       # clearance for the stock ear screws, at every hole in the flange
     ear_access_d: float = 40.0    # hood-end ear: hole for the aiming adjuster's access plug (from the photo)
     ear_access_yz: tuple = (-132.0, 16.0)
@@ -687,17 +688,17 @@ def ear(p, name):
     hf, hr = holes[0]["at"], holes[-1]["at"]
 
     def top(y):
-        return min(float(door_top(y)) - p.ear_top_gap, z_face)
-    y_back = hr[1] - 12
+        return float(door_top(y)) - p.ear_top_gap
+    y_back = hr[1] - 20
+    zbot = min(zb_hood, zb_fender)                       # level with the bezel's bottom
     # outline: down the front to the bezel's bottom corner, then (as the stock ear in the photo)
     # rising back to pass 12 mm under the last screw, up the back and along the top
     zs_ = np.linspace(ze, z_face, 14)
-    outline = [[front(z), z] for z in zs_]
-    outline += [[y_, top(y_)] for y_ in np.linspace(front(z_face) - 4, y_back + 6, 16)]
-    outline += [[y_back, top(y_back) - 6], [y_back, hr[2] - 4], [hr[1] + 2, hr[2] - 12]]
-    if name == "hood":                                   # round the access plug, as in the photo
-        ay, az = p.ear_access_yz
-        outline += [[ay - p.ear_access_d / 2, az - p.ear_access_d / 2 - 4], [ay + p.ear_access_d / 2, az - p.ear_access_d / 2 - 9]]
+    outline = [[front(zbot), zbot]] + [[front(z), z] for z in zs_]
+    outline += [[y_, top(y_)] for y_ in np.linspace(front(z_face), y_back + 6, 18)]
+    # rear: down from the top, then a straight rise from the level bottom, as the owner marked it
+    y_rise = p.ear_access_yz[0] if name == "hood" else hr[1] + 20
+    outline += [[y_back, top(y_back) - 6], [y_back, hr[2] - 12], [y_rise, zbot]]
     o = np.asarray(outline)
     if np.sum(o[:, 0] * np.roll(o[:, 1], -1) - np.roll(o[:, 0], -1) * o[:, 1]) < 0:
         o = o[::-1]                                      # counter-clockwise
@@ -713,7 +714,7 @@ def ear(p, name):
     if panel.volume() < 0:
         panel = panel.mirror([0, 0, 0])
     # the front bends in to the side of the bezel face
-    zr = M.cube([1, p.ear_t, z_face - ze - 0.6]).translate([0, -p.ear_t + 0.23, ze + 0.31]).refine_to_length(2.0)
+    zr = M.cube([1, p.ear_t, z_face - zbot - 0.6]).translate([0, -p.ear_t + 0.23, zbot + 0.31]).refine_to_length(2.0)
 
     def g_(v):
         out = np.empty_like(v)
