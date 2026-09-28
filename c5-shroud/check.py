@@ -36,10 +36,10 @@ a = pts["arm hole 1"][1] - pts["arm hole 4"][1]
 h = pts["pad upper"][1] - pts["pad lower"][1]
 b = pts["arm hole 4"][0] - pts["pad upper"][0]
 d = pts["pad upper"][1] - pts["arm hole 4"][1]
-for label, got, want in [("A arm hole 1-4", a, 43.2), ("H pad upper-lower", h, 20.3),
+for label, got, want in [("A arm hole 1-4", a, 43.2), ("H pad upper-lower", h, 19.0),
                          ("B across, pad upper to arm 4", b, 222.3),
                          ("D pad upper above arm 4", d, 19.3)]:
-    check(f"{label} = {got:.1f} mm", abs(got - want) < 0.05, f"measured {want} mm")
+    check(f"{label} = {got:.1f} mm", abs(got - want) < 0.05, f"target {want} mm")
 
 # 2. every slot is open through the wall, and solid just past its ends
 for n, (x, z, ax) in pts.items():
@@ -80,7 +80,7 @@ check(f"cable room behind the pods: {gap_nominal:.1f} mm default, {gap_min:.1f} 
 
 # 5. pods and shroud don't touch, and each pod face sits inside its window
 check("pods clear the shroud", overlap(pods, shroud) < 1e-6)
-check(f"window clearance {P.window_clear} mm per side around each pod face", P.window_clear > 0.3)
+check(f"window gap {P.window_clear_x} mm each side, {P.window_clear_y} mm top and bottom", min(P.window_clear_x, P.window_clear_y) > 0.3)
 
 # 6. shroud and carrier only touch at the screw tabs
 ov = overlap(shroud, carrier)

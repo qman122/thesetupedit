@@ -62,7 +62,7 @@ class Params:
 
     # --- stock mounting points: owner's tape measurements (approximate) ---
     arm_hole_a: float = 43.2      # A: fender arm, hole 1 to hole 4, centres (1.7 in)
-    pad_hole_h: float = 20.3      # H: aiming pad, upper to lower hole (0.8 in)
+    pad_hole_h: float = 19.0      # H: aiming pad, upper to lower hole (measured 0.8 in; test tab said a bit closer)
     span_b: float = 222.3         # B: across the car, pad upper hole to arm hole 4 (8.75 in)
     pad_above_arm_d: float = 19.3  # D: pad upper hole sits this much above arm hole 4 (0.76 in)
     arm4_above_floor: float = 14.0  # arm hole 4 height above the floor top (sets pod height)
@@ -80,8 +80,12 @@ class Params:
     shroud_margin_bot: float = 25.0  # below the floor; owner says there's plenty of room
     shroud_r: float = 14.0        # outer corner radius
     shroud_return: float = 12.0   # depth of the lip that wraps back from the face
-    window_clear: float = 1.8     # clearance around each pod bezel: the 4-notch frame fit on the car
-    window_ladder: tuple = (0.6, 1.0, 1.4, 1.8)  # clearances on the window fit test, 1-4 notches
+    # Window gap around the pod bezel, per side. The 4-notch test frame (1.8 / 1.8) fit but
+    # needed to be a little wider and a little shorter, so: 1 mm wider, 1 mm shorter overall.
+    window_clear_x: float = 2.3   # each side, left and right
+    window_clear_y: float = 1.3   # top and bottom
+    # (x, y) gaps on the window fit test, 1-3 notches; the middle one matches the shroud
+    window_ladder: tuple = ((2.0, 1.6), (2.3, 1.3), (2.6, 1.0))
     shroud_tab_screw_d: float = 3.4  # M4 self-tapping into the carrier floor
     shroud_gap: float = 0.5       # air gap between pod faces and the back of the shroud face
     shroud_tab_slot: float = 16.0  # fore-aft slot in each shroud tab, follows the pod slots
@@ -289,9 +293,9 @@ def splice_plates(p):
 def shroud_splice(p):
     """Backing strip glued behind the shroud face across the split line."""
     sx = split_x(p)
-    bar = pitch(p) - (p.pod_face_w + 2 * p.window_clear)       # material between windows
+    bar = pitch(p) - (p.pod_face_w + 2 * p.window_clear_x)     # material between windows
     z_bot = -p.shroud_margin_bot - p.floor_t + p.shroud_t + 0.5
-    win_bot = pod_zc(p) - (p.pod_face_h / 2 + p.window_clear)
+    win_bot = pod_zc(p) - (p.pod_face_h / 2 + p.window_clear_y)
     strip = box(sx - bar / 2 + 0.6, sx + bar / 2 - 0.6, 0, 2.5, z_bot, win_bot + p.pod_face_h)
     foot = box(sx - 22, sx + 22, 0, 2.5, z_bot, win_bot - 0.5)
     return (strip + foot).rotate([-90, 0, 0]).translate([-sx, 0, 0])
@@ -335,9 +339,9 @@ def shroud(p):
     shell = shell - plate_xz(inner, y_face - p.shroud_t, p.shroud_return + 1)
 
     # windows for the pod bezels, centred on each pod face
-    win_w = p.pod_face_w + 2 * p.window_clear
-    win_h = p.pod_face_h + 2 * p.window_clear
-    wins = [plate_xz(rrect(win_w, win_h, p.pod_face_r + p.window_clear)
+    win_w = p.pod_face_w + 2 * p.window_clear_x
+    win_h = p.pod_face_h + 2 * p.window_clear_y
+    wins = [plate_xz(rrect(win_w, win_h, p.pod_face_r + min(p.window_clear_x, p.window_clear_y))
                      .translate([x, pod_zc(p)]), y_face + 1, p.shroud_t + 2)
             for x in pod_x(p)]
 
@@ -356,17 +360,18 @@ def shroud(p):
 
 
 def fit_test(p):
-    """Quick print: four separate window frames with different clearances around the pod bezel.
-    The number of notches on each window's top edge is its position in window_ladder."""
+    """Quick print: separate window frames with different gaps around the pod bezel.
+    The number of notches on each frame's top edge is its position in window_ladder."""
     cells = []
-    for n, c in enumerate(p.window_ladder):
-        ww, wh = p.pod_face_w + 2 * c, p.pod_face_h + 2 * c
-        cw, ch = p.pod_face_w + 2 * max(p.window_ladder) + 16, p.pod_face_h + 2 * max(p.window_ladder) + 16
-        cell = rrect(cw, ch, 6) - rrect(ww, wh, p.pod_face_r + c)
+    mx = max(c for c, _ in p.window_ladder)
+    my = max(c for _, c in p.window_ladder)
+    cw, ch = p.pod_face_w + 2 * mx + 16, p.pod_face_h + 2 * my + 16
+    for n, (cx_, cy_) in enumerate(p.window_ladder):
+        ww, wh = p.pod_face_w + 2 * cx_, p.pod_face_h + 2 * cy_
+        cell = rrect(cw, ch, 6) - rrect(ww, wh, p.pod_face_r + min(cx_, cy_))
         for k in range(n + 1):
             cell = cell - CS.square([3, 4]).translate([-cw / 2 + 6 + k * 6, ch / 2 - 3])
-        cx, cy = (n % 2) * (cw + 8), (n // 2) * (ch + 8)   # 8 mm apart: four separate pieces
-        cells.append(cell.translate([cx, cy]))
+        cells.append(cell.translate([0, n * (ch + 8)]))   # stacked 8 mm apart: separate pieces
     return M.extrude(CS.batch_boolean(cells, m3d.OpType.Add), 2.0)
 
 

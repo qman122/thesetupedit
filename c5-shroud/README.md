@@ -19,12 +19,12 @@ is a short slot, sized snug (6.3 mm) on an M6 bolt so the bolt stays put while y
 | | Measurement | Value | Adjustment built in |
 |---|---|---|---|
 | A | Fender arm, hole 1 to hole 4 | 1.7 in (43.2 mm) | — |
-| H | Aiming pad, upper hole to lower hole | 0.8 in (20.3 mm) | — |
+| H | Aiming pad, upper hole to lower hole | 0.8 in measured; 19.0 mm after the test tab showed it a bit wide | — |
 | B | Across the car, pad upper hole to arm hole 4 | 8.75 in (222.3 mm) | arm slots ±3.7 mm side to side |
 | D | Pad upper hole above arm hole 4 | 0.76 in (19.3 mm) | pad slots ±1.8 mm up and down |
 | C | Pad face vs arm face, front to back | unknown | printed spacer washers, 2 / 4 / 6 mm |
 | F | Front opening width | 11 in (279.4 mm) | shroud is 269.4 mm, 5 mm clear each side |
-| — | Shroud windows | pod face + 1.8 mm each side, centred 0.3 in up for the bracket lift | the 4-notch fit-test frame fit the pod |
+| — | Shroud windows | pod face + 2.3 mm left/right and + 1.3 mm top/bottom, centred 0.3 in up for the bracket lift | the 4-notch test frame fit but wanted a bit wider and a bit shorter |
 | — | Pods | 3.0 × 1.8 in face, 1.8 in deep, 2.1 in tall with the bracket (maker's drawing) | pod slots: 22 mm forward, 10 mm back |
 | — | Pod stud | about 8 mm (5/16 in), in 8.6 mm floor slots | — |
 | — | Mounting bolts | M6 × 1.0, 10 mm flange nuts | — |
@@ -62,9 +62,9 @@ long pod slots and the shroud's slotted tabs take up the fore-aft part of that.
 
 ## Print order
 
-1. `stl/fit_test_window.stl` (about 20 minutes). It has four windows: 1, 2, 3 or 4 notches
-   on the top edge means 0.6, 1.0, 1.4 or 1.8 mm of gap around the 3.0 × 1.8 in pod face.
-   The 4-notch frame (1.8 mm) fit on the car, so the shroud windows use 1.8 mm.
+1. `stl/fit_test_window.stl` (about 15 minutes).
+      Now three frames, 1-3 notches: 2.0/1.6, 2.3/1.3 and 2.6/1.0 mm of gap (sides/top-bottom).
+   The shroud uses the 2-notch size.
 2. `stl/fit_test_mount_driver.stl` (about 20 minutes, two small flat tabs). Bolt the taller
    tab to the arm (holes 1 and 4) and the shorter one to the aiming pad (both holes).
    The bolts should go through snugly without forcing.
@@ -78,7 +78,9 @@ bay. Use 4 walls, 40% gyroid infill, and 6 top and bottom layers.
 
 ## Hardware (per side)
 
-- 4 × M6 × 1.0 × 20 mm bolts and 10 mm flange nuts (the stock headlight bolts work)
+- 4 × M6 × 1.0 × 20 mm bolts and 10 mm flange nuts (the stock headlight bolts work), with a flat
+  washer under each nut so it doesn't dig into the plastic. The nut can't pull through: the slots
+  are 6.3 mm wide and an M6 nut is 10 mm across.
 - 3 × M6 bolts, washers and nylon lock nuts for the pods, through the floor slots
 - 2 × M4 × 16 self-tapping screws for the shroud tabs
 
