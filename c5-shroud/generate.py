@@ -90,18 +90,20 @@ class Params:
     # screws to the carrier. It is taller at the hood end than at the fender end.
     shroud_t: float = 3.0         # thinnest wall (at the shallow side of each tunnel)
     shroud_margin_top: float = 8.0   # bezel top (the cover's underside) above the pod tops (ESTIMATE)
-    bezel_h_hood: float = 148.0   # front height at the hood end, top of the blade to the bottom of the lip (ESTIMATE, from video)
-    bezel_h_fender: float = 102.0  # front height at the fender end (ESTIMATE, from video)
+    bezel_h_hood: float = 100.0   # front height at the hood end, top of the blade to the bottom of the lip (ESTIMATE)
+    bezel_h_fender: float = 78.0  # front height at the fender end; the lip rises toward the fender (ESTIMATE)
     bezel_travel: float = 16.0    # the bezel's screw slots let it slide this far forward of the pods (never back)
     # KnightDriveTV-style open frame: a floor shelf just under the pods, and a thin round post
     # with flared ends in front of each gap between pods, set back from the front edge
     post_d: float = 9.0           # post width across the car
     post_len: float = 13.0        # post length front to back (slightly elongated, like theirs)
-    post_flare: tuple = ((0.0, 7.0), (3.0, 3.2), (7.0, 1.2), (12.0, 0.0))   # trumpet ends: (height from end, extra width)
+    post_flare_w: float = 7.0     # trumpet ends: extra width where each post meets the shelf and the blade
+    post_flare_h: float = 12.0    # height of each trumpet flare
     post_recess: float = 5.0      # posts sit this far behind the front edge
     pod_recess: float = 14.0      # the pods sit this much deeper in the mouth (lenses back in the shadow)
     mouth_r: float = 10.0         # corner radius of the opening
-    mouth_flare: float = 4.0      # the opening widens this much at the front edge, sides and bottom
+    mouth_flare: float = 4.0      # the opening widens this much at the front edge along the bottom
+    mouth_wrap: float = 9.0       # ...and this much at the ends, so the ends curve round instead of a flat side
     front_bow: float = 6.0        # the lower lip bows forward this much in the middle, following the nose
     shelf_t: float = 3.0
     rail_t: float = 4.0           # top blade thickness; its front edge is rounded
@@ -113,7 +115,7 @@ class Params:
     fork_x: float = 0.0           # fork centre, across the car from the middle of the bezel
     lip_ext: float = 10.0         # how far the rolled lower lip sticks out past the front
     rim_r: float = 4.0            # radius of the rolled lip
-    corner_r: float = 22.0        # bottom corners, seen from the front
+    corner_r: float = 12.0        # bottom corners, seen from the front
     end_wall_x: float = 123.0     # end walls of the frame start this far out (just past the outer pods)
     wing_t: float = 3.0           # side wings (ears)
     wing_screw_y: float = -54.0   # M4 screw through each wing into a boss on the carrier
@@ -519,8 +521,8 @@ def shroud(p):
     wy, wz, wr_ = p.wing_screw_y, p.wing_screw_z, p.wing_r
     for side in (1, -1):
         xo, xi = side * (ow / 2 + 0.5), side * (ow / 2 - p.wing_t)      # outer face trimmed below
-        yfr = min(yf(xo), yf(xi)) - 0.33
-        zlow = zb(side * up) + r + cr               # where the bottom corner turns up
+        yfr = min(yf(xo), yf(xi)) - 0.71
+        zlow = zb(side * up) + r + cr - 1.3         # where the bottom corner turns up (tucked into the lip)
         yb_, zbk = p.wing_back_y + wr_, p.wing_back_z + wr_
         corners = [[yb_ + wr_ * math.cos(a / 8 * math.pi), zc_ + wr_ * math.sin(a / 8 * math.pi)]
                    for zc_ in (z_top - wr_, zbk) for a in range(16)]
@@ -554,28 +556,42 @@ def shroud(p):
         cuts.append(M.extrude(sl, 20).transform([[0, 0, 1, side * ow / 2 - 10], [1, 0, 0, 0], [0, 1, 0, 0]]))
     # the mouth opening: round-cornered, wider at the front on the sides and bottom (the top
     # blade stays one clean line), narrowing back to just outside the pods
+    # loft of 12 sections from the front edge back to the pods, easing in on a curve so the
+    # ends wrap round and the floor rolls down into the lip
     uo = (p.end_wall_x - 0.4) / kx
-    mf, mr = p.mouth_flare, p.mouth_r
-    front_o = rrect(2 * (uo + mf), f_top - 0.13 - (f_bot - mf), mr + mf).translate([0, (f_top - 0.13 + f_bot - mf) / 2])
-    back_o = rrect(2 * uo, f_top - 0.13 - f_bot, mr).translate([0, (f_top - 0.13 + f_bot) / 2])
-    cuts.append(M.batch_hull([plate_xz(front_o, 3, 3.2), plate_xz(back_o, -dm - 1, 0.5)]).transform(F))
+    ztop = f_top - 0.29                             # (clear of the nose's lowest facets)
+    secs = []
+    for i in range(13):
+        t = i / 12                                   # 0 at the front edge, 1 at the back
+        e = (1 - t) ** 2
+        half = uo + p.mouth_wrap * e
+        zlo = f_bot - p.mouth_flare * e
+        rad = p.mouth_r + p.mouth_wrap * e
+        n = 3.0 - t * (dm + 4.0)
+        zt = ztop - 0.03 * i                         # tops a hair apart, never coplanar
+        secs.append(plate_xz(rrect(2 * half, zt - zlo, rad).translate([0, (zt + zlo) / 2]), n, 0.2))
+    cuts += [M.batch_hull([a_, b_]).transform(F) for a_, b_ in zip(secs, secs[1:])]
     out = M.batch_boolean([body] + cuts, m3d.OpType.Subtract)
 
     # posts: slightly elongated front to back, with trumpet flares into the shelf and the blade,
     # trimmed flat behind so they never reach the pods
-    sec = CS.square([p.post_d, max(p.post_len - p.post_d, 0.01)], center=True).offset(p.post_d / 2, m3d.JoinType.Round)
+    sec = CS.square([0.01, max(p.post_len - p.post_d, 0.01)], center=True).offset(p.post_d / 2 - 0.005, m3d.JoinType.Round)
     h = f_top - f_bot + 1.0                         # 0.5 mm into the shelf and the blade
     posts = []
     for (x, y, y_min) in post_xy(p):
-        slices = []
-        for (dz, grow) in p.post_flare:
-            for z in (dz, h - dz):
-                slices.append((z, grow))
-        slices = sorted(set(slices))
-        segs = [M.batch_hull([M.extrude(sec.offset(g0, m3d.JoinType.Round) if g0 else sec, 0.01).translate([0, 0, z0]),
-                              M.extrude(sec.offset(g1, m3d.JoinType.Round) if g1 else sec, 0.01).translate([0, 0, z1])])
-                for (z0, g0), (z1, g1) in zip(slices, slices[1:])]
-        post = M.batch_boolean(segs, m3d.OpType.Add).translate([x, y, f_bot - 0.5])
+        # one smooth trumpet curve at each end: extra width = W (1 - d/H)^2, applied to a finely
+        # divided extrusion so the flare is a single smooth surface
+        W, H = p.post_flare_w, p.post_flare_h
+        hw, hl = p.post_d / 2, p.post_len / 2
+
+        def trumpet(v, W=W, H=H, hw=hw, hl=hl, h=h):
+            d = np.minimum(v[:, 2], h - v[:, 2])
+            g_ = W * np.clip(1 - d / H, 0, 1) ** 2
+            out = v.copy()
+            out[:, 0] *= (hw + g_) / hw
+            out[:, 1] *= (hl + g_) / hl
+            return out
+        post = M.extrude(sec, h, n_divisions=int(h / 0.6)).warp_batch(trumpet).translate([x, y, f_bot - 0.5])
         post = post ^ box(x - 30, x + 30, y_min, y + 40, f_bot - 1, f_top + 1)
         posts.append(post ^ box(-U, U, -300, -0.8, -300, 300).transform(F))   # stays behind the front edge
     out = M.batch_boolean([out] + posts, m3d.OpType.Add)

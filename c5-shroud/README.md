@@ -87,23 +87,36 @@ stock bezel is held three ways, and so is this one:
 
 **Shape:**
 - **Front outline:** like the stock bezel, taller at the hood end than at the fender end:
-  about 148 mm and 102 mm (`bezel_h_hood`, `bezel_h_fender`). These heights are estimates,
-  measured from a head-on frame of the install video (13:00), scaled to the 11 in opening.
-  The stock bezel spans the opening when the lights are fully up. At the sleepy stop its
-  lower part tucks down behind the body, so there's no gap under the lights.
+  about 100 mm and 78 mm (`bezel_h_hood`, `bezel_h_fender`).
+  - The band below the opening is kept short, like KnightDriveTV's, so the opening fills
+    most of the pocket under the door.
+  - The lip's lower edge rises toward the fender.
+  - These heights are estimates until the stock bezel is measured.
 - **Lower lip:** below the lights, the front slopes down and forward to a rolled lip. The
   lip runs along the bottom, round the bottom corners and up both ends.
 - **Open frame, like KnightDriveTV's CAD and scan:** one rounded "mouth" across all
   three pods.
-  - **Opening:** 10 mm corners. It flares 4 mm wider at the front edge on the sides and
-    bottom, and narrows back to just outside the pods.
+  - **Opening:** lofted through 13 sections that ease in on a curve. It is 9 mm wider at
+    the front edge at the ends and 4 mm lower along the bottom, so the ends wrap round
+    instead of showing a flat side, and the floor rolls down into the lip. Corners are
+    10 mm at the back and 19 mm at the front.
   - **Top blade:** stays one clean, continuous line above the opening.
   - **Pods:** sit 14 mm deeper than they have to (`pod_recess`), so the lenses glow from
     back in the shadow. The cavity floor (a shelf just under the pod faces), end walls and
     top blade form one continuous shell.
-  - **Posts:** stand in front of each gap between pods, 9 mm wide and 13 mm front to back,
-    with trumpet flares into the shelf and the blade. They're trimmed flat behind so they
-    never touch the pods.
+  - **Posts:** stand in front of each gap between pods, 9 mm wide and 13 mm front to back.
+    Each end flares in one smooth trumpet curve: 7 mm extra width at the shelf and the
+    blade, easing to nothing over 12 mm. They're trimmed flat behind so they never touch
+    the pods.
+  - **Light the posts block** (checked by casting rays from each lens, seen from above at
+    lens height):
+    - Every lens is completely clear for at least 11° either side of straight ahead.
+      `check.py` tests 10°.
+    - The lens on the hood side of the middle and fender pods sits 12 mm behind the post
+      in front of it, so at wide angles toward the hood it loses some light: about 18% at
+      20° and 27% at 30°.
+    - Setting `pod_recess` to 0 brings that down to 0% at 20° and 9% at 30°, but the lenses
+      then sit almost at the front edge.
   - **Lower lip:** bows 6 mm forward in the middle to follow the nose (`front_bow`). It
     isn't built off the body surface: that needs a scan of the car's nose (see below).
   - **Settings:** `post_*`, `pod_recess`, `mouth_*`, `front_bow`, `shelf_t` and
@@ -126,8 +139,10 @@ and check the lip and wings don't touch anything as it goes down into the pocket
 
 - **The top slides into the headlight cover like the stock bezel,** with the same flat top
   blade and forked tab onto the cover's clip. This replaces the foam strip.
-- **The front is an open frame like KnightDriveTV's,** with a rounded mouth, the pods set
-  14 mm deeper, and trumpet-flared posts between them instead of a tunnel per pod.
+- **The front is an open frame like KnightDriveTV's.** It has a lofted mouth whose ends
+  wrap round, the pods set 14 mm deeper, and smooth trumpet-flared posts between them,
+  instead of a tunnel per pod. The band below the opening is about half as tall as
+  before.
 - **To follow the body exactly, the face needs a scan of the nose.** A LiDAR iPhone with
   Polycam, exported as STL or OBJ, is enough. Profiles from a contour gauge at 3–4 places
   across the headlight pocket also work.
@@ -171,7 +186,7 @@ and check the lip and wings don't touch anything as it goes down into the pocket
 
 ## Checks
 
-`python3 check.py` runs 37 checks. They all pass:
+`python3 check.py` runs 38 checks. They all pass:
 
 - The hole spacing matches A, H, B and D.
 - Every slot is open, with solid material past its ends.
@@ -179,6 +194,7 @@ and check the lip and wings don't touch anything as it goes down into the pocket
 - The pods clear the carrier across their whole slot travel, and there's always at least
   7 mm behind them for the wiring.
 - The pods clear the bezel, which clears the carrier.
+- Every lens has a clear view 10° either side of straight ahead.
 - The bezel fits the opening.
 - The carrier stays clear of the arm's pivot bolt and the pad's square adjuster, and the
   middle of the back is open.

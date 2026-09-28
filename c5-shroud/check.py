@@ -6,10 +6,13 @@ printable part is one clean solid.
 """
 
 import glob
+import math
 import os
 
 import manifold3d as m3d
+import numpy as np
 import trimesh
+from matplotlib.path import Path
 
 import generate as g
 
@@ -107,6 +110,29 @@ check("pods can also sit up to 10 mm further back with the bezel in place",
 nut_x = max(abs(x) + (P.arm_slot_len / 2 if ax == "x" else 0) + P.nut_r for (x, z, ax) in pts.values())
 gap = (shroud ^ g.box(-nut_x, nut_x, -300, 300, -300, 300)).bounding_box()[1] - (y_back + t + 8)
 check(f"bezel sits {gap:.1f} mm in front of the nuts (the wings pass outside them)", gap > 2)
+
+# 6c. every lens sees out straight ahead: no ray from anywhere on a lens, within 10 degrees
+#     either side of straight ahead (seen from above, at lens height), hits the bezel
+_polys = [Path(np.asarray(q)) for q in shroud.slice(g.pod_zc(P)).to_polygons()]
+
+
+def _hits(pts_):
+    c = np.zeros(len(pts_), int)
+    for pa in _polys:
+        c += pa.contains_points(pts_)
+    return (c % 2 == 1).any()
+
+
+blocked = 0
+for (px, py, _) in g.pod_poses(P):
+    for lx in (-18.5, 18.5):
+        for x0 in px + lx + np.linspace(-15, 15, 7):
+            for a_ in range(-10, 11, 2):
+                t_ = math.radians(a_)
+                s_ = np.arange(0.8, 160, 0.5)
+                blocked += _hits(np.stack([x0 + s_ * math.sin(t_), py + 0.3 + s_ * math.cos(t_)], 1))
+check("every lens has a clear view 10 degrees either side of straight ahead", blocked == 0,
+      f"{blocked} blocked rays")
 
 # 7. shroud fits the 11 in opening
 sb = shroud.bounding_box()
