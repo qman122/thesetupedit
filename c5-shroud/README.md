@@ -12,6 +12,7 @@ which the KnightDriveTV TripLED bezel also copies. The geometry is an original d
 Assembly diagrams: `diagrams/exploded.png`, `diagrams/front.png`, `diagrams/rear.png`, `diagrams/side.png`.
 Step size options (6, 9, 12 and 15 mm) side by side: `diagrams/step_options.png`.
 What to measure on the stock bezel and headlight: `diagrams/measure_stock_bezel.png`.
+How the pods sit on the bracket (carrier), with the bezel hidden: `diagrams/pods_on_bracket.png`.
 
 ## Measurements used
 
