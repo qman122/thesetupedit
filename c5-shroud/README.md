@@ -103,7 +103,7 @@ reference photo. It's modelled in one piece and split in two for printing (see b
     10° either side of straight ahead.
 - **Below the windows:** just a rounded 7 mm lip (`lip_r`) rolling back into a shallow
   22 mm floor. No apron.
-- **Top:** a flat 3 mm blade, 30 mm deep.
+- **Top:** a flat 3 mm blade, 38 mm (1.5 in) deep, matching the stock bezel as measured (S4).
   - A raised bead runs along its front edge (`bead_r`). The door's lip closes down behind
     it.
   - The blade follows the lip's height (up to about 9 mm higher at the hood end).
@@ -118,7 +118,7 @@ reference photo. It's modelled in one piece and split in two for printing (see b
   clip, and the ears screwed through the door's flanges, like the stock bezel.
 - **Printing:**
   - It's split through the middle of the hood-side post into a hood piece (about
-    129 × 232 mm) and a fender piece (about 213 × 172 mm). Both fit the A1's 256 mm bed.
+    123 × 226 mm) and a fender piece (about 218 × 197 mm). Both fit the A1's 256 mm bed.
   - Two 3 mm dowels, 12 mm long, cross the cut: one where the post meets the floor, one
     where it meets the blade. Glue the joint as well.
   - Each piece prints upside down on its blade, tipped to lie as flat as it goes. The bead

@@ -123,7 +123,7 @@ class Params:
     mask_t: float = 1.5           # black mask just in front of each pod, with one window the size of the pod face
     shelf_t: float = 3.0
     rail_t: float = 3.0           # top blade thickness; its front edge is rounded
-    blade_depth: float = 30.0     # flat top blade, from the front edge back (slides under the cover)
+    blade_depth: float = 38.1     # flat top blade, from the front edge back to the tongue (owner measured S4 = 1.5 in on the stock bezel)
     # the clip under the cover, measured from the owner's model of the covers (Covers.stl, see
     # cover_scan.py): a U-shaped rib hanging about 9 mm under the skin behind the front edge,
     # a cross bar with two short legs running back from its ends
@@ -1020,6 +1020,19 @@ def door_clearance(p):
     xs, ys = np.asarray(d["x"]), np.asarray(d["y"])
     Z = np.array([[np.nan if q is None else q for q in row] for row in d["z"]], float)
     Z = np.where(np.isnan(Z), 400.0, Z - p.door_clear)
+    # single-cell spikes (a stray down-facing sliver of the scan, 3+ mm under both neighbours
+    # along x or along y) would notch the walls and pinch the mesh: fill them from the neighbours
+    Zs = Z.copy()
+    for ax in (0, 1):
+        lo, hi = np.roll(Z, 1, ax), np.roll(Z, -1, ax)
+        spike = (Z < lo - 3) & (Z < hi - 3) & (lo < 300) & (hi < 300)
+        edge = np.zeros_like(spike)
+        idx = [slice(None)] * 2
+        for k in (0, -1):
+            idx[ax] = k
+            edge[tuple(idx)] = True
+        Zs = np.where(spike & ~edge, np.minimum(lo, hi), Zs)
+    Z = Zs
     blk = M.cube([xs[-1] - xs[0], ys[-1] - ys[0], 1]).translate([xs[0], ys[0], 0]).refine_to_length(1.0)
 
     def f(v):                                            # bottom follows the door, interpolated smoothly
@@ -1040,7 +1053,10 @@ def shroud(p):
     """The bezel as one piece (passenger side as modelled)."""
     body = shell_parts(p)
     cut = door_clearance(p)
-    return body if cut is None else body - cut
+    man = body if cut is None else body - cut
+    # the door cut can leave a crumb of blade corner (under 1 mm3) floating clear of the shell: drop it
+    keep = [pc for pc in man.decompose() if pc.volume() > 5]
+    return keep[0] if len(keep) == 1 else M.batch_boolean(keep, m3d.OpType.Add)
 
 
 def split_plane_u(p):
@@ -1180,10 +1196,18 @@ def print_orient_carrier(man):
 
 
 def save(man, path):
-    tm = to_trimesh(man)
-    b = tm.bounds
-    tm.apply_translation([-(b[0][0] + b[1][0]) / 2, -(b[0][1] + b[1][1]) / 2, -b[0][2]])
-    tm.export(path)
+    import trimesh
+    base = to_trimesh(man)
+    b = base.bounds
+    # centre it on the bed.  Two faces a few hundredths of a mm apart can round onto the same
+    # float32 point once shifted, which pinches the STL when a slicer re-welds it: if the file
+    # does not load back watertight, move the centring a few microns and write it again.
+    for k in range(40):
+        tm = base.copy()
+        tm.apply_translation([-(b[0][0] + b[1][0]) / 2 + 0.0037 * k, -(b[0][1] + b[1][1]) / 2 + 0.0023 * k, -b[0][2]])
+        tm.export(path)
+        if not base.is_watertight or trimesh.load(path).is_watertight:
+            break
     size = tm.bounds[1] - tm.bounds[0]
     print(f"{os.path.basename(path):32s} {size[0]:6.1f} x {size[1]:6.1f} x {size[2]:6.1f} mm"
           f"  watertight={tm.is_watertight}")
