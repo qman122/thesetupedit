@@ -30,3 +30,4 @@ for side, f in [("passenger", lambda m: m), ("driver", g.mirror_x)]:
     export(f(c), os.path.join(here, f"carrier_{side}.json"))
     export(f(s), os.path.join(here, f"shroud_{side}.json"))
 export(p, os.path.join(here, "pods.json"))
+export(g.pod_lenses(P), os.path.join(here, "lenses.json"))

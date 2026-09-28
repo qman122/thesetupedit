@@ -190,7 +190,7 @@
     <div class="spec"><b>+22 / −10 mm</b><span>Pod slide in the floor slots to set lens depth</span></div>
   </div>
 
-  <p class="note">The car body here is a simplified shape built for this mockup, not a scan, so its proportions are approximate. The carrier, shroud and pods are the real v2 design at true size, placed where they bolt on. Door angles are set by eye: about 13° at the sleepy stop and 48° full up.</p>
+  <p class="note">The car body here is a simplified shape built for this mockup, not a scan, so its proportions are approximate. The carrier, shroud and pods are the real v2 design at true size, placed where they bolt on. Door angles are set by eye: about 13° at the sleepy stop and 48° full up. The outer pods turn out 8° to follow the curve of the headlight.</p>
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/three@0.147.0/build/three.min.js"></script>
@@ -503,12 +503,8 @@
         asm.add(mesh);
       }));
     }
-    // twin lenses on each pod face
-    for (const px of [-84.5, 0, 84.5]) for (const dx of [-18.5, 18.5]) {
-      const lens = new THREE.Mesh(new THREE.CircleGeometry(16, 32), lensMat);
-      lens.position.set(px + dx, 30.6, 0.4);
-      asm.add(lens);
-    }
+    // twin lenses on each pod face (from the design files, so they follow each pod's angle)
+    want.push(loadPart("parts/lenses.json").then((g) => asm.add(new THREE.Mesh(g, lensMat))));
     const beam = new THREE.SpotLight(0xe6efff, 0, 9000, 0.42, 0.55, 1.2);
     beam.position.set(0, 23, 20);
     const tgt = new THREE.Object3D();

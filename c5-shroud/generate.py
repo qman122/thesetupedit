@@ -14,6 +14,7 @@ Seen from in front of the car, the driver-side fender arm is on the right and th
 aiming pad on the left.
 """
 
+import math
 import os
 from dataclasses import dataclass
 
@@ -38,6 +39,9 @@ class Params:
     pod_bracket_w: float = 43.0   # width of the bracket foot
     pod_bracket_d: float = 21.0   # front-to-back length of the bracket foot
     pod_gap: float = 8.0          # space between neighbouring pods
+    # The row follows the curve of the headlight opening: the middle pod faces straight ahead,
+    # the outer two sit a little further back and turn outward by this angle.
+    pod_arc_deg: float = 8.0
     pod_bolt_d: float = 8.6       # slot width for the bracket stud (about 8 mm / 5/16 in)
     pod_stud_d: float = 8.0       # stud diameter, from the drawing
     pod_bolt_y: float = -31.5     # slot centre, measured back from the pod face
@@ -46,6 +50,8 @@ class Params:
 
     # --- carrier ---
     floor_t: float = 5.0          # floor thickness
+    cup_wall: float = 3.0         # walls of the pocket each pod's bracket foot sits in
+    cup_h: float = 3.5            # pocket depth (stays under the bezel's window cells)
     wall_t: float = 4.0           # end cheeks and dividers
     divider_h: float = 14.0       # height of the locating ribs between pods
     lip_h: float = 8.0            # stiffening lip under the front and rear floor edges
@@ -82,13 +88,13 @@ class Params:
     # The shroud is a full bezel: its edge wraps back on all four sides so only the face and
     # the three lenses show when the door goes up. It stops short of the mounting nuts.
     shroud_return: float = 78.0   # how far the top, bottom and sides wrap back from the face
-    bezel_rear_screw_y: float = -56.0  # two more M4 screws up through the bezel bottom into the carrier
+    bezel_rear_screw_y: float = -50.0  # two more M4 screws up through the bezel bottom into the carrier
     bezel_travel: float = 16.0    # the bezel's screw slots let it slide this far forward with the pods (never back)
     cell_depth: float = 12.0      # each window gets its own sleeve reaching back around the pod bezel
-    cell_wall: float = 2.0
+    cell_wall: float = 1.4       # thin enough that each cell stays inside its own face panel
     foam_channel_w: float = 10.0  # recess on top for adhesive foam weatherstrip (seals to the door)
     foam_channel_d: float = 1.0
-    foam_channel_y: float = -14.0  # centre of the recess, behind the face
+    foam_channel_y: float = -22.0  # centre of the recess, behind the face
     # Window gap around the pod bezel, per side. The 4-notch test frame (1.8 / 1.8) fit but
     # needed to be a little wider and a little shorter, so: 1 mm wider, 1 mm shorter overall.
     window_clear_x: float = 2.3   # each side, left and right
@@ -152,10 +158,29 @@ def pod_top(p):
     return p.pod_lift + p.pod_body_h
 
 
-def pod_x(p):
-    pitch = p.pod_body_w + p.pod_gap
-    return [-pitch, 0.0, pitch]
+def pod_poses(p):
+    """(x, y, yaw in degrees) of each pod's face centre, left to right. Adjacent pod centres
+    are one pitch apart along an arc, so the outer pods sit back and turn outward."""
+    a = math.radians(p.pod_arc_deg)
+    if a == 0:
+        return [(-pitch(p), 0.0, 0.0), (0.0, 0.0, 0.0), (pitch(p), 0.0, 0.0)]
+    r = pitch(p) / (2 * math.sin(a / 2))
+    return [(r * math.sin(k * a), -r * (1 - math.cos(k * a)), -k * p.pod_arc_deg) for k in (-1, 0, 1)]
 
+
+def at_pose(man, pose):
+    x, y, yaw = pose
+    return man.rotate([0, 0, yaw]).translate([x, y, 0])
+
+
+def pose_pt(pose, lx, ly, dy=0.0):
+    x, y, yaw = pose
+    c, s_ = math.cos(math.radians(yaw)), math.sin(math.radians(yaw))
+    return [x + lx * c - ly * s_, y + lx * s_ + ly * c + dy]
+
+
+def pod_x(p):
+    return [x for (x, _, _) in pod_poses(p)]
 
 def row_w(p):
     return 3 * p.pod_body_w + 2 * p.pod_gap
@@ -226,24 +251,42 @@ def carrier(p):
     y_back = p.mount_wall_y
     parts = []
 
-    # floor
-    parts.append(box(-half, half, y_back, y_front, -p.floor_t, 0))
-    # stiffening lips under the front and rear edges
-    parts.append(box(-half, half, y_front - p.wall_t, y_front, -p.floor_t - p.lip_h, 0))
     arm_ear, pad_ear = ears(p)
-    lip_x0, lip_x1 = sorted([pad_ear[1] + 2, arm_ear[0] - 14])   # stays clear of the pivot bolt under arm hole 4
-    parts.append(box(lip_x0, lip_x1, y_back, y_back + p.wall_t, -p.floor_t - p.lip_h, 0))
+    # A beam under the pods with a pocket for each pod's bracket foot. The pockets follow the
+    # curve of the row, and each is long enough for its pod to slide straight fore and aft.
+    half_slot = (p.pod_slot_len - p.pod_bolt_d) / 2
+    fwd = (p.pod_bolt_y + half_slot) - p.pod_bolt_nominal_y
+    back = p.pod_bolt_nominal_y - (p.pod_bolt_y - half_slot)
+    cup_w = p.pod_bracket_w + 1.5
+    ly0 = p.pod_bolt_nominal_y - p.pod_bracket_d / 2 - 0.75
+    ly1 = p.pod_bolt_nominal_y + p.pod_bracket_d / 2 + 0.75
 
-    # locating ribs: two end cheeks plus two dividers
-    rib_front = -p.shroud_gap - p.cell_depth - 3      # ribs stop behind the bezel's window cells
-    for x in [-half + p.wall_t / 2, half - p.wall_t / 2]:
-        # stop short of the wall so the mounting nuts have room
-        parts.append(box(x - p.wall_t / 2, x + p.wall_t / 2,
-                         -p.pod_depth - 2, rib_front, 0, p.divider_h))
-    for i in range(2):
-        x = pod_x(p)[i] + (p.pod_body_w + p.pod_gap) / 2
-        parts.append(box(x - p.wall_t / 2, x + p.wall_t / 2,
-                         -p.pod_depth + 5, rib_front, 0, p.divider_h))
+    def swept(pose, grow):
+        pts = []
+        for dy in (-back, fwd):
+            for lx in (-cup_w / 2 - grow, cup_w / 2 + grow):
+                for ly in (ly0 - grow, ly1 + grow):
+                    pts.append(pose_pt(pose, lx, ly, dy))
+        return pts
+
+    poses = pod_poses(p)
+    all_outer = [q for pose in poses for q in swept(pose, p.cup_wall)]
+    beam = CS.hull_points(all_outer).offset(1.0, m3d.JoinType.Round)   # 1 mm past the cups so no edges coincide
+    parts.append(M.extrude(beam, p.floor_t).translate([0, 0, -p.floor_t]))
+    # stiffening rib round the beam's edge, kept away from the ends (the arm's pivot bolt)
+    ring = (beam.offset(-0.3, m3d.JoinType.Miter) - beam.offset(-p.wall_t - 0.3, m3d.JoinType.Miter)) ^ CS.square([170, 400], center=True)
+    parts.append(M.extrude(ring, p.lip_h + 1).translate([0, 0, -p.floor_t - p.lip_h]))   # 1 mm into the floor
+    for pose in poses:
+        cup = CS.hull_points(swept(pose, p.cup_wall)) - CS.hull_points(swept(pose, 0))
+        parts.append(M.extrude(cup, p.cup_h + 1).translate([0, 0, -1]))   # 1 mm into the floor
+    # knees: an angled plate from each end of the beam back to its mounting tab
+    for (x0, x1, _, _) in (arm_ear, pad_ear):
+        pose = poses[2] if x0 > 0 else poses[0]           # the end pod on this tab's side
+        tx0, tx1 = x0 - p.wall_t, x1 + p.wall_t
+        ty1 = y_back + p.mount_wall_t + 22
+        knee = CS.hull_points(swept(pose, p.cup_wall) +
+                              [[tx0, y_back], [tx1, y_back], [tx0, ty1], [tx1, ty1]]).offset(0.6, m3d.JoinType.Round)
+        parts.append(M.extrude(knee, p.floor_t).translate([0, 0, -p.floor_t]))
 
     # mounting tabs behind the pods, one at the arm and one at the pad; the middle stays open
     for (x0, x1, z0, z1) in (arm_ear, pad_ear):
@@ -273,9 +316,11 @@ def carrier(p):
     body = M.batch_boolean(parts, m3d.OpType.Add)
 
     cuts = []
-    for x in pod_x(p):
-        # bracket bolt slot under each pod
-        cuts.append(slot_z(p.pod_bolt_d, p.pod_slot_len, -p.floor_t - 1, 1, x, p.pod_bolt_y))
+    for pose in pod_poses(p):
+        # stud slot under each pod, straight fore and aft
+        sx_, sy_ = pose_pt(pose, 0, p.pod_bolt_nominal_y)
+        cuts.append(slot_z(p.pod_bolt_d, fwd + back + p.pod_bolt_d, -p.floor_t - 1, 1, sx_,
+                           sy_ + (fwd - back) / 2))
     for (_, hx, hz, axis) in mount_points(p):
         ln = p.arm_slot_len if axis == "x" else p.pad_slot_len
         cuts.append(slot_y(p.mount_hole_d, ln, axis, y_back - 1, y_back + p.mount_wall_t + 1, hx, hz))
@@ -286,10 +331,6 @@ def carrier(p):
 
     for x in bezel_rear_x(p):
         cuts.append(cyl_z(p.shroud_tab_screw_d - 0.4, bez_in - 1, -1.5, x, p.bezel_rear_screw_y))
-    # splice holes: countersunk from the top of the floor so the pods sit flat
-    for (hx, hy) in splice_floor_holes(p):
-        cuts.append(cyl_z(p.splice_screw_d, -p.floor_t - 1, 1, hx, hy))
-        cuts.append(M.cylinder(2.3, p.splice_screw_d / 2, 4.2).translate([hx, hy, -2.3 + 0.001]))
     return M.batch_boolean([body] + cuts, m3d.OpType.Subtract)
 
 
@@ -331,12 +372,12 @@ def bezel_rear_x(p):
 
 
 def shroud_tab_x(p):
-    return [-pitch(p) / 2, pitch(p) + 14]
+    return [-pitch(p) / 2, pitch(p) / 2]
 
 
 def splice_floor_holes(p):
     sx = split_x(p)
-    return [(sx + dx, y) for dx in (-16, 16) for y in (-20, p.mount_wall_y + 16)]
+    return [(sx + dx, y) for dx in (-16, 16) for y in (-20, -45)]
 
 
 def splice_wall_holes(p):
@@ -344,59 +385,95 @@ def splice_wall_holes(p):
     return [(sx + dx, z) for dx in (-16, 16) for z in (6, 44)]
 
 
+def face_line(p, pose, off):
+    """Point and direction of a pod's face plane (pod-local y = off), seen from above."""
+    q = pose_pt(pose, 0, off)
+    yaw = math.radians(pose[2])
+    return q, (math.cos(yaw), math.sin(yaw))
+
+
+def _meet(l1, l2):
+    (x1, y1), (dx1, dy1) = l1
+    (x2, y2), (dx2, dy2) = l2
+    den = dx1 * dy2 - dy1 * dx2
+    t = ((x2 - x1) * dy2 - (y2 - y1) * dx2) / den
+    return [x1 + t * dx1, y1 + t * dy1]
+
+
+def _at_x(l, x):
+    (x0, y0), (dx, dy) = l
+    return [x, y0 + (x - x0) / dx * dy]
+
+
+def face_outline(p, off, xe, y_rear):
+    """Plan-view outline: the faceted front (one facet per pod) plus straight sides and back."""
+    lines = [face_line(p, pose, off) for pose in pod_poses(p)]
+    front = [_at_x(lines[0], -xe), _meet(lines[0], lines[1]), _meet(lines[1], lines[2]), _at_x(lines[2], xe)]
+    pts = front + [[xe, y_rear], [-xe, y_rear]]
+    area = sum(a[0] * b[1] - b[0] * a[1] for a, b in zip(pts, pts[1:] + pts[:1]))
+    return CS([pts if area > 0 else pts[::-1]])        # counter-clockwise for the fill rule
+
+
+def face_y_at(p, off, x):
+    lines = [face_line(p, pose, off) for pose in pod_poses(p)]
+    i = 0 if x < _meet(lines[0], lines[1])[0] else (1 if x < _meet(lines[1], lines[2])[0] else 2)
+    return _at_x(lines[i], x)[1]
+
+
 def shroud(p):
+    """The bezel. Its face has one flat panel per pod, following the curve of the row, and its
+    top, bottom and sides wrap back so only the face and the lenses show."""
     ow = p.opening_w - 2 * p.opening_side_clear
     z_bot = -p.shroud_margin_bot - p.floor_t
     z_top = pod_top(p) + p.shroud_margin_top
     oh = z_top - z_bot
     zc = (z_top + z_bot) / 2
-    y_face = p.shroud_t + p.shroud_gap     # front of the shroud face
+    y_face = p.shroud_t + p.shroud_gap     # front of the face, in each pod's own frame
+    y_rear = y_face - p.shroud_t - p.shroud_return
 
-    # face and return lip as one shell: a solid slab with the back pocketed out
-    outer = rrect(ow, oh, p.shroud_r).translate([0, zc])
-    inner = rrect(ow - 2 * p.shroud_t, oh - 2 * p.shroud_t,
-                  max(p.shroud_r - p.shroud_t, 1)).translate([0, zc])
-    shell = plate_xz(outer, y_face, p.shroud_t + p.shroud_return)
-    shell = shell - plate_xz(inner, y_face - p.shroud_t, p.shroud_return + 1)
+    outer_front = rrect(ow, oh, p.shroud_r).translate([0, zc])
+    inner_front = rrect(ow - 2 * p.shroud_t, oh - 2 * p.shroud_t,
+                        max(p.shroud_r - p.shroud_t, 1)).translate([0, zc])
+    outer = (M.extrude(face_outline(p, y_face, ow / 2, y_rear), oh).translate([0, 0, z_bot])
+             ^ plate_xz(outer_front, 60, 300))
+    inner = (M.extrude(face_outline(p, y_face - p.shroud_t, ow / 2 - p.shroud_t, y_rear - 50),
+                       oh - 2 * p.shroud_t).translate([0, 0, z_bot + p.shroud_t])
+             ^ plate_xz(inner_front, 60, 300))
+    shell = outer - inner
 
-    # windows for the pod bezels, centred on each pod face
+    # window and a sleeve (cell) behind it for each pod, square to that pod
     win_w = p.pod_face_w + 2 * p.window_clear_x
     win_h = p.pod_face_h + 2 * p.window_clear_y
-    wins = [plate_xz(rrect(win_w, win_h, p.pod_face_r + min(p.window_clear_x, p.window_clear_y))
-                     .translate([x, pod_zc(p)]), y_face + 1, p.shroud_t + 2)
-            for x in pod_x(p)]
+    wr = p.pod_face_r + min(p.window_clear_x, p.window_clear_y)
+    cw_, ch_, cr = win_w + 0.2, win_h + 0.2, 2.5
+    wins, cells = [], []
+    for pose in pod_poses(p):
+        wins.append(at_pose(plate_xz(rrect(win_w, win_h, wr).translate([0, pod_zc(p)]),
+                                     y_face + 1, p.shroud_t + 2), pose))
+        ring = (rrect(cw_ + 2 * p.cell_wall, ch_ + 2 * p.cell_wall, cr + p.cell_wall)
+                - rrect(cw_, ch_, cr)).translate([0, pod_zc(p)])
+        cells.append(at_pose(plate_xz(ring, y_face - p.shroud_t + 0.5, p.cell_depth - p.shroud_t + 0.5), pose))
 
-    # tabs that reach back under the carrier floor for two M4 screws
+    # front tabs reaching back under the carrier floor for two M4 screws (forward-only slots)
     tabs = []
-    tab_y0 = -p.floor_front_setback - 20
     for x in shroud_tab_x(p):
-        ys = -p.floor_front_setback - 12                    # screw position with the bezel all the way back
-        t = box(x - 9, x + 9, ys - p.bezel_travel - 7, y_face - p.shroud_t + 1,
+        ys = -p.floor_front_setback - 12
+        yb = face_y_at(p, y_face - p.shroud_t, x)
+        t = box(x - 9, x + 9, ys - p.bezel_travel - 7, yb + 1,
                 -p.floor_t - p.lip_h - 3, -p.floor_t - p.lip_h)
-        # forward-only slot: as the bezel slides forward, the screw moves back along the slot
         t = t - slot_z(p.shroud_tab_screw_d + 0.6, p.bezel_travel + p.shroud_tab_screw_d + 0.6,
                        -40, 0, x, ys - p.bezel_travel / 2)
         tabs.append(t)
-    # a sleeve behind each window so every lens sits in its own cell
-    cells = []
-    cw_, ch_, cr = win_w + 0.6, win_h + 0.6, 2.5       # inside: a hair bigger than the window, squarer corners
-    for x in pod_x(p):
-        ring = (rrect(cw_ + 2 * p.cell_wall, ch_ + 2 * p.cell_wall, cr + p.cell_wall)
-                - rrect(cw_, ch_, cr)).translate([x, pod_zc(p)])
-        cells.append(plate_xz(ring, y_face - p.shroud_t + 0.5, p.cell_depth - p.shroud_t + 0.5))
-    # the tabs run 1 mm into the back of the face, which ties them on
     body = M.batch_boolean([shell] + tabs + cells, m3d.OpType.Add)
     cuts = list(wins)
     # shallow recess along the top for a strip of foam weatherstrip
-    cuts.append(box(-ow / 2 + 20, ow / 2 - 20,
+    cuts.append(box(-ow / 2 + 25, ow / 2 - 25,
                     p.foam_channel_y - p.foam_channel_w / 2, p.foam_channel_y + p.foam_channel_w / 2,
                     z_top - p.foam_channel_d, z_top + 1))
-    # rear screw holes in the bottom wall
     for x in bezel_rear_x(p):
         cuts.append(slot_z(p.shroud_tab_screw_d + 0.6, p.bezel_travel + p.shroud_tab_screw_d + 0.6,
                            z_bot - 1, z_bot + p.shroud_t + 1, x, p.bezel_rear_screw_y - p.bezel_travel / 2))
     return M.batch_boolean([body] + cuts, m3d.OpType.Subtract)
-
 
 def fit_test(p):
     """Quick print: separate window frames with different gaps around the pod bezel.
@@ -445,21 +522,26 @@ def spacers(p):
 
 
 def pod_dummy(p, dy=0.0):
-    """Stand-in pod from the maker's drawing: body, bezel, bracket foot and stud.
-    dy slides the pods fore-aft (for the clearance checks)."""
-    pods = []
-    for x in pod_x(p):
-        face = plate_xz(rrect(p.pod_face_w, p.pod_face_h, p.pod_face_r)
-                        .translate([x, pod_zc(p)]), 0, 8)
-        body = box(x - p.pod_body_w / 2, x + p.pod_body_w / 2, -p.pod_depth, -8,
-                   p.pod_lift, pod_top(p))
-        ys = p.pod_bolt_nominal_y
-        foot = box(x - p.pod_bracket_w / 2, x + p.pod_bracket_w / 2,
-                   ys - p.pod_bracket_d / 2, ys + p.pod_bracket_d / 2, 0.01, p.pod_lift + 1)
-        stud = cyl_z(p.pod_stud_d, -p.floor_t - 12, 0.02, x, ys)
-        pods += [face, body, foot, stud]
-    return M.batch_boolean(pods, m3d.OpType.Add).translate([0, dy, 0])
+    """Stand-in pods from the maker's drawing (body, bezel, bracket foot, stud), placed on the
+    curve. dy slides them straight fore-aft (for the clearance checks)."""
+    one = [plate_xz(rrect(p.pod_face_w, p.pod_face_h, p.pod_face_r).translate([0, pod_zc(p)]), 0, 8),
+           box(-p.pod_body_w / 2, p.pod_body_w / 2, -p.pod_depth, -8, p.pod_lift, pod_top(p)),
+           box(-p.pod_bracket_w / 2, p.pod_bracket_w / 2,
+               p.pod_bolt_nominal_y - p.pod_bracket_d / 2, p.pod_bolt_nominal_y + p.pod_bracket_d / 2,
+               0.01, p.pod_lift + 1),
+           cyl_z(p.pod_stud_d, -p.floor_t - 12, 0.02, 0, p.pod_bolt_nominal_y)]
+    pod = M.batch_boolean(one, m3d.OpType.Add)
+    return M.batch_boolean([at_pose(pod, pose) for pose in pod_poses(p)], m3d.OpType.Add).translate([0, dy, 0])
 
+
+def pod_lenses(p):
+    """Two lens discs per pod, for the mockup and diagrams."""
+    discs = []
+    for pose in pod_poses(p):
+        for dx in (-18.5, 18.5):
+            d = M.cylinder(0.6, 16).rotate([-90, 0, 0]).translate([dx, 0.2, pod_zc(p)])
+            discs.append(at_pose(d, pose))
+    return M.batch_boolean(discs, m3d.OpType.Add)
 
 # ---------- output ----------
 
@@ -527,8 +609,7 @@ def preview(p, out):
 if __name__ == "__main__":
     here = os.path.dirname(os.path.abspath(__file__))
     out = os.path.join(here, "stl")
-    sd = os.path.join(out, "split")
-    os.makedirs(sd, exist_ok=True)
+    os.makedirs(out, exist_ok=True)
     os.makedirs(os.path.join(here, "preview"), exist_ok=True)
     c, s = carrier(P), shroud(P)
     # modelled part is the passenger side; the driver side is its mirror image
@@ -541,15 +622,4 @@ if __name__ == "__main__":
     save(mirror_x(fit_test_mount(P)), os.path.join(out, "fit_test_mount_driver.stl"))
     save(spacers(P), os.path.join(out, "spacer_washers.stl"))
 
-    # split versions for small beds
-    for side, cc, ss, sgn in sides:
-        a, b = cc.split_by_plane([sgn, 0, 0], split_x(P))
-        save(print_orient_carrier(b), os.path.join(sd, f"carrier_{side}_A.stl"))
-        save(print_orient_carrier(a), os.path.join(sd, f"carrier_{side}_B.stl"))
-        a, b = ss.split_by_plane([sgn, 0, 0], split_x(P))
-        save(print_orient_shroud(b), os.path.join(sd, f"bezel_{side}_A.stl"))
-        save(print_orient_shroud(a), os.path.join(sd, f"bezel_{side}_B.stl"))
-    fp, _ = splice_plates(P)
-    save(fp, os.path.join(sd, "splice_floor_x2.stl"))
-    save(shroud_splice(P), os.path.join(sd, "bezel_splice_x2.stl"))
     preview(P, os.path.join(here, "preview", "assembly.png"))

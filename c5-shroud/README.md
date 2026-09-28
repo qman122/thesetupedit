@@ -33,6 +33,19 @@ is a short slot, sized snug (6.3 mm) on an M6 bolt so the bolt stays put while y
 the pod height relative to the holes (arm hole 4 is 14 mm above the carrier floor). The
 long pod slots and the shroud's slotted tabs take up the fore-aft part of that.
 
+## The curve
+
+The three pods follow the curve of the headlight opening instead of sitting in a straight
+line. The middle pod faces straight ahead, and the two outer pods sit about 6 mm further
+back and turn outward by 8° (`pod_arc_deg` in `generate.py`; 0 makes the row straight).
+
+- **Carrier:** a beam under the pods with a pocket for each pod's bracket foot. Each pocket
+  is turned to match its pod, so the pods sit square on the curve. Each pod still slides
+  straight fore and aft in its slot (16 mm forward, 10 mm back). Angled knees at each end
+  run back to the arm and pad tabs.
+- **Bezel:** the face has one flat panel per pod, angled with the curve. Each window and its
+  cell are square to their pod.
+
 ## The bezel
 
 The front piece is a full bezel, not just a frame. Its edge wraps back 78 mm on the top,
@@ -81,6 +94,8 @@ stops 3.5 mm short of the mounting nuts.
 - The driver part is a true mirror of the passenger part.
 - Every STL is one watertight solid lying flat on the bed.
 
+The small-bed split files were dropped: the curved bezel doesn't split cleanly, and bed size isn't a concern for this build.
+
 ## Print order
 
 1. `stl/fit_test_window.stl` (about 15 minutes).
@@ -91,8 +106,6 @@ stops 3.5 mm short of the mounting nuts.
    The bolts should go through snugly without forcing.
 3. `stl/carrier_driver.stl` and `stl/bezel_driver.stl`, then the passenger pair. The bezel prints face down.
 4. `stl/spacer_washers.stl`: only if a tab doesn't sit flat against the arm or the pad.
-
-`stl/split/` has the same parts cut in two, joined with a floor splice plate, for small beds.
 
 **Material:** ASA or ABS is best; PETG works. Don't use PLA, which softens in a hot engine
 bay. Use 4 walls, 40% gyroid infill, and 6 top and bottom layers.
