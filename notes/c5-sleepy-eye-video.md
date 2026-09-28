@@ -117,6 +117,39 @@ shipped since December 2022.
     that KnightDriveTV was working on its own bezels [0:36:56]. The space where the
     bezel was is the space a shroud fills.
 
+## How the stock bezel attaches (research)
+
+The stock C5 bezel is GM 10435411 (left) and 10435412 (right). It's a black plastic
+surround.
+- **Front:** a frame round the lamp that is taller at the hood end than at the fender end.
+- **Lip:** a rolled lip along the bottom.
+- **Top:** a flat top with a forked tab behind it.
+- **Ears:** an ear at each end. The hood-end ear is the tall one, with a round hole for
+  the aiming adjuster's access plug (GM 10435410).
+
+It's held three ways:
+- **Three Phillips screws.** One goes through each ear into the side of the headlight;
+  the third is at the back on the hood side.
+- **The forked tab on its top,** which "slides onto a clip on the underside of the
+  headlight cover". Source: Corvette Central tech blog, "C5 Headlight Repair with a T",
+  steps 3 and 4 (tech.corvettecentral.com, 2011). Its step 4 photo shows the fork
+  clearly.
+- **Its top edge sitting in under the front of the cover.** In the KnightDriveTV video
+  it comes off by "rotating downward and forward, while spreading the outer ears"
+  [0:13:02–0:13:20]. At [0:13:22] the clip is visible hanging under the middle of the
+  cover, just behind its front edge.
+
+KnightDriveTV's TripLED bezel keeps this outside shape, with the top blade, fork and ears,
+and adds a tunnel for each light. Their bezel is 3D-scanned from the car, and KDTV says
+the Gen 2 brackets "align with the bezels".
+
+A head-on frame at [0:13:00] gives these rough sizes, scaled to the 11 in opening:
+- The bezel front is about 148 mm tall at the hood end and 102 mm at the fender end.
+- The lens is about 211 × 88 mm.
+- The cover's front edge slopes down toward the fender relative to the lens.
+
+These are estimates until measured on a real bezel.
+
 ## Wiring (and what it means for clearance)
 
 - **Halo power:**

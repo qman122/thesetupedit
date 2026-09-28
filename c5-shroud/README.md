@@ -1,16 +1,17 @@
-# C5 sleepy-eye pod carrier and bezel (v5)
+# C5 sleepy-eye pod carrier and bezel (v6)
 
 For a 2000 C5 Corvette with the headlight door stops already fitted, holding three
 3.0 × 1.8 in dual-lens LED pods per side. Like the KnightDriveTV kit, each side is one
 carrier that bolts to the stock headlight mounting points (the fender-side arm and the
-hood-side aiming pad), plus a front bezel styled after the KnightDriveTV TripLED bezel. The geometry is an
-original design; see `../notes/c5-sleepy-eye-video.md` for the install video notes it follows.
+hood-side aiming pad), plus a front bezel with the outside shape of the stock C5 bezel,
+which the KnightDriveTV TripLED bezel also copies. The geometry is an original design; see `../notes/c5-sleepy-eye-video.md` for the install video notes it follows.
 
 ![assembly preview](preview/assembly.png)
 ![mounting tabs from behind](preview/rear.png)
 
 Assembly diagrams: `diagrams/exploded.png`, `diagrams/front.png`, `diagrams/rear.png`, `diagrams/side.png`.
 Step size options (6, 9, 12 and 15 mm) side by side: `diagrams/step_options.png`.
+What to measure on the stock bezel and headlight: `diagrams/measure_stock_bezel.png`.
 
 ## Measurements used
 
@@ -25,14 +26,19 @@ is a short slot, sized snug (6.3 mm) on an M6 bolt so the bolt stays put while y
 | D | Pad upper hole above arm hole 4 | 0.76 in (19.3 mm) | pad slots ±1.8 mm up and down |
 | C | Pad face vs arm face, front to back | unknown | printed spacer washers, 2 / 4 / 6 mm |
 | F | Front opening width | 11 in (279.4 mm) | bezel is 269.4 mm, 5 mm clear each side |
-| — | Shroud windows | pod face + 2.0 mm left/right and + 1.6 mm top/bottom, centred 0.3 in up for the bracket lift | matches the 1-notch test frame, which fit on the car |
+| — | Bezel windows | pod face + 2.0 mm left/right and + 1.6 mm top/bottom, centred 0.3 in up for the bracket lift | matches the 1-notch test frame, which fit on the car |
 | — | Pods | 3.0 × 1.8 in face, 1.8 in deep, 2.1 in tall with the bracket (maker's drawing) | pod slots: 16 mm forward, 10 mm back |
 | — | Pod stud | about 8 mm (5/16 in), in 8.6 mm floor slots | — |
 | — | Mounting bolts | M6 × 1.0, 10 mm flange nuts | — |
 
-**Still estimated:** how far back the mounting wall sits behind the pod faces (95 mm) and
-the pod height relative to the holes (arm hole 4 is 14 mm above the carrier floor). The
-long pod slots and the bezel's slotted tabs take up the fore-aft part of that.
+**Still estimated:**
+- How far back the mounting wall sits behind the pod faces (95 mm).
+- The pod height relative to the holes (arm hole 4 is 14 mm above the carrier floor).
+- The bezel's outside shape and where its top sits against the cover: see "The bezel"
+  below. `diagrams/measure_stock_bezel.png` shows the seven numbers that pin these down
+  (S1 to S5 on the stock bezel, V and D on the stock headlight with the bezel screwed back on).
+
+The long pod slots and the bezel's slotted tabs take up the fore-aft part of that.
 
 ## The curve
 
@@ -58,32 +64,60 @@ At 18 mm it hits the arm's nuts.
 
 ## The bezel
 
-Styled after the KnightDriveTV TripLED bezel:
+The bezel copies the outside of the stock C5 bezel (GM 10435411 left, 10435412 right).
+The KnightDriveTV TripLED bezel copies it too, then adds a tunnel for each light. The
+stock bezel is held three ways, and so is this one:
 
-- **Swept front:** one continuous front, angled back along the pods' step, so it follows the
-  curve of the opening. At the hood end it sits about 15 mm ahead of the pod face.
-- **Tunnels:** each pod sits at the back of its own tunnel. The tunnels are shallow on their
-  hood side (3.5 mm) and deeper on their fender side (14 mm), because the pods step back
-  behind the swept front. The thin posts between the tunnels hide the gaps between the pods.
-  A 12 mm sleeve behind each tunnel wraps the pod's own bezel.
-- **Front openings:** each opening shows the whole pod face with 1 mm to spare each side,
-  and opens 4 mm lower than the pod window so the tunnel floor slopes down to the lip.
-- **Lower lip:** below the tunnels the front slopes down and forward to a rolled lip that
-  sticks out 10 mm (`lip_ext`) and curves back in at each end.
-- **Top rail:** a 4 mm rail with a rounded front edge reaches 30 mm back over the pods. Its
-  10 mm wide, 1 mm deep recess takes a strip of adhesive foam weatherstrip. Use foam thick
-  enough to touch the underside of the door; the gap there wasn't measured, so the foam
-  takes it up.
-- **Side wings:** a thin wing at each end closes the side and tapers back to a screw slot.
-- **Mounting:** four M4 self-tapping screws, all in 16 mm slots, so the bezel can slide
-  forward (never back) to follow the pods if you move them forward.
-  - Two M4 × 16 go up through tabs under the front into bosses under the carrier floor,
-    beside the two outer pods' studs.
-  - Two M4 × 12 go in sideways, one through each wing, into a boss on the carrier just
-    outboard of the pods.
-- **Fit on the car:** it's 269 mm wide in the 279 mm opening. The hood end of the lip sits
-  further forward than the old flat bezel did. Cycle the door slowly by hand and check the
-  lip and wings don't touch anything. If the lip hits, lower `lip_ext`.
+- **Top blade into the headlight cover.** The stock bezel has a flat top that slides in
+  under the front edge of the headlight cover. A forked tab on it slides onto a clip on the
+  underside of the cover. Corvette Central's how-to describes it: "the tab on the top of
+  the bezel that slides onto a clip on the underside of the headlight cover". The
+  KnightDriveTV install video shows it too: at 13:02, "Remove bezel by rotating downward and
+  forward, while spreading the outer ears". This bezel has the same 30 mm flat top blade
+  with a forked tab behind its middle (`blade_depth`, `fork_*` in `generate.py`).
+- **Ears (wings) at both ends.** The stock ears screw to the stock headlight. Here each
+  wing takes one M4 × 12 screw into a boss on the carrier, in a slot so the bezel can sit
+  further forward.
+- **Two tabs under the front.** These are this design's own, not stock. Each takes an
+  M4 × 16 screw up into a boss under the carrier floor.
+
+**Shape:**
+- **Front outline:** like the stock bezel, taller at the hood end than at the fender end:
+  about 148 mm and 102 mm (`bezel_h_hood`, `bezel_h_fender`). These heights are estimates,
+  measured from a head-on frame of the install video (13:00), scaled to the 11 in opening.
+  The stock bezel spans the opening when the lights are fully up. At the sleepy stop its
+  lower part tucks down behind the body, so there's no gap under the lights.
+- **Lower lip:** below the lights, the front slopes down and forward to a rolled lip. The
+  lip runs along the bottom, round the bottom corners and up both ends.
+- **Tunnels:** the front sweeps back along the pods' step. Each pod sits at the back of its
+  own tunnel, which is shallow on its hood side (3.5 mm) and deeper on its fender side
+  (14 mm). The thin posts between the tunnels hide the gaps between the pods, and a 12 mm
+  sleeve behind each tunnel wraps the pod's own bezel.
+
+**Before printing the full bezel,** print `stl/fit_test_blade_driver.stl`. It's just the
+top blade and fork, 3.7 mm thick. Slide it in under the front of the headlight cover the
+way the stock bezel went, and check three things:
+- the fork finds the clip,
+- the front edge lines up with the cover,
+- the ends sit inside the opening.
+
+Then send the numbers on `diagrams/measure_stock_bezel.png`, and the outline and position
+get set from them.
+
+**Fit on the car:** it's 269 mm wide in the 279 mm opening. Cycle the door slowly by hand
+and check the lip and wings don't touch anything as it goes down into the pocket.
+
+## What changed in v6
+
+- **The top slides into the headlight cover like the stock bezel,** with the same flat top
+  blade and forked tab onto the cover's clip. This replaces the foam strip.
+- **The outside follows the stock and KnightDriveTV shape.** It's taller at the hood end,
+  with a rolled lip along the bottom and up both ends, so it goes all the way down.
+- **New quick print, `fit_test_blade_*.stl`:** the top blade and fork only, to check the
+  slide-in before the big print.
+- **New sheet, `diagrams/measure_stock_bezel.png`:** seven numbers off the stock bezel and
+  headlight that replace the estimates.
+- The unused split-plate code is gone from `generate.py`.
 
 ## What changed in v5
 
@@ -115,7 +149,7 @@ Styled after the KnightDriveTV TripLED bezel:
 
 ## Checks
 
-`python3 check.py` runs 35 checks. They all pass:
+`python3 check.py` runs 37 checks. They all pass:
 
 - The hole spacing matches A, H, B and D.
 - Every slot is open, with solid material past its ends.
@@ -139,10 +173,13 @@ The small-bed split files were dropped: the stepped bezel doesn't split cleanly,
 2. `stl/fit_test_mount_driver.stl` (about 20 minutes, two small flat tabs). Bolt the taller
    tab to the arm (holes 1 and 4) and the shorter one to the aiming pad (both holes).
    The bolts should go through snugly without forcing. Already done: the spacing fit.
-3. `stl/carrier_driver.stl` and `stl/bezel_driver.stl`, then the passenger pair. The bezel
-   prints upside down, standing on its flat top rail. Turn supports on for the tunnel
-   roofs and the tabs under the front.
-4. `stl/spacer_washers.stl`: only if a tab doesn't sit flat against the arm or the pad.
+3. `stl/fit_test_blade_driver.stl` (about 40 minutes, one flat strip). Slide it in under
+   the front of the headlight cover like the stock bezel, and check the fork finds the clip.
+4. `stl/carrier_driver.stl` and `stl/bezel_driver.stl`, then the passenger pair. Wait for
+   the measurements on `diagrams/measure_stock_bezel.png` before printing the bezel. It
+   prints upside down, standing on its flat top blade. Turn supports on for the tunnel
+   roofs, the lip and the tabs under the front.
+5. `stl/spacer_washers.stl`: only if a tab doesn't sit flat against the arm or the pad.
 
 **Material:** ASA or ABS is best; PETG works. Don't use PLA, which softens in a hot engine
 bay. Use 4 walls, 40% gyroid infill, and 6 top and bottom layers.
@@ -154,7 +191,6 @@ bay. Use 4 walls, 40% gyroid infill, and 6 top and bottom layers.
   are 6.3 mm wide and an M6 nut is 10 mm across.
 - 3 × M6 bolts, washers and nylon lock nuts for the pods, through the floor slots
 - 2 × M4 × 16 and 2 × M4 × 12 self-tapping screws for the bezel
-- Adhesive foam weatherstrip, about 10 mm wide, for the top of the bezel
 
 ## Fitting
 
@@ -164,8 +200,10 @@ bay. Use 4 walls, 40% gyroid infill, and 6 top and bottom layers.
 2. If there's a gap at the arm or the pad, fill it with spacer washers.
 3. Bolt the pods on through the floor slots. Slide them forward or back so the lenses sit
    where you want them in the opening, then tighten.
-4. Screw the bezel on: two screws up through the tabs under the front and one through each
-   wing. Its slots let it sit further forward if you moved the pods forward.
+4. Slide the bezel's top blade in under the front of the headlight cover until the fork
+   is on the clip, like the stock bezel. Then screw it on: two screws up through the tabs
+   under the front and one through each wing. If the lenses don't sit at the back of the
+   tunnels, slide the pods forward in their slots to meet it.
 5. Cycle the lights slowly by hand with the motor knob and check nothing touches the door
    or the body, then tighten everything.
 6. Aim the lights with the stock adjusters.

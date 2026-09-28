@@ -83,30 +83,36 @@ class Params:
     opening_w: float = 279.4      # F: 11 in
     opening_side_clear: float = 5.0  # shroud clearance to the body at each side
 
-    # --- bezel (styled after the KnightDriveTV TripLED bezel) ---
-    # One continuous front that sweeps back with the pods' step, a window tunnel back to each
-    # pod, a rounded lower lip, a top rail with a seal channel, and a side wing at each end
-    # that screws to the carrier.
+    # --- bezel: the outside shape of the stock C5 bezel (GM 10435411/12), which the
+    # KnightDriveTV TripLED bezel copies, with a tunnel back to each pod ---
+    # Like the stock one, its flat top blade slides in under the front of the headlight cover and
+    # a forked tab on the blade slides onto the clip under the cover. A wing (ear) at each end
+    # screws to the carrier. It is taller at the hood end than at the fender end.
     shroud_t: float = 3.0         # thinnest wall (at the shallow side of each tunnel)
-    shroud_margin_top: float = 8.0
-    shroud_margin_bot: float = 25.0  # below the floor; owner says there's plenty of room
-    bezel_travel: float = 16.0    # the bezel's screw slots let it slide this far forward with the pods (never back)
+    shroud_margin_top: float = 8.0   # bezel top (the cover's underside) above the pod tops (ESTIMATE)
+    bezel_h_hood: float = 148.0   # front height at the hood end, top of the blade to the bottom of the lip (ESTIMATE, from video)
+    bezel_h_fender: float = 102.0  # front height at the fender end (ESTIMATE, from video)
+    block_bot: float = -20.0      # solid behind the front stops here; the lip's scoop carries on below
+    bezel_travel: float = 16.0    # the bezel's screw slots let it slide this far forward of the pods (never back)
     cell_depth: float = 12.0      # each window gets its own sleeve reaching back around the pod bezel
     cell_wall: float = 1.4
-    rail_t: float = 4.0           # top rail thickness; its front edge is rounded
-    top_depth: float = 30.0       # how far the top rail reaches back from the front
-    lip_ext: float = 10.0         # how far the rounded lower lip sticks out past the front
-    rim_r: float = 4.0            # radius of the rolled lip and the front corners
+    rail_t: float = 4.0           # top blade thickness; its front edge is rounded
+    blade_depth: float = 30.0     # flat top blade, from the front edge back (slides under the cover)
+    fork_len: float = 25.0        # forked tab behind the blade: slides onto the clip under the cover
+    fork_w: float = 26.0
+    fork_slot: float = 5.0
+    fork_t: float = 2.5
+    fork_x: float = 0.0           # fork centre, across the car from the middle of the bezel
+    lip_ext: float = 10.0         # how far the rolled lower lip sticks out past the front
+    rim_r: float = 4.0            # radius of the rolled lip
+    corner_r: float = 22.0        # bottom corners, seen from the front
     flare_bot: float = 4.0        # each tunnel opens this much lower at the front than at the pod
     front_clear: float = 1.0      # front opening: pod face + this much each side (the posts hide the gaps)
-    end_flare: float = 4.0        # outer tunnels open this much wider toward the ends
-    wing_t: float = 3.0           # side wings
+    end_flare: float = 2.0        # outer tunnels open this much wider toward the ends
+    wing_t: float = 3.0           # side wings (ears)
     wing_screw_y: float = -54.0   # M4 screw through each wing into a boss on the carrier
     wing_screw_z: float = 4.0
     wing_lobe_r: float = 7.5      # plastic round the wing slot
-    foam_channel_w: float = 10.0  # recess on the top rail for adhesive foam weatherstrip (seals to the door)
-    foam_channel_d: float = 1.0
-    foam_channel_back: float = 12.0  # centre of the recess, behind the front
     # Window gap around the pod bezel, per side, at the back of each tunnel (the 1-notch test frame fit)
     window_clear_x: float = 2.0   # each side, left and right (the 1-notch test frame fit)
     window_clear_y: float = 1.6   # top and bottom
@@ -115,11 +121,6 @@ class Params:
     shroud_tab_screw_d: float = 3.4  # M4 self-tapping into the carrier floor
     shroud_gap: float = 0.5       # air gap between pod faces and the back of the shroud face
     shroud_tab_slot: float = 16.0  # fore-aft slot in each shroud tab, follows the pod slots
-
-    # --- splitting for printers smaller than ~310 mm ---
-    # Cut between the middle and outer pods; the halves bolt together with splice plates.
-    splice_screw_d: float = 4.4   # M4 clearance
-    splice_t: float = 5.0         # splice plate thickness
 
 
 P = Params()
@@ -357,37 +358,8 @@ def carrier(p):
     return M.batch_boolean([body] + cuts, m3d.OpType.Subtract)
 
 
-def splice_plates(p):
-    """Floor plate (goes under the floor) and wall plate (goes behind the wall)."""
-    sx, t = split_x(p), p.splice_t
-    ys = [y for (_, y) in splice_floor_holes(p)]
-    floor = box(sx - 26, sx + 26, min(ys) - 9, max(ys) + 9, 0, t)
-    for (hx, hy) in splice_floor_holes(p):
-        floor = floor - cyl_z(p.splice_screw_d, -1, t + 1, hx, hy)
-    zs = [z for (_, z) in splice_wall_holes(p)]
-    wall = box(sx - 26, sx + 26, min(zs) - 9, max(zs) + 9, 0, t)
-    for (hx, hz) in splice_wall_holes(p):
-        wall = wall - cyl_z(p.splice_screw_d, -1, t + 1, hx, hz)
-    return floor.translate([-sx, 0, 0]), wall.translate([-sx, 0, 0])
-
-
-def shroud_splice(p):
-    """Backing strip glued behind the shroud face across the split line."""
-    sx = split_x(p)
-    bar = pitch(p) - (p.pod_face_w + 2 * p.window_clear_x)     # material between windows
-    z_bot = -p.shroud_margin_bot - p.floor_t + p.shroud_t + 0.5
-    win_bot = pod_zc(p) - (p.pod_face_h / 2 + p.window_clear_y)
-    strip = box(sx - bar / 2 + 0.6, sx + bar / 2 - 0.6, 0, 2.5, z_bot, win_bot + p.pod_face_h)
-    foot = box(sx - 22, sx + 22, 0, 2.5, z_bot, win_bot - 0.5)
-    return (strip + foot).rotate([-90, 0, 0]).translate([-sx, 0, 0])
-
-
 def pitch(p):
     return p.pod_body_w + p.pod_gap
-
-
-def split_x(p):
-    return pitch(p) / 2
 
 
 def wing_boss_x(p):
@@ -404,16 +376,6 @@ def shroud_tabs(p):
         x, y = pose_pt(pose, side * 18, -p.floor_front_setback - 12)
         out.append((x, y))
     return out
-
-
-def splice_floor_holes(p):
-    sx = split_x(p)
-    return [(sx + dx, y) for dx in (-16, 16) for y in (-20, -45)]
-
-
-def splice_wall_holes(p):
-    sx = split_x(p)
-    return [(sx + dx, z) for dx in (-16, 16) for z in (6, 44)]
 
 
 def front_line(p):
@@ -442,14 +404,20 @@ def cyl_x(d, x0, x1, y, z):
     return M.cylinder(x1 - x0, d / 2).rotate([0, 90, 0]).translate([x0, y, z])
 
 
-def shroud(p):
-    """The bezel, styled after the KnightDriveTV TripLED bezel. One continuous front sweeps
-    back with the pods' step. Behind it, a tunnel runs back to each pod (so the thin posts
-    between the windows get deeper toward the fender), a rounded lip runs along the bottom,
-    a rail with a seal channel runs along the top, and a wing at each end screws to the carrier."""
-    ow = p.opening_w - 2 * p.opening_side_clear
-    z_bot = -p.shroud_margin_bot - p.floor_t
+def bezel_z(p):
+    """(top, bottom at the hood end, bottom at the fender end) of the bezel front."""
     z_top = pod_top(p) + p.shroud_margin_top
+    return z_top, z_top - p.bezel_h_hood, z_top - p.bezel_h_fender
+
+
+def shroud(p):
+    """The bezel. Its outside follows the stock C5 bezel, which the KnightDriveTV TripLED bezel
+    copies: a flat top blade that slides in under the front of the headlight cover, with a forked
+    tab that slides onto the clip under the cover; a front that is taller at the hood end, with a
+    rolled lip running along the bottom and up both ends; and a wing (ear) at each end that screws
+    to the carrier. The front sweeps back along the pods' step, and a tunnel runs back to each pod."""
+    ow = p.opening_w - 2 * p.opening_side_clear
+    z_top, zb_hood, zb_fender = bezel_z(p)
     s, c0 = front_line(p)
     F = front_frame(p)
     kx = F[0][0]                                    # cos of the sweep angle
@@ -464,6 +432,10 @@ def shroud(p):
     def yf(x):
         return c0 + s * x
 
+    def zb(u):                                      # bottom of the lip; the hood end is -u
+        t = min(max((u + U) / (2 * U), 0.0), 1.0)
+        return zb_hood + t * (zb_fender - zb_hood)
+
     parts = []
     # solid behind the front, one column per pod, each stopping just in front of its pod's face.
     # A rearward column reaches 2 mm past the midpoint to wrap its neighbour's cell.
@@ -472,53 +444,66 @@ def shroud(p):
     cols = [(-ow / 2 - 0.5, mids[0]), (mids[0] - 2, mids[1]), (mids[1] - 2, ow / 2 + 0.5)]   # ends trimmed below
     plan = CS.batch_boolean([CS([[[xa, y + p.shroud_gap], [xb, y + p.shroud_gap], [xb, yf(xb)], [xa, yf(xa)]]])
                              for (xa, xb), (_, y, _) in zip(cols, poses)], m3d.OpType.Add)
-    parts.append(M.extrude(plan.simplify(0.01), z_top - z_bot).translate([0, 0, z_bot]))
-    # top rail reaching back over the pods, with a rounded nose along the front
+    parts.append(M.extrude(plan.simplify(0.01), z_top - p.block_bot).translate([0, 0, p.block_bot]))
+
+    # top blade: slides in under the front of the headlight cover; rounded front edge
     rt = p.rail_t / 2
-    parts.append(box(-U, U, -p.top_depth, -0.5, z_top - p.rail_t, z_top).transform(F))
-    # (round parts sit a hair off the front plane and the rail's top so their facets never
+    parts.append(box(-U, U, -p.blade_depth, -0.5, z_top - p.rail_t, z_top).transform(F))
+    # (round parts sit a hair off the front plane and the blade's top so their facets never
     # land exactly on a flat face, which would leave the STL with pinched edges)
     parts.append(M.hull_points(ball_pts(-U + rt + 0.2, 0.37, z_top - rt - 0.13, rt) +
                                ball_pts(U - rt - 0.2, 0.37, z_top - rt - 0.13, rt)).transform(F))
-    # rounded lower lip: a rolled edge out in front, sloping back up to the tunnel floors,
-    # curving back in to the front at each end
-    r, R = p.rim_r, p.lip_ext - p.rim_r
-    up = U - r - 0.2
-    path = [(-up + R - R * math.cos(math.radians(a)), R * math.sin(math.radians(a))) for a in range(0, 91, 10)]
-    path += [(up - R + R * math.cos(math.radians(a)), R * math.sin(math.radians(a))) for a in range(90, -1, -10)]
-    z_rim = z_bot + r
-    pts = []
-    for (u, n) in path:
-        pts += ball_pts(u, n + 0.37, z_rim, r) + [[u, -0.5, f_bot - 0.3], [u, -0.5, z_bot]]
-    parts.append(M.hull_points(pts).transform(F))           # the lip's plan shape is convex: one hull
-    # rounded upright edges at the two ends of the front
-    for u in (-up, up):
-        parts.append(M.hull_points(ball_pts(u * 0.999, 0.37, z_rim + 0.3, r - 0.3) +
-                                   ball_pts(u, 0.37, z_top - rt - 0.13, rt)).transform(F))
+    # forked tab behind the blade, flush with its top: slides onto the clip under the cover
+    uf = p.fork_x / kx
+    parts.append(box(uf - p.fork_w / 2, uf + p.fork_w / 2, -p.blade_depth - p.fork_len, -p.blade_depth + 1,
+                     z_top - p.fork_t, z_top).transform(F))
 
-    # side wings: thin plates back from each end of the front, tapering to a lobe round the screw slot
+    # rolled lip: along the bottom (sticking out lip_ext), round the bottom corners and up
+    # both ends; the front slopes down and forward from the tunnel floors to meet it
+    r, R, cr = p.rim_r, p.lip_ext - p.rim_r, p.corner_r
+    up = U - r - 0.2
+    rim = []                                        # (u, n, z) of the rim's centre line, below the tunnels
+    for side in (-1, 1):
+        ue = side * up
+        zc = zb(ue) + r + cr                        # centre of the bottom corner arc
+        arc = [(ue - side * cr + side * cr * math.sin(math.radians(a)),
+                0.37 + R * math.cos(math.radians(a)),
+                zc - cr * math.cos(math.radians(a))) for a in range(0, 91, 15)]
+        side_pts = [(ue, 0.37, z) for z in np.linspace(zc, f_bot - r - 1, 5)[1:]]
+        rim += (arc + side_pts) if side > 0 else (side_pts[::-1] + arc[::-1])
+    pts = []
+    for (u, n, z) in rim:
+        pts += ball_pts(u, n, z, r) + [[u, -2.5, z - r]]
+    pts += [[u, -0.4, f_bot - 0.3] for u in (-up, up)] + [[u, -2.5, zb(u)] for u in np.linspace(-up + cr, up - cr, 9)]
+    parts.append(M.hull_points(pts).transform(F))   # the lip seen from the front is convex: one hull
+    # rounded upright edges above the lip, beside the outer tunnels, up to the blade
+    for u in (-up, up):
+        parts.append(M.hull_points(ball_pts(u * 0.999, 0.37, f_bot - r - 3, r * 0.9) +
+                                   ball_pts(u * 0.999, 0.37, z_top - rt - 0.13, rt)).transform(F))
+
+    # side wings (ears): back from each end, tapering to a lobe round the screw slot
     wy, wz, lr = p.wing_screw_y, p.wing_screw_z, p.wing_lobe_r
     for side in (1, -1):
         xo, xi = side * (ow / 2 + 0.5), side * (ow / 2 - p.wing_t)      # outer face trimmed below
         yfr = min(yf(xo), yf(xi)) - 0.2
-        prof = CS.hull_points([[yfr, z_bot], [yfr, z_top], [yfr - p.top_depth, z_top]] +
+        zlow = zb(side * up) + r + cr               # where the bottom corner turns up
+        prof = CS.hull_points([[yfr, zlow], [yfr, z_top], [yfr - p.blade_depth, z_top]] +
                               [[yy + lr * math.cos(a / 8 * math.pi), wz + lr * math.sin(a / 8 * math.pi)]
                                for yy in (wy - p.bezel_travel, wy) for a in range(16)])
         x0 = min(xo, xi)
         parts.append(M.extrude(prof, p.wing_t + 0.5).transform([[0, 0, 1, x0], [1, 0, 0, 0], [0, 1, 0, 0]]))
 
     # a sleeve (cell) behind each tunnel, round the pod's own bezel, hiding the gaps between pods
-    cw_, ch_, cr = win_w + 0.2, win_h + 0.2, 2.5
+    cw_, ch_, cr_ = win_w + 0.2, win_h + 0.2, 2.5
     for pose in poses:
-        ring = (rrect(cw_ + 2 * p.cell_wall, ch_ + 2 * p.cell_wall, cr + p.cell_wall)
-                - rrect(cw_, ch_, cr)).translate([0, pod_zc(p)])
+        ring = (rrect(cw_ + 2 * p.cell_wall, ch_ + 2 * p.cell_wall, cr_ + p.cell_wall)
+                - rrect(cw_, ch_, cr_)).translate([0, pod_zc(p)])
         parts.append(at_pose(plate_xz(ring, p.shroud_gap + 0.5, p.cell_depth - p.shroud_t + 0.5), pose))
 
     # front tabs reaching back under the carrier floor for two M4 screws (forward-only slots)
     for (x, ys), pose in zip(shroud_tabs(p), (poses[0], poses[2])):
-        t = box(x - 9, x + 9, ys - p.bezel_travel - 7, pose[1] + p.shroud_gap + 1,
-                -p.floor_t - p.lip_h - 3, -p.floor_t - p.lip_h)
-        parts.append(t)
+        parts.append(box(x - 9, x + 9, ys - p.bezel_travel - 7, pose[1] + p.shroud_gap + 1,
+                         -p.floor_t - p.lip_h - 3, -p.floor_t - p.lip_h))
     body = M.batch_boolean(parts, m3d.OpType.Add)
 
     cuts = []
@@ -537,10 +522,11 @@ def shroud(p):
         back = at_pose(plate_xz(win, p.shroud_gap + 0.3, 0.2), pose)
         cuts.append(M.batch_hull([front, back]))
         cuts.append(at_pose(plate_xz(win, p.shroud_gap + 0.5, 3.0), pose))
-    # shallow recess along the top rail for a strip of foam weatherstrip
-    fb, fw = p.foam_channel_back, p.foam_channel_w
-    cuts.append(box(-U + 25, U - 25, -fb - fw / 2, -fb + fw / 2,
-                    z_top - p.foam_channel_d, z_top + 1).transform(F))
+    # the fork's slot, open at the back, with a rounded end
+    sl = CS.square([p.fork_slot, p.fork_len], center=True).offset(p.fork_slot / 2 * 0.999, m3d.JoinType.Round)
+    sl = sl ^ CS.square([p.fork_slot + 2, p.fork_len + p.fork_slot], center=True).translate([0, -p.fork_slot / 2])
+    cuts.append(M.extrude(sl.translate([uf, -p.blade_depth - p.fork_len / 2 - 0.01 - 4]), p.fork_t + 2)
+                .translate([0, 0, z_top - p.fork_t - 1]).transform(F))
     for (x, ys) in shroud_tabs(p):
         cuts.append(slot_z(p.shroud_tab_screw_d + 0.6, p.bezel_travel + p.shroud_tab_screw_d + 0.6,
                            -40, 0, x, ys - p.bezel_travel / 2))
@@ -567,6 +553,16 @@ def fit_test(p):
             cell = cell - CS.square([3, 4]).translate([-cw / 2 + 6 + k * 6, ch / 2 - 3])
         cells.append(cell.translate([0, n * (ch + 8)]))   # stacked 8 mm apart: separate pieces
     return M.extrude(CS.batch_boolean(cells, m3d.OpType.Add), 2.0)
+
+
+def fit_test_blade(p):
+    """Quick print: just the bezel's top blade and fork, 3.7 mm thick. Slide it in under the
+    front of the headlight cover to check the fork finds the clip and the front edge lines up."""
+    z_top = bezel_z(p)[0]
+    F = front_frame(p)
+    U = (p.opening_w / 2 - p.opening_side_clear) / F[0][0]
+    keep = box(-U - 5, U + 5, -p.blade_depth - p.fork_len - 2, 8, z_top - p.rail_t + 0.3, z_top + 1).transform(F)
+    return shroud(p) ^ keep
 
 
 def fit_test_mount(p):
@@ -696,6 +692,9 @@ if __name__ == "__main__":
         save(print_orient_carrier(cc), os.path.join(out, f"carrier_{side}.stl"))
         save(print_orient_shroud(ss), os.path.join(out, f"bezel_{side}.stl"))
     save(fit_test(P), os.path.join(out, "fit_test_window.stl"))
+    blade = fit_test_blade(P)
+    save(print_orient_shroud(blade), os.path.join(out, "fit_test_blade_passenger.stl"))
+    save(print_orient_shroud(mirror_x(blade)), os.path.join(out, "fit_test_blade_driver.stl"))
     save(fit_test_mount(P), os.path.join(out, "fit_test_mount_passenger.stl"))
     save(mirror_x(fit_test_mount(P)), os.path.join(out, "fit_test_mount_driver.stl"))
     save(spacers(P), os.path.join(out, "spacer_washers.stl"))
