@@ -24,7 +24,7 @@ is a short slot, sized snug (6.3 mm) on an M6 bolt so the bolt stays put while y
 | D | Pad upper hole above arm hole 4 | 0.76 in (19.3 mm) | pad slots ±1.8 mm up and down |
 | C | Pad face vs arm face, front to back | unknown | printed spacer washers, 2 / 4 / 6 mm |
 | F | Front opening width | 11 in (279.4 mm) | shroud is 269.4 mm, 5 mm clear each side |
-| — | Shroud windows | pod face + 1.0 mm each side, centred 0.3 in up for the bracket lift | the first fit test used the listing's 2.9 in width |
+| — | Shroud windows | pod face + 1.8 mm each side, centred 0.3 in up for the bracket lift | the 4-notch fit-test frame fit the pod |
 | — | Pods | 3.0 × 1.8 in face, 1.8 in deep, 2.1 in tall with the bracket (maker's drawing) | pod slots: 22 mm forward, 10 mm back |
 | — | Pod stud | about 8 mm (5/16 in), in 8.6 mm floor slots | — |
 | — | Mounting bolts | M6 × 1.0, 10 mm flange nuts | — |
@@ -64,8 +64,7 @@ long pod slots and the shroud's slotted tabs take up the fore-aft part of that.
 
 1. `stl/fit_test_window.stl` (about 20 minutes). It has four windows: 1, 2, 3 or 4 notches
    on the top edge means 0.6, 1.0, 1.4 or 1.8 mm of gap around the 3.0 × 1.8 in pod face.
-   Find the smallest one the pod drops through easily. The shroud uses the 2-notch size
-   (1.0 mm) unless you say otherwise.
+   The 4-notch frame (1.8 mm) fit on the car, so the shroud windows use 1.8 mm.
 2. `stl/fit_test_mount_driver.stl` (about 20 minutes, two small flat tabs). Bolt the taller
    tab to the arm (holes 1 and 4) and the shorter one to the aiming pad (both holes).
    The bolts should go through snugly without forcing.

@@ -80,7 +80,7 @@ class Params:
     shroud_margin_bot: float = 25.0  # below the floor; owner says there's plenty of room
     shroud_r: float = 14.0        # outer corner radius
     shroud_return: float = 12.0   # depth of the lip that wraps back from the face
-    window_clear: float = 1.0     # clearance around each 3.0 x 1.8 in pod bezel
+    window_clear: float = 1.8     # clearance around each pod bezel: the 4-notch frame fit on the car
     window_ladder: tuple = (0.6, 1.0, 1.4, 1.8)  # clearances on the window fit test, 1-4 notches
     shroud_tab_screw_d: float = 3.4  # M4 self-tapping into the carrier floor
     shroud_gap: float = 0.5       # air gap between pod faces and the back of the shroud face
