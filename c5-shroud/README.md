@@ -92,13 +92,19 @@ stock bezel is held three ways, and so is this one:
     28 mm lower corners sweeping up into the sides and 10 mm corners under the door.
     It's about 100 mm tall at the hood end and 78 mm at the fender end
     (`bezel_h_hood`, `bezel_h_fender`; estimates until the stock bezel is measured).
-  - **Curve:** the face bows 6 mm forward in the middle, and its lower edge sits 6 mm
-    forward of its top (`front_bow`, `lip_ext`). Following the body exactly needs profiles
-    of the nose; see "What changed in v6".
+  - **Curve:**
+    - The face bows 12 mm forward in the middle of its width.
+    - Seen from the side, it swells 7 mm forward halfway down and rolls 12 mm back at its
+      lower edge, like a chin.
+    - The lower edge curves 8 mm down in the middle instead of running straight.
+    - A 5 mm rolled edge runs right round the outside of the face.
+    - Settings: `front_bow`, `face_belly`, `face_tuck`, `bottom_sag` and `edge_r`.
+    - Following the body exactly needs profiles of the nose; see "What changed in v6".
   - **Slot:** about 5:1, lofted back to the pods through 13 sections that ease in. It is
     9 mm wider at the ends and 4 mm lower along the bottom at the front, so the ends wrap
     round. A 3 mm shell forms its walls. Its corners are 16 mm at the back and 25 mm at
-    the front edge, so the ends are nearly round, like the reference scan.
+    the front edge, so the ends are nearly round, like the reference scan. Its lower lip
+    dips 5 mm in the middle in a slight smile (`slot_smile`).
   - **Rim:** a 6 mm rolled rim runs down each side and along the bottom of the slot. Its
     ends tuck into the top blade.
   - **Shadow line:** a 1.5 mm groove runs under the blade along the top of the slot.

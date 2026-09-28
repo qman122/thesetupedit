@@ -110,7 +110,12 @@ class Params:
     mouth_r: float = 16.0         # corner radius of the slot at the back (25 mm at the front edge): near-round ends like the reference scan
     mouth_flare: float = 4.0      # the opening widens this much at the front edge along the bottom
     mouth_wrap: float = 9.0       # ...and this much at the ends, so the ends curve round instead of a flat side
-    front_bow: float = 6.0        # the face bows forward this much in the middle, following the nose
+    front_bow: float = 12.0       # the face bows forward this much in the middle, following the nose
+    face_belly: float = 7.0       # seen from the side, the face swells forward this much halfway down...
+    face_tuck: float = 12.0       # ...and rolls back this much at its lower edge, like a chin
+    bottom_sag: float = 8.0       # the lower edge curves down this much in the middle instead of a straight line
+    slot_smile: float = 5.0       # the slot's lower lip dips this much in the middle at the front edge
+    edge_r: float = 2.6           # rolled edge right round the outside of the face
     face_t: float = 3.0           # the face is a shell this thick, with the slot cut through it
     top_corner_r: float = 10.0    # outline corners at the top, under the door
     mouth_wall: float = 3.0       # the slot's walls, from the face back to the pods
@@ -124,7 +129,6 @@ class Params:
     fork_slot: float = 5.0
     fork_t: float = 2.5
     fork_x: float = 0.0           # fork centre, across the car from the middle of the bezel
-    lip_ext: float = 6.0          # the face's lower edge sits this far forward of its top edge
     rim_r: float = 3.0            # the rolled rim round the slot is a tube this radius (6 mm lip)
     corner_r: float = 28.0        # bottom corners of the outline, sweeping up into the sides
     end_wall_x: float = 123.0     # end walls of the frame start this far out (just past the outer pods)
@@ -520,30 +524,64 @@ def shroud(p):
         t = min(max((u + U) / (2 * U), 0.0), 1.0)
         return zb_hood + t * (zb_fender - zb_hood)
 
+    zlow = zmin - p.bottom_sag                      # lowest point of the face
+
+    def profile(z):                                 # side view: swell forward, then roll back at the bottom
+        t = np.clip((z_top - z) / (z_top - zlow), 0, 1)
+        return p.face_belly * np.sin(np.pi * t) - p.face_tuck * t ** 3
+
     def bulge(u, z):                                # how far the curved face sits in front of the flat front line
-        return p.front_bow * (1 - (u / U) ** 2) + p.lip_ext * (z_top - z) / (z_top - zmin)
+        return p.front_bow * (1 - min(abs(u) / U, 1) ** 2) + float(profile(z))
 
     def warp(man, edge=4.0):
         """Bend a part built against the flat front onto the curved face."""
         def f(v):
             out = v.copy()
-            out[:, 1] += p.front_bow * (1 - np.clip(v[:, 0] / U, -1, 1) ** 2) + \
-                p.lip_ext * (z_top - v[:, 2]) / (z_top - zmin)
+            out[:, 1] += p.front_bow * (1 - np.clip(v[:, 0] / U, -1, 1) ** 2) + profile(v[:, 2])
             return out
         return man.refine_to_length(edge).warp_batch(f)
 
+    def u_path(inset=0.0, z_end=None):
+        """The face's outline below the top corners: down one side, round the big lower corner,
+        along the curved bottom, round the other corner and up; inset moves it inward."""
+        cr = p.corner_r - inset
+        zt_ = (z_top - p.top_corner_r) if z_end is None else z_end
+        ul, ur = -U + inset, U - inset
+        zl_, zr_ = zb(-U) + inset, zb(U) + inset
+        pts = [(ul, z) for z in np.arange(zt_, zl_ + p.corner_r, -3.0)]
+        pts += [(ul + p.corner_r - cr * math.cos(a), zl_ + cr * 0 + p.corner_r - cr * math.sin(a))
+                for a in np.linspace(0, math.pi / 2, 12)]
+        span = U - p.corner_r
+        pts += [(u, zb(u) + inset - p.bottom_sag * (1 - (u / span) ** 2))
+                for u in np.arange(-span + 3, span - 1.5, 3.0)]
+        pts += [(ur - p.corner_r + cr * math.sin(a), zr_ + p.corner_r - cr * math.cos(a))
+                for a in np.linspace(0, math.pi / 2, 12)]
+        pts += [(ur, z) for z in np.arange(zr_ + p.corner_r + 3, zt_ + 0.01, 3.0)]
+        clean = [pts[0]]
+        for q in pts[1:]:
+            if math.hypot(q[0] - clean[-1][0], q[1] - clean[-1][1]) > 0.8:
+                clean.append(q)
+        return clean
+
     parts = []
     # --- the face: a shell with the door-shaped outline, bent to the nose ---
-    ctr = [(-U + p.top_corner_r, z_top - p.top_corner_r, p.top_corner_r),
-           (U - p.top_corner_r, z_top - p.top_corner_r, p.top_corner_r),
-           (-U + p.corner_r, zb(-U) + p.corner_r, p.corner_r),
-           (U - p.corner_r, zb(U) + p.corner_r, p.corner_r)]
-    outline = CS.hull_points([[cu + rr * math.cos(a / 24 * math.pi), cz + rr * math.sin(a / 24 * math.pi)]
-                              for (cu, cz, rr) in ctr for a in range(48)])
+    tops = [(-U + p.top_corner_r, z_top - p.top_corner_r), (U - p.top_corner_r, z_top - p.top_corner_r)]
+    outline = CS.hull_points([list(q) for q in u_path()] +
+                             [[cu + p.top_corner_r * math.cos(a / 24 * math.pi), cz + p.top_corner_r * math.sin(a / 24 * math.pi)]
+                              for (cu, cz) in tops for a in range(48)])
     face = plate_xz(outline, 0, p.face_t)            # n from -face_t to 0
     # the slot's walls: a shell lofted from the face back to the pods, easing in on a curve
     uo = (p.end_wall_x - 0.4) / kx
     ztop = f_top - 0.29                             # (clear of the blade nose's lowest facets)
+
+    def slot_sec(half, zlo, zt, rad, smile):
+        """Rounded slot outline whose lower edge dips by `smile` in the middle (convex)."""
+        pts = [[cu + rad * math.cos(a / 24 * math.pi), cz + rad * math.sin(a / 24 * math.pi)]
+               for (cu, cz) in ((-half + rad, zt - rad), (half - rad, zt - rad),
+                                (-half + rad, zlo + rad), (half - rad, zlo + rad)) for a in range(48)]
+        span = max(half - rad, 1.0)
+        pts += [[u, zlo - smile * (1 - (u / span) ** 2)] for u in np.linspace(-span, span, 25)]
+        return CS.hull_points(pts)
 
     def slot_secs(grow, n_front, n_back):
         out = []
@@ -554,7 +592,7 @@ def shroud(p):
             zlo = f_bot - p.mouth_flare * e - grow
             rad = p.mouth_r + p.mouth_wrap * e + grow
             zt = ztop - 0.03 * i + (grow and 0.6)     # the outer shell tucks up into the blade
-            out.append(plate_xz(rrect(2 * half, zt - zlo, rad).translate([0, (zt + zlo) / 2]),
+            out.append(plate_xz(slot_sec(half, zlo, zt, rad, p.slot_smile * e),
                                 n_front - t * (n_front - n_back), 0.2))
         return [M.batch_hull([a_, b_]) for a_, b_ in zip(out, out[1:])]
     walls = slot_secs(p.mouth_wall, -1.0, -dm)
@@ -573,7 +611,7 @@ def shroud(p):
         parts.append(M.extrude(sec, z_top - 0.5 - (f_bot - p.shelf_t - 0.37)).translate([0, 0, f_bot - p.shelf_t - 0.37]))
     # black mask just in front of each pod: a plate with holes for the two lenses only
     for (x, y, _) in poses:
-        plate = rrect(p.pod_face_w + p.pod_gap + 1.0, f_top - f_bot + 1.0, 1.0).translate([0, (f_top + f_bot) / 2])
+        plate = rrect(p.pod_face_w + p.pod_gap + 1.0, f_top - f_bot + 0.87, 1.0).translate([0, (f_top + f_bot) / 2 - 0.065])
         for lx in (-18.5, 18.5):
             plate = plate - CS.circle(p.mask_hole_r, 64).translate([lx, pod_zc(p)])
         parts.append(plate_xz(plate, y + p.shroud_gap + p.mask_t, p.mask_t).translate([x, 0, 0]))
@@ -603,7 +641,8 @@ def shroud(p):
         yb_, zbk = p.wing_back_y + wr_, p.wing_back_z + wr_
         corners = [[yb_ + wr_ * math.cos(a / 8 * math.pi), zc_ + wr_ * math.sin(a / 8 * math.pi)]
                    for zc_ in (z_top - wr_, zbk) for a in range(16)]
-        prof = CS.hull_points([[yfr + bulge(side * U, ze) - 1.0, ze], [yfr, z_top], [yfr - 20, z_top]] +
+        front_edge = [[yfr + bulge(side * U, z) - 1.0, z] for z in np.linspace(ze, z_top, 12)]
+        prof = CS.hull_points(front_edge + [[yfr - 20, z_top]] +
                               [q for q in corners if q[1] <= z_top])
         x0 = min(xo, xi)
         parts.append(M.extrude(prof, p.wing_t + 0.5).transform([[0, 0, 1, x0], [1, 0, 0, 0], [0, 1, 0, 0]]))
@@ -643,7 +682,8 @@ def shroud(p):
     zt_end = z_top - p.rail_t / 2
     path = [(-hw, z) for z in np.arange(zt_end, zl + rc, -2.0)]
     path += [(-hw + rc - rc * math.cos(a), zl + rc - rc * math.sin(a)) for a in np.linspace(0, math.pi / 2, 16)]
-    path += [(u, zl) for u in np.arange(-hw + rc + 2.0, hw - rc - 1.0, 2.0)]
+    span_ = hw - rc
+    path += [(u, zl - p.slot_smile * (1 - (u / span_) ** 2)) for u in np.arange(-hw + rc + 2.0, hw - rc - 1.0, 2.0)]
     path += [(hw - rc + rc * math.sin(a), zl + rc - rc * math.cos(a)) for a in np.linspace(0, math.pi / 2, 16)]
     path += [(hw, z) for z in np.arange(zl + rc + 2.0, zt_end + 0.01, 2.0)]
     clean = [path[0]]
@@ -651,6 +691,8 @@ def shroud(p):
         if math.hypot(q[0] - clean[-1][0], q[1] - clean[-1][1]) > 0.5:
             clean.append(q)
     rim = warp(tube(clean, rr, -rr * 0.35), 2.0)
+    # rolled edge right round the outside of the face, its ends buried in the blade
+    edge = warp(tube(u_path(inset=p.edge_r * 0.53, z_end=z_top - p.rail_t / 2), p.edge_r, -p.face_t / 2), 2.0)
 
     # posts: slightly elongated front to back, spreading into the floor like roots and only
     # just flaring into the blade, trimmed flat behind so they never reach the pods
@@ -671,7 +713,7 @@ def shroud(p):
         post = M.extrude(sec, h, n_divisions=int(h / 0.6)).warp_batch(flare).translate([x, y, f_bot - 0.5])
         post = post ^ box(x - 30, x + 30, y_min + p.mask_t, y + 40, f_bot - 1, f_top + 1)
         posts.append(post ^ box(-U, U, -300, -0.8, -300, 300).transform(F))   # stays behind the front edge
-    out = M.batch_boolean([out, rim.transform(F)] + posts, m3d.OpType.Add)
+    out = M.batch_boolean([out, rim.transform(F), edge.transform(F)] + posts, m3d.OpType.Add)
     return out ^ box(-ow / 2, ow / 2, -300, 300, -300, 300)
 
 
