@@ -15,7 +15,8 @@ What to measure on the stock bezel and headlight: `diagrams/measure_stock_bezel.
 How the pods sit on the bracket (carrier), with the bezel hidden: `diagrams/pods_on_bracket.png`.
 How the bezel attaches (tongue onto the door's clip, 4 screws): `diagrams/bezel_attach.png`.
 The bezel against the owner's model of the headlight doors: `diagrams/cover_fit.png`, and
-rendered with the door on: `diagrams/with_door.png`.
+rendered with the door on: `diagrams/with_door.png`. The ear screws at the stock location:
+`diagrams/ear_screws.png`.
 
 ## Measurements used
 
@@ -83,10 +84,20 @@ stock bezel is held three ways, and so is this one:
 - **Ears (wings) at both ends.** Like the stock and KnightDriveTV ears, they are full
   side walls. Each runs from the front back past the pods to 5 mm in front of the arm and
   the pad, and from the top blade down over the carrier, so the sides are covered too.
-  - The stock ears screw to the stock headlight; here each wing takes one M4 × 12 screw
-    into a boss on the carrier, in a slot so the bezel can sit further forward.
+  - **Ear screws at the stock location.** Each headlight door side flange has a vertical
+    slotted hole where the stock ear screws on (`diagrams/ear_screws.png`).
+    - Each wing has a round pad that comes out to 0.5 mm short of the inside of the door's
+      flange, faced parallel to it. The pad's hole lines up with the door's slot and runs
+      along the screw's line (`ear_slots`, `ear_pad_*`).
+    - One screw per side goes in from outside, through the door's slot, into the pad. Reuse
+      the stock screw: the hole is a 3.4 mm pilot for an M4 self-tapping screw, so drill it
+      out if the stock screw is bigger.
+    - The fender-side wing now runs about 9 mm further back, to carry its pad.
+  - Each wing also takes one M4 × 12 screw into a boss on the carrier, in a slot so the
+    bezel can sit further forward.
   - The hood-end wing has a 28 mm hole for reaching the aiming adjuster, like the stock
-    ear's. Its position is an estimate (`access_hole_yz`).
+    ear's. It moved down 20 mm, clear of the ear screw. Its position is an estimate
+    (`access_hole_yz`).
 - **Two tabs under the front.** These are this design's own, not stock. Each takes an
   M4 × 16 screw up into a boss under the carrier floor.
 
@@ -176,12 +187,24 @@ file's path.
 - **Printing:** the top is no longer flat, so the bezel is tipped to lay the blade as flat
   as it goes. The blade ends then sit up to about 4 mm off the bed; turn on supports (tree
   supports are fine; that face hides under the door).
+- **Ear screws where the stock ones go:** the slotted holes in the door's two side flanges.
+  A pad on each wing comes out to the flange, and one screw per side goes through the
+  door's slot into it, like the stock ear.
+  - The slots are 72 mm (hood side) and 88 mm (fender side) behind the bezel front, and
+    about 46 and 39 mm up.
+  - The door is now centred across the bezel on these two flanges: they bolt to the
+    headlight, which is centred on the opening. It moved 4.5 mm toward the hood from the
+    first placement. Their insides are then 139.3 mm either side of centre, right at the
+    edge of the 279.4 mm opening, so the pads sit just inside the door.
+  - The front of the door's fender-side flange comes down over the fender wing's top.
+    The wing is trimmed up to 2.5 mm to clear it (`door_corner_cut`).
 - **Fixed:** the blade test print was trimming up to 6 mm off the front of the curved nose.
-- **New checks (42 now):**
+- **New checks (44 now):**
   - the lip sits on the blade all the way across,
   - the bar sits in the groove,
   - pulled forward, the bar catches on the tooth,
-  - the tongue fits between the legs.
+  - the tongue fits between the legs,
+  - each ear pad reaches the door's flange with its hole on the door's slot.
 - **Still an assumption:** how the door sits relative to the bezel. The door is placed with
   its lip on the blade at the clip and its front edge 1 mm behind the blade's nose. Its tilt
   is taken as it lies in the file. The blade test print on the car checks exactly this; if
@@ -237,7 +260,7 @@ file's path.
 
 ## Checks
 
-`python3 check.py` runs 42 checks. They all pass:
+`python3 check.py` runs 44 checks. They all pass:
 
 - The hole spacing matches A, H, B and D.
 - Every slot is open, with solid material past its ends.
@@ -248,6 +271,8 @@ file's path.
 - Every lens has a clear view 10° either side of straight ahead.
 - The door's lip sits on the top blade all the way across, the clip's cross bar sits in the
   tongue's groove and catches on its tooth, and the tongue fits between the clip's legs.
+- Each ear pad comes out to 0.5 mm from the door's side flange, with its hole on the
+  door's slot.
 - The bezel fits the opening.
 - The carrier stays clear of the arm's pivot bolt and the pad's square adjuster, and the
   middle of the back is open.
@@ -287,6 +312,8 @@ bay. Use 4 walls, 40% gyroid infill, and 6 top and bottom layers.
   the nut (M8 or 5/16 in) so it slides with the stud but can't turn, and each pod
   tightens from above with one hand, as in the owner's bracket sketch.
 - 2 × M4 × 16 and 2 × M4 × 12 self-tapping screws for the bezel
+- The 2 stock bezel ear screws, or 2 × M4 × 16 self-tapping screws, through the door's
+  slots into the ear pads
 
 ## Fitting
 
@@ -297,8 +324,11 @@ bay. Use 4 walls, 40% gyroid infill, and 6 top and bottom layers.
 3. Bolt the pods on through the floor slots. Slide them forward or back so the lenses sit
    where you want them in the opening, then tighten.
 4. Slide the bezel's top blade in under the front of the headlight cover until the tongue
-   clicks onto the clip, like the stock bezel. Then screw it on: two screws up through the tabs
-   under the front and one through each wing. If the lenses sit too far back behind the
+   clicks onto the clip, like the stock bezel. Then screw it on:
+   - the two ear screws from outside, through the slots in the door's side flanges, the
+     stock way,
+   - two screws up through the tabs under the front,
+   - one through each wing into the carrier. If the lenses sit too far back behind the
    posts, slide the pods forward in their slots to meet it.
 5. Cycle the lights slowly by hand with the motor knob and check nothing touches the door
    or the body, then tighten everything.

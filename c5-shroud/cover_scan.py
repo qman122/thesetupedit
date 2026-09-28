@@ -24,7 +24,7 @@ import matplotlib.pyplot as plt  # noqa: E402
 import generate as g  # noqa: E402
 
 P, M = g.P, g.M
-X_MID = 170.0      # middle of the door's front edge (its flat run is x = 40..300)
+X_MID = 174.45     # centres the door's two side flanges (where they screw on) on the opening
 
 
 def load_door(path):
@@ -64,7 +64,9 @@ def main(path, view_path=None):
     # the clip: the only thing hanging under the middle of the door
     cl = V[(V[:, 0] > 120) & (V[:, 0] < 210) & (V[:, 1] > -120) & (V[:, 1] < -60) & (V[:, 2] < 29)]
     print(f"clip: x {cl[:, 0].min():.1f}..{cl[:, 0].max():.1f}, y {cl[:, 1].min():.1f}..{cl[:, 1].max():.1f}, "
-          f"lowest z {cl[:, 2].min():.1f}")
+          f"lowest z {cl[:, 2].min():.1f}; centre between the legs u = {164.5 - X_MID:.1f}")
+    ul = np.arange(-140, 141, 10.0)
+    print("COVER_LIP_Z =", [round(float(z), 1) for z in np.interp(ul + X_MID, xs, lip)])
 
     # put the door on the passenger bezel: front edge at the nose less cover_edge_n at the clip,
     # lip bottom on the blade at the clip
@@ -81,6 +83,7 @@ def main(path, view_path=None):
     print(f"bezel and door overlap: {ov:.1f} mm^3 (0 = no clash)")
     if view_path:
         export_view(view_path, A, F)
+    find_slots(local.transform(np.vstack([np.asarray(F, float), [0, 0, 0, 1]])[:3]))
 
     # blade top against the lip, along the front
     gaps = lip - lip_c - (g.top_rise(P, u) - g.top_rise(P, uc))
@@ -121,6 +124,40 @@ def main(path, view_path=None):
     out = os.path.join(os.path.dirname(os.path.abspath(__file__)), "diagrams", "cover_fit.png")
     fig.savefig(out, dpi=90)
     print("diagram ->", out)
+
+
+def find_slots(door_m):
+    """The slotted holes in the door's two side flanges, where the stock bezel's ears screw on,
+    in the passenger model frame: centre on the flange's inner face, the flange's outward
+    normal, and the slot size."""
+    mm = door_m.to_mesh()
+    v, f = np.asarray(mm.vert_properties)[:, :3], np.asarray(mm.tri_verts)
+    c = v[f].mean(1)
+    n = np.cross(v[f[:, 1]] - v[f[:, 0]], v[f[:, 2]] - v[f[:, 0]])
+    a = np.linalg.norm(n, axis=1)
+    n = n / (a[:, None] + 1e-12)
+    for name, sx in (("hood", -1), ("fender", 1)):
+        sel = (c[:, 0] * sx > 125) & (c[:, 1] > -110) & (c[:, 1] < -55) & (c[:, 2] > 25) & (c[:, 2] < 70) & (n[:, 0] * sx > 0.6)
+        cen = (c[sel] * a[sel, None]).sum(0) / a[sel].sum()
+        e3 = np.linalg.svd((c[sel] - cen) * np.sqrt(a[sel])[:, None], full_matrices=False)[2][2]
+        e3 = e3 * np.sign(e3[0] * sx)
+        e1 = np.cross([0, 0, 1], e3)
+        e1 /= np.linalg.norm(e1)
+        e2 = np.cross(e3, e1)
+        T = np.array([np.r_[e1, -e1 @ cen], np.r_[e2, -e2 @ cen], np.r_[e3, -e3 @ cen]])
+        R = door_m.transform(T)
+        for poly in (R ^ M.cube([120, 90, 24], True)).project().to_polygons():
+            q = np.asarray(poly)
+            ar = 0.5 * np.sum(q[:, 0] * np.roll(q[:, 1], -1) - np.roll(q[:, 0], -1) * q[:, 1])
+            w, h = q.max(0) - q.min(0)
+            if -70 < ar < -25 and h > 1.5 * w:                      # a hole, taller than wide: the slot
+                ctr = q.mean(0)
+                # inner face of the flange at the slot, along the normal
+                ring = R ^ M.cube([w + 8, h + 8, 30], True).translate([ctr[0], ctr[1], 0])
+                zin = ring.bounding_box()[2]
+                p_in = cen + ctr[0] * e1 + ctr[1] * e2 + zin * e3
+                print(f"{name} slot {w:.1f} x {h:.1f} mm, inner face at "
+                      f"({p_in[0]:.1f}, {p_in[1]:.1f}, {p_in[2]:.1f}), normal ({e3[0]:.3f}, {e3[1]:.3f}, {e3[2]:.3f})")
 
 
 def export_view(view_path, A, F):

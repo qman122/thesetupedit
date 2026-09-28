@@ -173,12 +173,26 @@ tw = P.tongue_w
 check(f"the tongue ({tw:.0f} mm) fits between the clip's legs ({P.clip_leg_gap:.0f} mm apart)",
       P.clip_leg_gap - tw >= 2)
 
-# 7. shroud fits the 11 in opening
-sb = shroud.bounding_box()
+# 7. shroud fits the 11 in opening (the ear pads further back reach out to the door's flanges)
+sb = (shroud ^ g.box(-300, 300, -60, 300, -300, 300)).bounding_box()
 sw = sb[3] - sb[0]
 check(f"shroud width {sw:.1f} mm fits the {P.opening_w:.1f} mm opening",
       sw <= P.opening_w - 2 * P.opening_side_clear + 0.01,
       f"{(P.opening_w - sw) / 2:.1f} mm clear each side")
+
+# 7a. an ear pad on each wing comes out to the door's side flange, 0.5 mm short of it, with its
+#     screw hole on the door's slot (where the stock bezel's ear screws on)
+sv = np.asarray(shroud.to_mesh().vert_properties)[:, :3]
+for (x, y, z, nrm) in P.ear_slots:
+    nrm = np.asarray(nrm)
+    rel = sv - [x, y, z]
+    near = sv[np.linalg.norm(rel - np.outer(rel @ nrm, nrm), axis=1) < P.ear_pad_d / 2 + 0.5]   # on the pad
+    reach = float(((near - [x, y, z]) @ nrm).max())                      # pad face vs the flange
+    hole = [x, y, z] - nrm * np.arange(1.0, 8.0, 0.5)[:, None]          # along the screw, into the pad
+    side = "hood" if x < 0 else "fender"
+    solid_at = [overlap(shroud, g.box(q[0] - 0.4, q[0] + 0.4, q[1] - 0.4, q[1] + 0.4, q[2] - 0.4, q[2] + 0.4)) for q in hole]
+    check(f"{side} ear pad reaches the door's flange ({-reach:.1f} mm gap) with its hole on the door's slot",
+          0.3 < -reach < 0.8 and max(solid_at) < 1e-6)
 
 # 7b. keep clear of the car parts next to the holes (seen in the owner's photos)
 z4 = pts["arm hole 4"][1]

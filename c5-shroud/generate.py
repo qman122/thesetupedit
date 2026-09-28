@@ -126,7 +126,7 @@ class Params:
     # the clip under the cover, measured from the owner's model of the covers (Covers.stl, see
     # cover_scan.py): a U-shaped rib hanging about 9 mm under the skin behind the front edge,
     # a cross bar with two short legs running back from its ends
-    clip_u: float = -5.5          # clip centre across the front, from the middle of the bezel (hood end is -)
+    clip_u: float = -9.9          # clip centre across the front, from the middle of the bezel (hood end is -)
     clip_back: float = 61.2       # front face of the cross bar, behind the cover's front edge
     clip_bar_t: float = 3.5       # cross bar thickness
     clip_skew: float = 0.36       # the bar runs 0.36 mm further forward per mm toward the fender (20 deg)
@@ -155,7 +155,21 @@ class Params:
     wing_back_z: float = -20.0    # bottom of the wings at their rear edge (under the carrier's tabs)
     wing_r: float = 10.0          # rounded rear corners
     access_hole_d: float = 28.0   # hood-end wing: hole to reach the aiming adjuster, like the stock ear
-    access_hole_yz: tuple = (-72.0, 38.0)
+    access_hole_yz: tuple = (-72.0, 18.0)   # moved down clear of the ear screw above it
+    # ear screws where the stock bezel's ears screw on: the slotted hole in each side flange of the
+    # headlight door (measured from the owner's model, cover_scan.py). Each is (x, y, z) of the slot
+    # on the flange's inside face and the flange's outward normal; hood side first. A pad on the
+    # wing comes out to sit against the flange, and a screw from outside goes through the door's
+    # slot into it, as the stock screw does into the stock ear.
+    ear_slots: tuple = ((-139.4, -72.2, 46.5, (-0.967, -0.044, -0.252)),
+                        (139.2, -87.6, 38.8, (0.943, 0.262, -0.208)))
+    ear_pad_d: float = 16.0
+    ear_gap: float = 0.5          # between the pad and the door flange
+    ear_hole_d: float = 3.4       # pilot for an M4 self-tapping screw (drill out to suit the stock screw)
+    # the front of the door's fender-side flange comes down over the top of the fender wing: the
+    # wing is trimmed under it (from the owner's model). (x from, x to, y from, y to, z at x from,
+    # drop per mm toward the fender)
+    door_corner_cut: tuple = (122.0, 140.0, -48.0, -3.0, 61.1, 0.225)
     # Window gap around the pod bezel, per side, at the back of each tunnel (the 1-notch test frame fit)
     window_clear_x: float = 2.0   # each side, left and right (the 1-notch test frame fit)
     window_clear_y: float = 1.6   # top and bottom
@@ -212,8 +226,8 @@ def pod_zc(p):
 # the underside of the door's front lip, measured from the owner's model of the covers
 # (cover_scan.py): across the front from the hood end (-) to the fender end (+), mm
 COVER_LIP_U = list(range(-140, 141, 10))
-COVER_LIP_Z = [23.4, 24.0, 24.4, 24.6, 24.7, 24.8, 24.8, 24.8, 24.7, 24.6, 24.4, 24.2, 24.0, 23.7, 23.5,
-               23.2, 22.8, 22.3, 21.8, 21.3, 20.9, 20.3, 19.8, 19.2, 18.5, 17.9, 16.9, 15.8, 14.4]
+COVER_LIP_Z = [24.0, 24.1, 24.5, 24.6, 24.8, 24.8, 24.8, 24.8, 24.7, 24.5, 24.3, 24.1, 23.9, 23.6, 23.3,
+               23.0, 22.6, 22.1, 21.7, 21.1, 20.6, 20.1, 19.5, 18.9, 18.2, 17.4, 16.5, 15.8, 15.8]
 
 
 def pod_top(p):
@@ -581,6 +595,35 @@ def clip_tongue(p, z_top):
     return tongue, groove
 
 
+def ear_pads(p):
+    """Pads on the outside of the wings that come out to the door's side flanges at the stock
+    bezel's screw slots, faced parallel to the flange, and the screw holes through them (along
+    the flange's normal, so the screw goes straight through the door's slot)."""
+    ow = p.opening_w - 2 * p.opening_side_clear
+    pads, holes = [], []
+    r = p.ear_pad_d / 2
+    for (x, y, z, nrm) in p.ear_slots:
+        side = 1 if x > 0 else -1
+        nrm = np.asarray(nrm, float)
+        e1 = np.cross([0.0, 0.0, 1.0], nrm)
+        e1 /= np.linalg.norm(e1)
+        e2 = np.cross(nrm, e1)
+        face = np.array([x, y, z]) - p.ear_gap * nrm
+        xw = side * (ow / 2 - p.wing_t / 2)            # middle of the wing
+        ring = [a / 16 * 2 * math.pi for a in range(16)]
+        pts = [face + r * (math.cos(a) * e1 + math.sin(a) * e2) for a in ring]
+        pts += [[xw, y + (r + 2) * math.cos(a), z + (r + 2) * math.sin(a)] for a in ring]
+        pads.append(M.hull_points(pts))
+        hole = M.cylinder(40, p.ear_hole_d / 2, p.ear_hole_d / 2, 24).translate([0, 0, -30])
+        # turn the cylinder's axis (z) onto the flange normal and put its top 10 mm past the face
+        k = np.cross([0, 0, 1], nrm)
+        ang = math.acos(np.clip(nrm[2], -1, 1))
+        K = np.array([[0, -k[2], k[1]], [k[2], 0, -k[0]], [-k[1], k[0], 0]]) / (np.linalg.norm(k) or 1)
+        Rm = np.eye(3) + math.sin(ang) * K + (1 - math.cos(ang)) * K @ K
+        holes.append(hole.transform(np.hstack([Rm, (face + 10 * nrm)[:, None]])))
+    return pads, holes
+
+
 def shroud(p):
     """The bezel, built like KnightDriveTV's: a curved face that fills the pocket under the door,
     with a letterbox slot cut through it and a rolled rim round the slot. The face's outline
@@ -726,7 +769,10 @@ def shroud(p):
         corners = [[yb_ + wr_ * math.cos(a / 8 * math.pi), zc_ + wr_ * math.sin(a / 8 * math.pi)]
                    for zc_ in (z_top - wr_, zbk) for a in range(16)]
         front_edge = [[yfr + bulge(side * U, z) - 1.0, z] for z in np.linspace(ze, z_top, 12)]
-        prof = CS.hull_points(front_edge + [[yfr - 20, z_top]] +
+        # the wing reaches back far enough to carry the ear screw pad on its side
+        lobe = [[y_ + (p.ear_pad_d / 2 + 3) * math.cos(a / 8 * math.pi), z_ + (p.ear_pad_d / 2 + 3) * math.sin(a / 8 * math.pi)]
+                for (x_, y_, z_, _) in p.ear_slots if x_ * side > 0 for a in range(16)]
+        prof = CS.hull_points(front_edge + [[yfr - 20, z_top]] + lobe +
                               [q for q in corners if q[1] <= z_top])
         x0 = min(xo, xi)
         parts.append(M.extrude(prof, p.wing_t + 0.5).transform([[0, 0, 1, x0], [1, 0, 0, 0], [0, 1, 0, 0]]))
@@ -795,7 +841,12 @@ def shroud(p):
         post = post ^ box(x - 30, x + 30, y_min + p.mask_t, y + 40, f_bot - 1, f_top + 1)
         posts.append(post ^ box(-U, U, -300, -0.8, -300, 300).transform(F))   # stays behind the front edge
     out = M.batch_boolean([out, rim.transform(F), edge.transform(F)] + posts, m3d.OpType.Add)
-    return lift_top(p, out ^ box(-ow / 2, ow / 2, -300, 300, -300, 300))
+    out = out ^ box(-ow / 2, ow / 2, -300, 300, -300, 300)
+    pads, holes = ear_pads(p)
+    out = lift_top(p, M.batch_boolean([out] + pads, m3d.OpType.Add) - M.batch_boolean(holes, m3d.OpType.Add))
+    x0, x1, y0, y1, z0, dz = p.door_corner_cut
+    return out - M.hull_points([[x, y, z] for x in (x0, x1) for y in (y0, y1)
+                                for z in (z0 - dz * (x - x0), z0 + 40)])
 
 
 def fit_test(p):
