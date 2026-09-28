@@ -1,15 +1,16 @@
-# C5 sleepy-eye pod carrier and shroud (v4)
+# C5 sleepy-eye pod carrier and bezel (v5)
 
 For a 2000 C5 Corvette with the headlight door stops already fitted, holding three
 3.0 × 1.8 in dual-lens LED pods per side. Like the KnightDriveTV kit, each side is one
 carrier that bolts to the stock headlight mounting points (the fender-side arm and the
-hood-side aiming pad), plus a front shroud that frames the three pods. The geometry is an
+hood-side aiming pad), plus a front bezel styled after the KnightDriveTV TripLED bezel. The geometry is an
 original design; see `../notes/c5-sleepy-eye-video.md` for the install video notes it follows.
 
 ![assembly preview](preview/assembly.png)
 ![mounting tabs from behind](preview/rear.png)
 
 Assembly diagrams: `diagrams/exploded.png`, `diagrams/front.png`, `diagrams/rear.png`, `diagrams/side.png`.
+Step size options (6, 9, 12 and 15 mm) side by side: `diagrams/step_options.png`.
 
 ## Measurements used
 
@@ -23,7 +24,7 @@ is a short slot, sized snug (6.3 mm) on an M6 bolt so the bolt stays put while y
 | B | Across the car, pad upper hole to arm hole 4 | 8.75 in (222.3 mm) | arm slots ±3.7 mm side to side |
 | D | Pad upper hole above arm hole 4 | 0.76 in (19.3 mm) | pad slots ±1.8 mm up and down |
 | C | Pad face vs arm face, front to back | unknown | printed spacer washers, 2 / 4 / 6 mm |
-| F | Front opening width | 11 in (279.4 mm) | shroud is 269.4 mm, 5 mm clear each side |
+| F | Front opening width | 11 in (279.4 mm) | bezel is 269.4 mm, 5 mm clear each side |
 | — | Shroud windows | pod face + 2.0 mm left/right and + 1.6 mm top/bottom, centred 0.3 in up for the bracket lift | matches the 1-notch test frame, which fit on the car |
 | — | Pods | 3.0 × 1.8 in face, 1.8 in deep, 2.1 in tall with the bracket (maker's drawing) | pod slots: 16 mm forward, 10 mm back |
 | — | Pod stud | about 8 mm (5/16 in), in 8.6 mm floor slots | — |
@@ -31,7 +32,7 @@ is a short slot, sized snug (6.3 mm) on an M6 bolt so the bolt stays put while y
 
 **Still estimated:** how far back the mounting wall sits behind the pod faces (95 mm) and
 the pod height relative to the holes (arm hole 4 is 14 mm above the carrier floor). The
-long pod slots and the shroud's slotted tabs take up the fore-aft part of that.
+long pod slots and the bezel's slotted tabs take up the fore-aft part of that.
 
 ## The curve
 
@@ -46,35 +47,53 @@ little further back than the one beside it:
 | Fender side | 24 mm |
 
 The step is `pod_step` in `generate.py`. It's estimated from photos, so change it if the
-pods don't line up with the curve on the car.
+pods don't line up with the curve on the car. Steps from 6 to 12 mm pass every check.
+At 15 mm the fender-side pod has only 3 mm of wiring room if you slide it all the way back.
+At 18 mm it hits the arm's nuts.
 
 - **Carrier:** a stepped beam under the pods with a pocket for each pod's bracket foot. Each
   pod still slides straight fore and aft in its slot (16 mm forward, 10 mm back). Knees at
   each end run back to the arm and pad tabs.
-- **Bezel:** the face steps back with the pods. Each pod has its own flat panel, window and
-  cell, and short joins link the panels between the pods.
+- **Bezel:** one continuous front sweeps back along the same line as the pods (see below).
 
 ## The bezel
 
-The front piece is a full bezel, not just a frame. Its edge wraps back 78 mm on the top,
-bottom and both sides, so with the door up you see only the bezel face and the three
-lenses. The carrier, bolts and pocket stay hidden. The back is open for the wiring and
-stops 3.5 mm short of the mounting nuts.
+Styled after the KnightDriveTV TripLED bezel:
 
-- **Cells:** each window has its own 12 mm deep sleeve around the pod bezel, so every lens
-  sits in its own recess and the gaps between the pods are hidden. The carrier's locating
-  ribs stop behind the cells.
-- **Mounting:** four M4 × 16 self-tapping screws. Two go up through the front tabs into
-  bosses under the carrier floor, beside the two outer pods' studs. The other two go up
-  through the bottom wall into posts at the back of the floor. All four holes are 16 mm
-  slots, so the bezel can slide forward (never back) to follow the pods if you move them
-  forward.
-- **Sealing to the door:** the top has a 10 mm wide, 1 mm deep recess. Stick a strip of
-  adhesive foam weatherstrip in it (about 10 mm wide, thick enough to touch the underside
-  of the door) to close the last gap. The gap between the bezel and the door wasn't
-  measured, so the foam takes it up.
-- **Fit on the car:** it's 269 mm wide in the 279 mm opening. Cycle the door slowly by hand
-  and check the wrap doesn't touch anything inside the pocket.
+- **Swept front:** one continuous front, angled back along the pods' step, so it follows the
+  curve of the opening. At the hood end it sits about 15 mm ahead of the pod face.
+- **Tunnels:** each pod sits at the back of its own tunnel. The tunnels are shallow on their
+  hood side (3.5 mm) and deeper on their fender side (14 mm), because the pods step back
+  behind the swept front. The thin posts between the tunnels hide the gaps between the pods.
+  A 12 mm sleeve behind each tunnel wraps the pod's own bezel.
+- **Front openings:** each opening shows the whole pod face with 1 mm to spare each side,
+  and opens 4 mm lower than the pod window so the tunnel floor slopes down to the lip.
+- **Lower lip:** below the tunnels the front slopes down and forward to a rolled lip that
+  sticks out 10 mm (`lip_ext`) and curves back in at each end.
+- **Top rail:** a 4 mm rail with a rounded front edge reaches 30 mm back over the pods. Its
+  10 mm wide, 1 mm deep recess takes a strip of adhesive foam weatherstrip. Use foam thick
+  enough to touch the underside of the door; the gap there wasn't measured, so the foam
+  takes it up.
+- **Side wings:** a thin wing at each end closes the side and tapers back to a screw slot.
+- **Mounting:** four M4 self-tapping screws, all in 16 mm slots, so the bezel can slide
+  forward (never back) to follow the pods if you move them forward.
+  - Two M4 × 16 go up through tabs under the front into bosses under the carrier floor,
+    beside the two outer pods' studs.
+  - Two M4 × 12 go in sideways, one through each wing, into a boss on the carrier just
+    outboard of the pods.
+- **Fit on the car:** it's 269 mm wide in the 279 mm opening. The hood end of the lip sits
+  further forward than the old flat bezel did. Cycle the door slowly by hand and check the
+  lip and wings don't touch anything. If the lip hits, lower `lip_ext`.
+
+## What changed in v5
+
+- **The bezel is restyled after the KnightDriveTV TripLED bezel,** with a swept front,
+  tunnels, a rounded lower lip, a top rail and side wings (see above). It replaces the
+  boxy wrap.
+- **The carrier's two rear posts for the bezel are gone.** Two side bosses for the wing
+  screws replace them.
+- The mockup now mirrors the pods for the driver side. Before, the stepped pods were
+  drawn the wrong way round on that side; the STL files were right.
 
 ## What changed in v4
 
@@ -103,8 +122,8 @@ stops 3.5 mm short of the mounting nuts.
 - A 15 mm flange nut at either end of every slot clears the carrier and the pods.
 - The pods clear the carrier across their whole slot travel, and there's always at least
   7 mm behind them for the wiring.
-- The pods clear the shroud, which clears the carrier.
-- The shroud fits the opening.
+- The pods clear the bezel, which clears the carrier.
+- The bezel fits the opening.
 - The carrier stays clear of the arm's pivot bolt and the pad's square adjuster, and the
   middle of the back is open.
 - The driver part is a true mirror of the passenger part.
@@ -120,7 +139,9 @@ The small-bed split files were dropped: the stepped bezel doesn't split cleanly,
 2. `stl/fit_test_mount_driver.stl` (about 20 minutes, two small flat tabs). Bolt the taller
    tab to the arm (holes 1 and 4) and the shorter one to the aiming pad (both holes).
    The bolts should go through snugly without forcing. Already done: the spacing fit.
-3. `stl/carrier_driver.stl` and `stl/bezel_driver.stl`, then the passenger pair. The bezel prints face down.
+3. `stl/carrier_driver.stl` and `stl/bezel_driver.stl`, then the passenger pair. The bezel
+   prints upside down, standing on its flat top rail. Turn supports on for the tunnel
+   roofs and the tabs under the front.
 4. `stl/spacer_washers.stl`: only if a tab doesn't sit flat against the arm or the pad.
 
 **Material:** ASA or ABS is best; PETG works. Don't use PLA, which softens in a hot engine
@@ -132,7 +153,7 @@ bay. Use 4 walls, 40% gyroid infill, and 6 top and bottom layers.
   washer under each nut so it doesn't dig into the plastic. The nut can't pull through: the slots
   are 6.3 mm wide and an M6 nut is 10 mm across.
 - 3 × M6 bolts, washers and nylon lock nuts for the pods, through the floor slots
-- 4 × M4 × 16 self-tapping screws for the bezel
+- 2 × M4 × 16 and 2 × M4 × 12 self-tapping screws for the bezel
 - Adhesive foam weatherstrip, about 10 mm wide, for the top of the bezel
 
 ## Fitting
@@ -143,7 +164,8 @@ bay. Use 4 walls, 40% gyroid infill, and 6 top and bottom layers.
 2. If there's a gap at the arm or the pad, fill it with spacer washers.
 3. Bolt the pods on through the floor slots. Slide them forward or back so the lenses sit
    where you want them in the opening, then tighten.
-4. Screw the shroud on from underneath. Its slotted tabs follow the pods forward or back.
+4. Screw the bezel on: two screws up through the tabs under the front and one through each
+   wing. Its slots let it sit further forward if you moved the pods forward.
 5. Cycle the lights slowly by hand with the motor knob and check nothing touches the door
    or the body, then tighten everything.
 6. Aim the lights with the stock adjusters.

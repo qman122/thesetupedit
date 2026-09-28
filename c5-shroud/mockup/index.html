@@ -496,7 +496,7 @@
     asm.rotation.x = ANG.sleepy;        // pods sit level when the door is at the sleepy stop
     hinge.add(asm);
 
-    for (const [file, mat] of [[`parts/carrier_${sideName}.json`, carrierMat], [`parts/shroud_${sideName}.json`, shroudMat], ["parts/pods.json", podMat]]) {
+    for (const [file, mat] of [[`parts/carrier_${sideName}.json`, carrierMat], [`parts/shroud_${sideName}.json`, shroudMat], [`parts/pods_${sideName}.json`, podMat]]) {
       want.push(loadPart(file).then((g) => {
         const mesh = new THREE.Mesh(g, mat);
         mesh.castShadow = mesh.receiveShadow = true;
@@ -504,7 +504,7 @@
       }));
     }
     // twin lenses on each pod face (from the design files, so they follow each pod's angle)
-    want.push(loadPart("parts/lenses.json").then((g) => asm.add(new THREE.Mesh(g, lensMat))));
+    want.push(loadPart(`parts/lenses_${sideName}.json`).then((g) => asm.add(new THREE.Mesh(g, lensMat))));
     const beam = new THREE.SpotLight(0xe6efff, 0, 9000, 0.42, 0.55, 1.2);
     beam.position.set(0, 23, 20);
     const tgt = new THREE.Object3D();

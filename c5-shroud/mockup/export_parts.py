@@ -26,8 +26,10 @@ def export(man, path):
 here = os.path.dirname(os.path.abspath(__file__))
 P = g.P
 c, s, p = g.carrier(P), g.shroud(P), g.pod_dummy(P)
+lens = g.pod_lenses(P)
 for side, f in [("passenger", lambda m: m), ("driver", g.mirror_x)]:
     export(f(c), os.path.join(here, f"carrier_{side}.json"))
     export(f(s), os.path.join(here, f"shroud_{side}.json"))
-export(p, os.path.join(here, "pods.json"))
-export(g.pod_lenses(P), os.path.join(here, "lenses.json"))
+    # the pods are stepped, so each side needs its own copy
+    export(f(p), os.path.join(here, f"pods_{side}.json"))
+    export(f(lens), os.path.join(here, f"lenses_{side}.json"))

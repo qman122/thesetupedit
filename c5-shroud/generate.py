@@ -2,7 +2,8 @@
 
 Holds three 2.9 x 1.8 in dual-lens LED pods per side in place of the stock
 headlight unit, the same way the KnightDriveTV kit does: one carrier per side that
-bolts to the stock headlight mounting points, plus a front shroud that frames the pods.
+bolts to the stock headlight mounting points, plus a front bezel styled after the
+KnightDriveTV TripLED bezel.
 
 Run:  python3 generate.py            -> writes STL files to ./stl and previews to ./preview
 All sizes are millimetres. Change the numbers in PARAMS and re-run.
@@ -82,26 +83,34 @@ class Params:
     opening_w: float = 279.4      # F: 11 in
     opening_side_clear: float = 5.0  # shroud clearance to the body at each side
 
-    # --- shroud (front frame) ---
-    shroud_t: float = 3.0         # face thickness
+    # --- bezel (styled after the KnightDriveTV TripLED bezel) ---
+    # One continuous front that sweeps back with the pods' step, a window tunnel back to each
+    # pod, a rounded lower lip, a top rail with a seal channel, and a side wing at each end
+    # that screws to the carrier.
+    shroud_t: float = 3.0         # thinnest wall (at the shallow side of each tunnel)
     shroud_margin_top: float = 8.0
     shroud_margin_bot: float = 25.0  # below the floor; owner says there's plenty of room
-    shroud_r: float = 14.0        # outer corner radius
-    # The shroud is a full bezel: its edge wraps back on all four sides so only the face and
-    # the three lenses show when the door goes up. It stops short of the mounting nuts.
-    shroud_return: float = 78.0   # how far the top, bottom and sides wrap back from the face
-    bezel_rear_screw_y: float = -50.0  # two more M4 screws up through the bezel bottom into the carrier
     bezel_travel: float = 16.0    # the bezel's screw slots let it slide this far forward with the pods (never back)
     cell_depth: float = 12.0      # each window gets its own sleeve reaching back around the pod bezel
-    cell_wall: float = 1.4       # thin enough that each cell stays inside its own face panel
-    foam_channel_w: float = 10.0  # recess on top for adhesive foam weatherstrip (seals to the door)
+    cell_wall: float = 1.4
+    rail_t: float = 4.0           # top rail thickness; its front edge is rounded
+    top_depth: float = 30.0       # how far the top rail reaches back from the front
+    lip_ext: float = 10.0         # how far the rounded lower lip sticks out past the front
+    rim_r: float = 4.0            # radius of the rolled lip and the front corners
+    flare_bot: float = 4.0        # each tunnel opens this much lower at the front than at the pod
+    front_clear: float = 1.0      # front opening: pod face + this much each side (the posts hide the gaps)
+    end_flare: float = 4.0        # outer tunnels open this much wider toward the ends
+    wing_t: float = 3.0           # side wings
+    wing_screw_y: float = -54.0   # M4 screw through each wing into a boss on the carrier
+    wing_screw_z: float = 4.0
+    wing_lobe_r: float = 7.5      # plastic round the wing slot
+    foam_channel_w: float = 10.0  # recess on the top rail for adhesive foam weatherstrip (seals to the door)
     foam_channel_d: float = 1.0
-    foam_channel_y: float = -22.0  # centre of the recess, behind the face
-    # Window gap around the pod bezel, per side. The 4-notch test frame (1.8 / 1.8) fit but
-    # needed to be a little wider and a little shorter, so: 1 mm wider, 1 mm shorter overall.
+    foam_channel_back: float = 12.0  # centre of the recess, behind the front
+    # Window gap around the pod bezel, per side, at the back of each tunnel (the 1-notch test frame fit)
     window_clear_x: float = 2.0   # each side, left and right (the 1-notch test frame fit)
     window_clear_y: float = 1.6   # top and bottom
-    # (x, y) gaps on the window fit test, 1-3 notches; the middle one matches the shroud
+    # (x, y) gaps on the window fit test, 1-3 notches; the first one matches the bezel
     window_ladder: tuple = ((2.0, 1.6), (2.3, 1.3), (2.6, 1.0))
     shroud_tab_screw_d: float = 3.4  # M4 self-tapping into the carrier floor
     shroud_gap: float = 0.5       # air gap between pod faces and the back of the shroud face
@@ -319,10 +328,11 @@ def carrier(p):
     boss_z0 = -p.floor_t - p.lip_h
     for (x, y) in shroud_tabs(p):
         parts.append(cyl_z(11, boss_z0, -p.floor_t + 0.01, x, y))
-    # standoffs down to the bezel's bottom wall for its two rear screws
-    bez_in = -p.shroud_margin_bot - p.floor_t + p.shroud_t
-    for x in bezel_rear_x(p):
-        parts.append(cyl_z(11, bez_in, -p.floor_t + 0.01, x, p.bezel_rear_screw_y))
+    # bosses for the screws through the bezel's side wings, outboard of the pods
+    for (xa, xb) in wing_boss_x(p):
+        parts.append(box(xa, xb, -89, p.wing_screw_y + 7, -p.floor_t, 0))           # ties into the tab floor
+        xa2, xb2 = (row_w(p) / 2 + 1.25, xb) if xb > 0 else (xa, -row_w(p) / 2 - 1.25)
+        parts.append(box(xa2, xb2, p.wing_screw_y - 7, p.wing_screw_y + 7, -p.floor_t, p.wing_screw_z + 8))
 
     body = M.batch_boolean(parts, m3d.OpType.Add)
 
@@ -340,8 +350,10 @@ def carrier(p):
         # blind pilot hole for an M4 self-tapping screw, stops 1.5 mm under the floor top
         cuts.append(cyl_z(p.shroud_tab_screw_d - 0.4, boss_z0 - 1, -1.5, x, y))
 
-    for x in bezel_rear_x(p):
-        cuts.append(cyl_z(p.shroud_tab_screw_d - 0.4, bez_in - 1, -1.5, x, p.bezel_rear_screw_y))
+    for (xa, xb) in wing_boss_x(p):
+        xw = xb if xb > 0 else xa
+        x0, x1 = (xw - 7, xw + 1) if xb > 0 else (xw - 1, xw + 7)
+        cuts.append(cyl_x(p.shroud_tab_screw_d - 0.4, x0, x1, p.wing_screw_y, p.wing_screw_z))
     return M.batch_boolean([body] + cuts, m3d.OpType.Subtract)
 
 
@@ -378,8 +390,10 @@ def split_x(p):
     return pitch(p) / 2
 
 
-def bezel_rear_x(p):
-    return [-pitch(p) / 2, pitch(p) / 2]
+def wing_boss_x(p):
+    """(x0, x1) of the lower plate under each wing screw boss; x1 (or x0) stops just inside the wing."""
+    xw = p.opening_w / 2 - p.opening_side_clear - p.wing_t - 0.3
+    return [(row_w(p) / 2 - 4, xw), (-xw, -row_w(p) / 2 + 4)]
 
 
 def shroud_tabs(p):
@@ -402,113 +416,142 @@ def splice_wall_holes(p):
     return [(sx + dx, z) for dx in (-16, 16) for z in (6, 44)]
 
 
-def face_line(p, pose, off):
-    """Point and direction of a pod's face plane (pod-local y = off), seen from above."""
-    q = pose_pt(pose, 0, off)
-    yaw = math.radians(pose[2])
-    return q, (math.cos(yaw), math.sin(yaw))
-
-
-def _meet(l1, l2):
-    (x1, y1), (dx1, dy1) = l1
-    (x2, y2), (dx2, dy2) = l2
-    den = dx1 * dy2 - dy1 * dx2
-    t = ((x2 - x1) * dy2 - (y2 - y1) * dx2) / den
-    return [x1 + t * dx1, y1 + t * dy1]
-
-
-def _at_x(l, x):
-    (x0, y0), (dx, dy) = l
-    return [x, y0 + (x - x0) / dx * dy]
-
-
-def _joins(p, off):
-    """Where neighbouring face panels meet: a corner if they're angled, a step if they're parallel."""
+def front_line(p):
+    """The bezel front seen from above, y = c0 + s * x. It follows the pods' step and sits far
+    enough forward to leave shroud_t of plastic at the shallow side of every tunnel."""
     poses = pod_poses(p)
-    lines = [face_line(p, pose, off) for pose in poses]
-    out = []
-    for i in range(2):
-        (_, (dx1, dy1)), (_, (dx2, dy2)) = lines[i], lines[i + 1]
-        if abs(dx1 * dy2 - dy1 * dx2) > 1e-6:
-            q = _meet(lines[i], lines[i + 1])
-            out.append([q, q])
-        else:
-            xm = (poses[i][0] + poses[i + 1][0]) / 2
-            out.append([_at_x(lines[i], xm), _at_x(lines[i + 1], xm)])
-    return lines, out
+    s = (poses[-1][1] - poses[0][1]) / (poses[-1][0] - poses[0][0])
+    half = p.pod_face_w / 2 + p.window_clear_x
+    c0 = max(y + p.shroud_gap + p.shroud_t - s * (x + dx) for (x, y, _) in poses for dx in (-half, half))
+    return s, c0
 
 
-def face_outline(p, off, xe, y_rear):
-    """Plan-view outline: one face panel per pod (stepped or angled) plus straight sides and back."""
-    lines, j = _joins(p, off)
-    front = [_at_x(lines[0], -xe)] + j[0] + j[1] + [_at_x(lines[2], xe)]
-    pts = []
-    for q in front + [[xe, y_rear], [-xe, y_rear]]:
-        if not pts or abs(q[0] - pts[-1][0]) + abs(q[1] - pts[-1][1]) > 1e-6:
-            pts.append(q)
-    area = sum(a[0] * b[1] - b[0] * a[1] for a, b in zip(pts, pts[1:] + pts[:1]))
-    return CS([pts if area > 0 else pts[::-1]])        # counter-clockwise for the fill rule
+def front_frame(p):
+    """Transform from the front's own frame (u along the front, n forward, z up) to the model."""
+    s, c0 = front_line(p)
+    k = 1 / math.hypot(1, s)
+    return [[k, -s * k, 0, 0], [s * k, k, 0, c0], [0, 0, 1, 0]]
 
 
-def face_y_at(p, off, x):
-    lines, j = _joins(p, off)
-    i = 0 if x < j[0][0][0] else (1 if x < j[1][0][0] else 2)
-    return _at_x(lines[i], x)[1]
+def ball_pts(u, n, z, r):
+    return np.asarray(M.sphere(r, 24).translate([u, n, z]).to_mesh().vert_properties)[:, :3].tolist()
+
+
+def cyl_x(d, x0, x1, y, z):
+    """Cylinder along X from x0 to x1."""
+    return M.cylinder(x1 - x0, d / 2).rotate([0, 90, 0]).translate([x0, y, z])
 
 
 def shroud(p):
-    """The bezel. Its face has one flat panel per pod, following the curve of the row, and its
-    top, bottom and sides wrap back so only the face and the lenses show."""
+    """The bezel, styled after the KnightDriveTV TripLED bezel. One continuous front sweeps
+    back with the pods' step. Behind it, a tunnel runs back to each pod (so the thin posts
+    between the windows get deeper toward the fender), a rounded lip runs along the bottom,
+    a rail with a seal channel runs along the top, and a wing at each end screws to the carrier."""
     ow = p.opening_w - 2 * p.opening_side_clear
     z_bot = -p.shroud_margin_bot - p.floor_t
     z_top = pod_top(p) + p.shroud_margin_top
-    oh = z_top - z_bot
-    zc = (z_top + z_bot) / 2
-    y_face = p.shroud_t + p.shroud_gap     # front of the face, in each pod's own frame
-    y_rear = y_face - p.shroud_t - p.shroud_return
-
-    outer_front = rrect(ow, oh, p.shroud_r).translate([0, zc])
-    inner_front = rrect(ow - 2 * p.shroud_t, oh - 2 * p.shroud_t,
-                        max(p.shroud_r - p.shroud_t, 1)).translate([0, zc])
-    outer = (M.extrude(face_outline(p, y_face, ow / 2, y_rear), oh).translate([0, 0, z_bot])
-             ^ plate_xz(outer_front, 60, 300))
-    inner = (M.extrude(face_outline(p, y_face - p.shroud_t, ow / 2 - p.shroud_t, y_rear - 50),
-                       oh - 2 * p.shroud_t).translate([0, 0, z_bot + p.shroud_t])
-             ^ plate_xz(inner_front, 60, 300))
-    shell = outer - inner
-
-    # window and a sleeve (cell) behind it for each pod, square to that pod
+    s, c0 = front_line(p)
+    F = front_frame(p)
+    kx = F[0][0]                                    # cos of the sweep angle
+    U = ow / 2 / kx                                 # the ends, measured along the front
+    poses = pod_poses(p)
     win_w = p.pod_face_w + 2 * p.window_clear_x
     win_h = p.pod_face_h + 2 * p.window_clear_y
     wr = p.pod_face_r + min(p.window_clear_x, p.window_clear_y)
+    win_bot = pod_zc(p) - win_h / 2
+    f_bot, f_top = win_bot - p.flare_bot, z_top - p.rail_t      # front openings, top and bottom
+
+    def yf(x):
+        return c0 + s * x
+
+    parts = []
+    # solid behind the front, one column per pod, each stopping just in front of its pod's face.
+    # A rearward column reaches 2 mm past the midpoint to wrap its neighbour's cell.
+    xs = [x for (x, _, _) in poses]
+    mids = [(xs[0] + xs[1]) / 2, (xs[1] + xs[2]) / 2]
+    cols = [(-ow / 2 - 0.5, mids[0]), (mids[0] - 2, mids[1]), (mids[1] - 2, ow / 2 + 0.5)]   # ends trimmed below
+    plan = CS.batch_boolean([CS([[[xa, y + p.shroud_gap], [xb, y + p.shroud_gap], [xb, yf(xb)], [xa, yf(xa)]]])
+                             for (xa, xb), (_, y, _) in zip(cols, poses)], m3d.OpType.Add)
+    parts.append(M.extrude(plan.simplify(0.01), z_top - z_bot).translate([0, 0, z_bot]))
+    # top rail reaching back over the pods, with a rounded nose along the front
+    rt = p.rail_t / 2
+    parts.append(box(-U, U, -p.top_depth, -0.5, z_top - p.rail_t, z_top).transform(F))
+    # (round parts sit a hair off the front plane and the rail's top so their facets never
+    # land exactly on a flat face, which would leave the STL with pinched edges)
+    parts.append(M.hull_points(ball_pts(-U + rt + 0.2, 0.37, z_top - rt - 0.13, rt) +
+                               ball_pts(U - rt - 0.2, 0.37, z_top - rt - 0.13, rt)).transform(F))
+    # rounded lower lip: a rolled edge out in front, sloping back up to the tunnel floors,
+    # curving back in to the front at each end
+    r, R = p.rim_r, p.lip_ext - p.rim_r
+    up = U - r - 0.2
+    path = [(-up + R - R * math.cos(math.radians(a)), R * math.sin(math.radians(a))) for a in range(0, 91, 10)]
+    path += [(up - R + R * math.cos(math.radians(a)), R * math.sin(math.radians(a))) for a in range(90, -1, -10)]
+    z_rim = z_bot + r
+    pts = []
+    for (u, n) in path:
+        pts += ball_pts(u, n + 0.37, z_rim, r) + [[u, -0.5, f_bot - 0.3], [u, -0.5, z_bot]]
+    parts.append(M.hull_points(pts).transform(F))           # the lip's plan shape is convex: one hull
+    # rounded upright edges at the two ends of the front
+    for u in (-up, up):
+        parts.append(M.hull_points(ball_pts(u * 0.999, 0.37, z_rim + 0.3, r - 0.3) +
+                                   ball_pts(u, 0.37, z_top - rt - 0.13, rt)).transform(F))
+
+    # side wings: thin plates back from each end of the front, tapering to a lobe round the screw slot
+    wy, wz, lr = p.wing_screw_y, p.wing_screw_z, p.wing_lobe_r
+    for side in (1, -1):
+        xo, xi = side * (ow / 2 + 0.5), side * (ow / 2 - p.wing_t)      # outer face trimmed below
+        yfr = min(yf(xo), yf(xi)) - 0.2
+        prof = CS.hull_points([[yfr, z_bot], [yfr, z_top], [yfr - p.top_depth, z_top]] +
+                              [[yy + lr * math.cos(a / 8 * math.pi), wz + lr * math.sin(a / 8 * math.pi)]
+                               for yy in (wy - p.bezel_travel, wy) for a in range(16)])
+        x0 = min(xo, xi)
+        parts.append(M.extrude(prof, p.wing_t + 0.5).transform([[0, 0, 1, x0], [1, 0, 0, 0], [0, 1, 0, 0]]))
+
+    # a sleeve (cell) behind each tunnel, round the pod's own bezel, hiding the gaps between pods
     cw_, ch_, cr = win_w + 0.2, win_h + 0.2, 2.5
-    wins, cells = [], []
-    for pose in pod_poses(p):
-        wins.append(at_pose(plate_xz(rrect(win_w, win_h, wr).translate([0, pod_zc(p)]),
-                                     y_face + 1, p.shroud_t + 2), pose))
+    for pose in poses:
         ring = (rrect(cw_ + 2 * p.cell_wall, ch_ + 2 * p.cell_wall, cr + p.cell_wall)
                 - rrect(cw_, ch_, cr)).translate([0, pod_zc(p)])
-        cells.append(at_pose(plate_xz(ring, y_face - p.shroud_t + 0.5, p.cell_depth - p.shroud_t + 0.5), pose))
+        parts.append(at_pose(plate_xz(ring, p.shroud_gap + 0.5, p.cell_depth - p.shroud_t + 0.5), pose))
 
     # front tabs reaching back under the carrier floor for two M4 screws (forward-only slots)
-    tabs = []
-    for (x, ys) in shroud_tabs(p):
-        yb = min(face_y_at(p, y_face - p.shroud_t, x - 9), face_y_at(p, y_face - p.shroud_t, x + 9))
-        t = box(x - 9, x + 9, ys - p.bezel_travel - 7, yb + 1,
+    for (x, ys), pose in zip(shroud_tabs(p), (poses[0], poses[2])):
+        t = box(x - 9, x + 9, ys - p.bezel_travel - 7, pose[1] + p.shroud_gap + 1,
                 -p.floor_t - p.lip_h - 3, -p.floor_t - p.lip_h)
-        t = t - slot_z(p.shroud_tab_screw_d + 0.6, p.bezel_travel + p.shroud_tab_screw_d + 0.6,
-                       -40, 0, x, ys - p.bezel_travel / 2)
-        tabs.append(t)
-    body = M.batch_boolean([shell] + tabs + cells, m3d.OpType.Add)
-    cuts = list(wins)
-    # shallow recess along the top for a strip of foam weatherstrip
-    cuts.append(box(-ow / 2 + 25, ow / 2 - 25,
-                    p.foam_channel_y - p.foam_channel_w / 2, p.foam_channel_y + p.foam_channel_w / 2,
-                    z_top - p.foam_channel_d, z_top + 1))
-    for x in bezel_rear_x(p):
+        parts.append(t)
+    body = M.batch_boolean(parts, m3d.OpType.Add)
+
+    cuts = []
+    # tunnels: from the opening in the front back to the window in front of each pod
+    for i, pose in enumerate(poses):
+        uc = pose[0] / kx
+        hw = (p.pod_face_w / 2 + p.front_clear) / kx
+        u0, u1 = uc - hw, uc + hw
+        if i == 0:
+            u0 -= p.end_flare
+        if i == len(poses) - 1:
+            u1 += p.end_flare
+        front = plate_xz(rrect(u1 - u0, f_top - f_bot, wr + 1).translate([(u0 + u1) / 2, (f_top + f_bot) / 2]),
+                         3, 3.3).transform(F)      # starts 0.3 behind the front
+        win = rrect(win_w, win_h, wr).translate([0, pod_zc(p)])
+        back = at_pose(plate_xz(win, p.shroud_gap + 0.3, 0.2), pose)
+        cuts.append(M.batch_hull([front, back]))
+        cuts.append(at_pose(plate_xz(win, p.shroud_gap + 0.5, 3.0), pose))
+    # shallow recess along the top rail for a strip of foam weatherstrip
+    fb, fw = p.foam_channel_back, p.foam_channel_w
+    cuts.append(box(-U + 25, U - 25, -fb - fw / 2, -fb + fw / 2,
+                    z_top - p.foam_channel_d, z_top + 1).transform(F))
+    for (x, ys) in shroud_tabs(p):
         cuts.append(slot_z(p.shroud_tab_screw_d + 0.6, p.bezel_travel + p.shroud_tab_screw_d + 0.6,
-                           z_bot - 1, z_bot + p.shroud_t + 1, x, p.bezel_rear_screw_y - p.bezel_travel / 2))
-    return M.batch_boolean([body] + cuts, m3d.OpType.Subtract)
+                           -40, 0, x, ys - p.bezel_travel / 2))
+    # wing slots: the screw sits at the front end, so the bezel can slide forward (never back)
+    for side in (1, -1):
+        sl = CS.square([p.bezel_travel, 0.01], center=True).offset((p.shroud_tab_screw_d + 0.6) / 2, m3d.JoinType.Round)
+        sl = sl.translate([wy - p.bezel_travel / 2, wz])
+        cuts.append(M.extrude(sl, 20).transform([[0, 0, 1, side * ow / 2 - 10], [1, 0, 0, 0], [0, 1, 0, 0]]))
+    out = M.batch_boolean([body] + cuts, m3d.OpType.Subtract)
+    return out ^ box(-ow / 2, ow / 2, -300, 300, -300, 300)
+
 
 def fit_test(p):
     """Quick print: separate window frames with different gaps around the pod bezel.
@@ -592,8 +635,8 @@ def mirror_x(man):
 
 
 def print_orient_shroud(man):
-    """Lay the shroud face-down on the bed (face at Z = 0)."""
-    return man.rotate([-90, 0, 0])
+    """Print the bezel upside down, standing on its flat top rail."""
+    return man.rotate([180, 0, 0])
 
 
 def print_orient_carrier(man):
