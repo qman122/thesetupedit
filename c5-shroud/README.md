@@ -1,4 +1,4 @@
-# C5 sleepy-eye pod carrier and shroud (v3)
+# C5 sleepy-eye pod carrier and shroud (v4)
 
 For a 2000 C5 Corvette with the headlight door stops already fitted, holding three
 3.0 × 1.8 in dual-lens LED pods per side. Like the KnightDriveTV kit, each side is one
@@ -24,8 +24,8 @@ is a short slot, sized snug (6.3 mm) on an M6 bolt so the bolt stays put while y
 | D | Pad upper hole above arm hole 4 | 0.76 in (19.3 mm) | pad slots ±1.8 mm up and down |
 | C | Pad face vs arm face, front to back | unknown | printed spacer washers, 2 / 4 / 6 mm |
 | F | Front opening width | 11 in (279.4 mm) | shroud is 269.4 mm, 5 mm clear each side |
-| — | Shroud windows | pod face + 2.3 mm left/right and + 1.3 mm top/bottom, centred 0.3 in up for the bracket lift | the 4-notch test frame fit but wanted a bit wider and a bit shorter |
-| — | Pods | 3.0 × 1.8 in face, 1.8 in deep, 2.1 in tall with the bracket (maker's drawing) | pod slots: 22 mm forward, 10 mm back |
+| — | Shroud windows | pod face + 2.0 mm left/right and + 1.6 mm top/bottom, centred 0.3 in up for the bracket lift | matches the 1-notch test frame, which fit on the car |
+| — | Pods | 3.0 × 1.8 in face, 1.8 in deep, 2.1 in tall with the bracket (maker's drawing) | pod slots: 16 mm forward, 10 mm back |
 | — | Pod stud | about 8 mm (5/16 in), in 8.6 mm floor slots | — |
 | — | Mounting bolts | M6 × 1.0, 10 mm flange nuts | — |
 
@@ -35,16 +35,24 @@ long pod slots and the shroud's slotted tabs take up the fore-aft part of that.
 
 ## The curve
 
-The three pods follow the curve of the headlight opening instead of sitting in a straight
-line. The middle pod faces straight ahead, and the two outer pods sit about 6 mm further
-back and turn outward by 8° (`pod_arc_deg` in `generate.py`; 0 makes the row straight).
+Like the KnightDriveTV Gen 2 bracket, the pods follow the curve of the headlight opening
+with a staircase, not by turning. All three face straight ahead, and each pocket sits a
+little further back than the one beside it:
 
-- **Carrier:** a beam under the pods with a pocket for each pod's bracket foot. Each pocket
-  is turned to match its pod, so the pods sit square on the curve. Each pod still slides
-  straight fore and aft in its slot (16 mm forward, 10 mm back). Angled knees at each end
-  run back to the arm and pad tabs.
-- **Bezel:** the face has one flat panel per pod, angled with the curve. Each window and its
-  cell are square to their pod.
+| Pod | Set back from the hood-side pod |
+|---|---|
+| Hood side | 0 mm |
+| Middle | 12 mm |
+| Fender side | 24 mm |
+
+The step is `pod_step` in `generate.py`. It's estimated from photos, so change it if the
+pods don't line up with the curve on the car.
+
+- **Carrier:** a stepped beam under the pods with a pocket for each pod's bracket foot. Each
+  pod still slides straight fore and aft in its slot (16 mm forward, 10 mm back). Knees at
+  each end run back to the arm and pad tabs.
+- **Bezel:** the face steps back with the pods. Each pod has its own flat panel, window and
+  cell, and short joins link the panels between the pods.
 
 ## The bezel
 
@@ -57,15 +65,23 @@ stops 3.5 mm short of the mounting nuts.
   sits in its own recess and the gaps between the pods are hidden. The carrier's locating
   ribs stop behind the cells.
 - **Mounting:** four M4 × 16 self-tapping screws. Two go up through the front tabs into
-  bosses under the carrier floor, and two go up through the bottom wall into posts at the
-  back of the floor. All four holes are 16 mm slots, so the bezel can slide forward
-  (never back) to follow the pods if you move them forward.
+  bosses under the carrier floor, beside the two outer pods' studs. The other two go up
+  through the bottom wall into posts at the back of the floor. All four holes are 16 mm
+  slots, so the bezel can slide forward (never back) to follow the pods if you move them
+  forward.
 - **Sealing to the door:** the top has a 10 mm wide, 1 mm deep recess. Stick a strip of
   adhesive foam weatherstrip in it (about 10 mm wide, thick enough to touch the underside
   of the door) to close the last gap. The gap between the bezel and the door wasn't
   measured, so the foam takes it up.
 - **Fit on the car:** it's 269 mm wide in the 279 mm opening. Cycle the door slowly by hand
   and check the wrap doesn't touch anything inside the pocket.
+
+## What changed in v4
+
+- **The pods are stepped instead of angled.** All three face straight ahead, with each pod
+  12 mm behind its neighbour, like the KnightDriveTV Gen 2 bracket.
+- **The windows match the 1-notch test frame:** 2.0 mm of gap each side and 1.6 mm top and bottom.
+- The mounting tabs and hole spacing are unchanged; the mount test fit.
 
 ## What changed in v3
 
@@ -80,7 +96,7 @@ stops 3.5 mm short of the mounting nuts.
 
 ## Checks
 
-`python3 check.py` runs 40 checks. They all pass:
+`python3 check.py` runs 35 checks. They all pass:
 
 - The hole spacing matches A, H, B and D.
 - Every slot is open, with solid material past its ends.
@@ -94,16 +110,16 @@ stops 3.5 mm short of the mounting nuts.
 - The driver part is a true mirror of the passenger part.
 - Every STL is one watertight solid lying flat on the bed.
 
-The small-bed split files were dropped: the curved bezel doesn't split cleanly, and bed size isn't a concern for this build.
+The small-bed split files were dropped: the stepped bezel doesn't split cleanly, and bed size isn't a concern for this build.
 
 ## Print order
 
 1. `stl/fit_test_window.stl` (about 15 minutes).
-      Now three frames, 1-3 notches: 2.0/1.6, 2.3/1.3 and 2.6/1.0 mm of gap (sides/top-bottom).
-   The shroud uses the 2-notch size.
+   Three frames, 1-3 notches: 2.0/1.6, 2.3/1.3 and 2.6/1.0 mm of gap (sides/top-bottom).
+   The bezel uses the 1-notch size, which fit on the car. Already done.
 2. `stl/fit_test_mount_driver.stl` (about 20 minutes, two small flat tabs). Bolt the taller
    tab to the arm (holes 1 and 4) and the shorter one to the aiming pad (both holes).
-   The bolts should go through snugly without forcing.
+   The bolts should go through snugly without forcing. Already done: the spacing fit.
 3. `stl/carrier_driver.stl` and `stl/bezel_driver.stl`, then the passenger pair. The bezel prints face down.
 4. `stl/spacer_washers.stl`: only if a tab doesn't sit flat against the arm or the pad.
 

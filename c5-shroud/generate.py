@@ -39,9 +39,11 @@ class Params:
     pod_bracket_w: float = 43.0   # width of the bracket foot
     pod_bracket_d: float = 21.0   # front-to-back length of the bracket foot
     pod_gap: float = 8.0          # space between neighbouring pods
-    # The row follows the curve of the headlight opening: the middle pod faces straight ahead,
-    # the outer two sit a little further back and turn outward by this angle.
-    pod_arc_deg: float = 8.0
+    # The row follows the slope of the headlight opening: every pod faces straight ahead, and
+    # each one is stepped back from its neighbour toward the fender (a staircase, like the
+    # KnightDriveTV bracket). pod_arc_deg can also turn the outer pods; 0 keeps them parallel.
+    pod_step: float = 12.0        # each pod sits this far behind the one on its hood side
+    pod_arc_deg: float = 0.0
     pod_bolt_d: float = 8.6       # slot width for the bracket stud (about 8 mm / 5/16 in)
     pod_stud_d: float = 8.0       # stud diameter, from the drawing
     pod_bolt_y: float = -31.5     # slot centre, measured back from the pod face
@@ -97,8 +99,8 @@ class Params:
     foam_channel_y: float = -22.0  # centre of the recess, behind the face
     # Window gap around the pod bezel, per side. The 4-notch test frame (1.8 / 1.8) fit but
     # needed to be a little wider and a little shorter, so: 1 mm wider, 1 mm shorter overall.
-    window_clear_x: float = 2.3   # each side, left and right
-    window_clear_y: float = 1.3   # top and bottom
+    window_clear_x: float = 2.0   # each side, left and right (the 1-notch test frame fit)
+    window_clear_y: float = 1.6   # top and bottom
     # (x, y) gaps on the window fit test, 1-3 notches; the middle one matches the shroud
     window_ladder: tuple = ((2.0, 1.6), (2.3, 1.3), (2.6, 1.0))
     shroud_tab_screw_d: float = 3.4  # M4 self-tapping into the carrier floor
@@ -163,9 +165,13 @@ def pod_poses(p):
     are one pitch apart along an arc, so the outer pods sit back and turn outward."""
     a = math.radians(p.pod_arc_deg)
     if a == 0:
-        return [(-pitch(p), 0.0, 0.0), (0.0, 0.0, 0.0), (pitch(p), 0.0, 0.0)]
-    r = pitch(p) / (2 * math.sin(a / 2))
-    return [(r * math.sin(k * a), -r * (1 - math.cos(k * a)), -k * p.pod_arc_deg) for k in (-1, 0, 1)]
+        base = [(k * pitch(p), 0.0, 0.0) for k in (-1, 0, 1)]
+    else:
+        r = pitch(p) / (2 * math.sin(a / 2))
+        base = [(r * math.sin(k * a), -r * (1 - math.cos(k * a)), -k * p.pod_arc_deg) for k in (-1, 0, 1)]
+    # step each pod back toward the fender (+X): the hood-side pod stays put, the middle one
+    # sits one step back and the fender-side one two steps back
+    return [(x, y - (k + 1) * p.pod_step, yaw) for k, (x, y, yaw) in zip((-1, 0, 1), base)]
 
 
 def at_pose(man, pose):
@@ -270,8 +276,13 @@ def carrier(p):
         return pts
 
     poses = pod_poses(p)
-    all_outer = [q for pose in poses for q in swept(pose, p.cup_wall)]
-    beam = CS.hull_points(all_outer).offset(1.0, m3d.JoinType.Round)   # 1 mm past the cups so no edges coincide
+    feet = [CS.hull_points(swept(pose, p.cup_wall)) for pose in poses]
+    # spine: joins the pockets across the band of depth they all share, like a stepped bracket
+    ys_lo = max(min(q[1] for q in swept(pose, p.cup_wall)) for pose in poses)
+    ys_hi = min(max(q[1] for q in swept(pose, p.cup_wall)) for pose in poses)
+    xs_all = [q[0] for pose in poses for q in swept(pose, p.cup_wall)]
+    spine = CS.square([max(xs_all) - min(xs_all), ys_hi - ys_lo]).translate([min(xs_all), ys_lo])
+    beam = CS.batch_boolean(feet + [spine], m3d.OpType.Add).offset(1.0, m3d.JoinType.Round)
     parts.append(M.extrude(beam, p.floor_t).translate([0, 0, -p.floor_t]))
     # stiffening rib round the beam's edge, kept away from the ends (the arm's pivot bolt)
     ring = (beam.offset(-0.3, m3d.JoinType.Miter) - beam.offset(-p.wall_t - 0.3, m3d.JoinType.Miter)) ^ CS.square([170, 400], center=True)
@@ -306,8 +317,8 @@ def carrier(p):
 
     # bosses under the floor for the shroud screws
     boss_z0 = -p.floor_t - p.lip_h
-    for x in shroud_tab_x(p):
-        parts.append(cyl_z(11, boss_z0, -p.floor_t + 0.01, x, y_front - 12))
+    for (x, y) in shroud_tabs(p):
+        parts.append(cyl_z(11, boss_z0, -p.floor_t + 0.01, x, y))
     # standoffs down to the bezel's bottom wall for its two rear screws
     bez_in = -p.shroud_margin_bot - p.floor_t + p.shroud_t
     for x in bezel_rear_x(p):
@@ -325,9 +336,9 @@ def carrier(p):
         ln = p.arm_slot_len if axis == "x" else p.pad_slot_len
         cuts.append(slot_y(p.mount_hole_d, ln, axis, y_back - 1, y_back + p.mount_wall_t + 1, hx, hz))
     # shroud screw holes near the front edge of the floor, in the gaps between pods
-    for x in shroud_tab_x(p):
+    for (x, y) in shroud_tabs(p):
         # blind pilot hole for an M4 self-tapping screw, stops 1.5 mm under the floor top
-        cuts.append(cyl_z(p.shroud_tab_screw_d - 0.4, boss_z0 - 1, -1.5, x, y_front - 12))
+        cuts.append(cyl_z(p.shroud_tab_screw_d - 0.4, boss_z0 - 1, -1.5, x, y))
 
     for x in bezel_rear_x(p):
         cuts.append(cyl_z(p.shroud_tab_screw_d - 0.4, bez_in - 1, -1.5, x, p.bezel_rear_screw_y))
@@ -371,8 +382,14 @@ def bezel_rear_x(p):
     return [-pitch(p) / 2, pitch(p) / 2]
 
 
-def shroud_tab_x(p):
-    return [-pitch(p) / 2, pitch(p) / 2]
+def shroud_tabs(p):
+    """(x, y) of the two front bezel screws: beside each outer pod's stud (toward the middle),
+    under that pod's own pocket and clear of the steps in the bezel face."""
+    out = []
+    for pose, side in ((pod_poses(p)[0], 1), (pod_poses(p)[2], -1)):
+        x, y = pose_pt(pose, side * 18, -p.floor_front_setback - 12)
+        out.append((x, y))
+    return out
 
 
 def splice_floor_holes(p):
@@ -405,18 +422,37 @@ def _at_x(l, x):
     return [x, y0 + (x - x0) / dx * dy]
 
 
+def _joins(p, off):
+    """Where neighbouring face panels meet: a corner if they're angled, a step if they're parallel."""
+    poses = pod_poses(p)
+    lines = [face_line(p, pose, off) for pose in poses]
+    out = []
+    for i in range(2):
+        (_, (dx1, dy1)), (_, (dx2, dy2)) = lines[i], lines[i + 1]
+        if abs(dx1 * dy2 - dy1 * dx2) > 1e-6:
+            q = _meet(lines[i], lines[i + 1])
+            out.append([q, q])
+        else:
+            xm = (poses[i][0] + poses[i + 1][0]) / 2
+            out.append([_at_x(lines[i], xm), _at_x(lines[i + 1], xm)])
+    return lines, out
+
+
 def face_outline(p, off, xe, y_rear):
-    """Plan-view outline: the faceted front (one facet per pod) plus straight sides and back."""
-    lines = [face_line(p, pose, off) for pose in pod_poses(p)]
-    front = [_at_x(lines[0], -xe), _meet(lines[0], lines[1]), _meet(lines[1], lines[2]), _at_x(lines[2], xe)]
-    pts = front + [[xe, y_rear], [-xe, y_rear]]
+    """Plan-view outline: one face panel per pod (stepped or angled) plus straight sides and back."""
+    lines, j = _joins(p, off)
+    front = [_at_x(lines[0], -xe)] + j[0] + j[1] + [_at_x(lines[2], xe)]
+    pts = []
+    for q in front + [[xe, y_rear], [-xe, y_rear]]:
+        if not pts or abs(q[0] - pts[-1][0]) + abs(q[1] - pts[-1][1]) > 1e-6:
+            pts.append(q)
     area = sum(a[0] * b[1] - b[0] * a[1] for a, b in zip(pts, pts[1:] + pts[:1]))
     return CS([pts if area > 0 else pts[::-1]])        # counter-clockwise for the fill rule
 
 
 def face_y_at(p, off, x):
-    lines = [face_line(p, pose, off) for pose in pod_poses(p)]
-    i = 0 if x < _meet(lines[0], lines[1])[0] else (1 if x < _meet(lines[1], lines[2])[0] else 2)
+    lines, j = _joins(p, off)
+    i = 0 if x < j[0][0][0] else (1 if x < j[1][0][0] else 2)
     return _at_x(lines[i], x)[1]
 
 
@@ -456,9 +492,8 @@ def shroud(p):
 
     # front tabs reaching back under the carrier floor for two M4 screws (forward-only slots)
     tabs = []
-    for x in shroud_tab_x(p):
-        ys = -p.floor_front_setback - 12
-        yb = face_y_at(p, y_face - p.shroud_t, x)
+    for (x, ys) in shroud_tabs(p):
+        yb = min(face_y_at(p, y_face - p.shroud_t, x - 9), face_y_at(p, y_face - p.shroud_t, x + 9))
         t = box(x - 9, x + 9, ys - p.bezel_travel - 7, yb + 1,
                 -p.floor_t - p.lip_h - 3, -p.floor_t - p.lip_h)
         t = t - slot_z(p.shroud_tab_screw_d + 0.6, p.bezel_travel + p.shroud_tab_screw_d + 0.6,

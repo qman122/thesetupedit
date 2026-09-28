@@ -72,7 +72,7 @@ half = (P.pod_slot_len - P.pod_bolt_d) / 2
 fwd = (P.pod_bolt_y + half) - P.pod_bolt_nominal_y
 back = P.pod_bolt_nominal_y - (P.pod_bolt_y - half)
 worst = max(overlap(carrier, g.pod_dummy(P, s)) for s in (-back, 0, fwd))
-gap_nominal = -P.pod_depth - (y_back + t)
+gap_nominal = min(y for (_, y, _) in g.pod_poses(P)) - P.pod_depth - (y_back + t)   # the rearmost pod
 gap_min = gap_nominal - back
 check(f"pods clear the carrier from {back:.1f} mm back to {fwd:.1f} mm forward", worst < 1e-6)
 check(f"cable room behind the pods: {gap_nominal:.1f} mm default, {gap_min:.1f} mm at full rearward",
