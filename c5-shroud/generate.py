@@ -97,14 +97,22 @@ class Params:
     # with flared ends in front of each gap between pods, set back from the front edge
     post_d: float = 9.0           # post width across the car
     post_len: float = 13.0        # post length front to back (slightly elongated, like theirs)
-    post_flare_w: float = 7.0     # trumpet ends: extra width where each post meets the shelf and the blade
-    post_flare_h: float = 12.0    # height of each trumpet flare
+    post_root_w: float = 9.0      # posts flare mostly at the bottom, spreading into the floor like roots
+    post_root_h: float = 22.0
+    post_cap_w: float = 1.5       # ...and only a little where they meet the blade
+    post_cap_h: float = 3.0
+    shadow_line: float = 1.5      # groove along the underside of the blade at the top of the slot
     post_recess: float = 5.0      # posts sit this far behind the front edge
     pod_recess: float = 14.0      # the pods sit this much deeper in the mouth (lenses back in the shadow)
     mouth_r: float = 10.0         # corner radius of the opening
     mouth_flare: float = 4.0      # the opening widens this much at the front edge along the bottom
     mouth_wrap: float = 9.0       # ...and this much at the ends, so the ends curve round instead of a flat side
-    front_bow: float = 6.0        # the lower lip bows forward this much in the middle, following the nose
+    front_bow: float = 6.0        # the face bows forward this much in the middle, following the nose
+    face_t: float = 3.0           # the face is a shell this thick, with the slot cut through it
+    top_corner_r: float = 10.0    # outline corners at the top, under the door
+    mouth_wall: float = 3.0       # the slot's walls, from the face back to the pods
+    mask_t: float = 1.5           # black mask just in front of each pod: only the lenses show through
+    mask_hole_r: float = 16.5     # (lens radius 16 plus 0.5)
     shelf_t: float = 3.0
     rail_t: float = 4.0           # top blade thickness; its front edge is rounded
     blade_depth: float = 30.0     # flat top blade, from the front edge back (slides under the cover)
@@ -113,9 +121,9 @@ class Params:
     fork_slot: float = 5.0
     fork_t: float = 2.5
     fork_x: float = 0.0           # fork centre, across the car from the middle of the bezel
-    lip_ext: float = 10.0         # how far the rolled lower lip sticks out past the front
-    rim_r: float = 4.0            # radius of the rolled lip
-    corner_r: float = 12.0        # bottom corners, seen from the front
+    lip_ext: float = 6.0          # the face's lower edge sits this far forward of its top edge
+    rim_r: float = 3.0            # the rolled rim round the slot is a tube this radius (6 mm lip)
+    corner_r: float = 28.0        # bottom corners of the outline, sweeping up into the sides
     end_wall_x: float = 123.0     # end walls of the frame start this far out (just past the outer pods)
     wing_t: float = 3.0           # side wings (ears)
     wing_screw_y: float = -54.0   # M4 screw through each wing into a boss on the carrier
@@ -438,14 +446,44 @@ def bezel_z(p):
     return z_top, z_top - p.bezel_h_hood, z_top - p.bezel_h_fender
 
 
+def tube(path, r, n0, segs=20):
+    """A closed-ended tube of radius r along a polyline of (u, z) points, centred at n = n0
+    (front frame coordinates), built directly as a mesh so it is one clean solid."""
+    path = np.asarray(path, float)
+    verts, tris = [], []
+    k = len(path)
+    for i in range(k):
+        a, b = path[max(i - 1, 0)], path[min(i + 1, k - 1)]
+        tu, tz = (b - a) / np.linalg.norm(b - a)
+        nu, nz = -tz, tu                            # in-plane normal
+        for j in range(segs):
+            ang = 2 * math.pi * j / segs
+            c, s_ = math.cos(ang), math.sin(ang)
+            verts.append([path[i][0] + r * c * nu, n0 + r * s_, path[i][1] + r * c * nz])
+    for i in range(k - 1):
+        for j in range(segs):
+            a0, a1 = i * segs + j, i * segs + (j + 1) % segs
+            b0, b1 = a0 + segs, a1 + segs
+            tris += [[a0, b0, b1], [a0, b1, a1]]
+    for end, ring in ((0, 0), (1, k - 1)):          # end caps
+        verts.append(list(np.mean(np.asarray(verts[ring * segs:(ring + 1) * segs]), 0)))
+        cidx = len(verts) - 1
+        for j in range(segs):
+            a0, a1 = ring * segs + j, ring * segs + (j + 1) % segs
+            tris.append([cidx, a0, a1] if end == 0 else [cidx, a1, a0])
+    mesh = m3d.Mesh(np.asarray(verts, np.float32), np.asarray(tris, np.uint32))
+    man = M(mesh)
+    return man if man.volume() > 0 else M(m3d.Mesh(np.asarray(verts, np.float32), np.asarray(tris, np.uint32)[:, ::-1].copy()))
+
+
 def shroud(p):
-    """The bezel. Its outside follows the stock C5 bezel, which the KnightDriveTV TripLED bezel
-    copies: a flat top blade that slides in under the front of the headlight cover, with a forked
-    tab that slides onto the clip under the cover; a front that is taller at the hood end, with a
-    rolled lip running along the bottom and up both ends; and a wing (ear) at each end that screws
-    to the carrier. Like the KnightDriveTV bezel it is an open frame: the pods sit just above a
-    floor shelf, behind thin round posts that hide the gaps between them. The front sweeps back
-    along the pods' step."""
+    """The bezel, built like KnightDriveTV's: a curved face that fills the pocket under the door,
+    with a letterbox slot cut through it and a rolled rim round the slot. The face's outline
+    follows the stock C5 bezel and the door: big rounded lower corners, taller at the hood end.
+    Inside the slot the pods sit back in shadow behind a black mask with holes for the lenses
+    only, and thin posts that spread into the floor like roots. The flat top blade slides in under
+    the front of the headlight cover with a forked tab onto its clip, like the stock bezel, and a
+    wing (ear) at each end screws to the carrier."""
     ow = p.opening_w - 2 * p.opening_side_clear
     z_top, zb_hood, zb_fender = bezel_z(p)
     s, c0 = front_line(p)
@@ -453,148 +491,170 @@ def shroud(p):
     kx = F[0][0]                                    # cos of the sweep angle
     U = ow / 2 / kx                                 # the ends, measured along the front
     poses = pod_poses(p)
-    f_bot = pod_zc(p) - p.pod_face_h / 2 - 1.2      # top of the floor shelf, just under the pod faces
-    f_top = z_top - p.rail_t                        # underside of the top blade
+    f_bot = pod_zc(p) - p.pod_face_h / 2 - 1.2      # bottom of the slot, just under the pod faces
+    f_top = z_top - p.rail_t                        # top of the slot: the underside of the blade
+    dm = p.pod_recess + p.shroud_t                  # depth of the slot, front to the nearest pod face
+    zmin = min(zb_hood, zb_fender)
 
     def yf(x):
         return c0 + s * x
 
-    def zb(u):                                      # bottom of the lip; the hood end is -u
+    def zb(u):                                      # bottom of the face; the hood end is -u
         t = min(max((u + U) / (2 * U), 0.0), 1.0)
         return zb_hood + t * (zb_fender - zb_hood)
 
+    def bulge(u, z):                                # how far the curved face sits in front of the flat front line
+        return p.front_bow * (1 - (u / U) ** 2) + p.lip_ext * (z_top - z) / (z_top - zmin)
+
+    def warp(man, edge=4.0):
+        """Bend a part built against the flat front onto the curved face."""
+        def f(v):
+            out = v.copy()
+            out[:, 1] += p.front_bow * (1 - np.clip(v[:, 0] / U, -1, 1) ** 2) + \
+                p.lip_ext * (z_top - v[:, 2]) / (z_top - zmin)
+            return out
+        return man.refine_to_length(edge).warp_batch(f)
+
     parts = []
-    # floor shelf: from the front back to just in front of each pod's face
+    # --- the face: a shell with the door-shaped outline, bent to the nose ---
+    ctr = [(-U + p.top_corner_r, z_top - p.top_corner_r, p.top_corner_r),
+           (U - p.top_corner_r, z_top - p.top_corner_r, p.top_corner_r),
+           (-U + p.corner_r, zb(-U) + p.corner_r, p.corner_r),
+           (U - p.corner_r, zb(U) + p.corner_r, p.corner_r)]
+    outline = CS.hull_points([[cu + rr * math.cos(a / 24 * math.pi), cz + rr * math.sin(a / 24 * math.pi)]
+                              for (cu, cz, rr) in ctr for a in range(48)])
+    face = plate_xz(outline, 0, p.face_t)            # n from -face_t to 0
+    # the slot's walls: a shell lofted from the face back to the pods, easing in on a curve
+    uo = (p.end_wall_x - 0.4) / kx
+    ztop = f_top - 0.29                             # (clear of the blade nose's lowest facets)
+
+    def slot_secs(grow, n_front, n_back):
+        out = []
+        for i in range(13):
+            t = i / 12
+            e = (1 - t) ** 2
+            half = uo + p.mouth_wrap * e + grow
+            zlo = f_bot - p.mouth_flare * e - grow
+            rad = p.mouth_r + p.mouth_wrap * e + grow
+            zt = ztop - 0.03 * i + (grow and 0.6)     # the outer shell tucks up into the blade
+            out.append(plate_xz(rrect(2 * half, zt - zlo, rad).translate([0, (zt + zlo) / 2]),
+                                n_front - t * (n_front - n_back), 0.2))
+        return [M.batch_hull([a_, b_]) for a_, b_ in zip(out, out[1:])]
+    walls = slot_secs(p.mouth_wall, -1.0, -dm)
+    parts.append(warp(M.batch_boolean([face] + walls, m3d.OpType.Add)).transform(F))
+
+    # floor shelf under the slot, from the slot walls back to just in front of each pod's face
     xs = [x for (x, _, _) in poses]
     mids = [(xs[0] + xs[1]) / 2, (xs[1] + xs[2]) / 2]
     cols = [(-ow / 2 - 0.5, mids[0]), (mids[0] - 2, mids[1]), (mids[1] - 2, ow / 2 + 0.5)]   # ends trimmed below
-    plan = CS.batch_boolean([CS([[[xa, y + p.shroud_gap], [xb, y + p.shroud_gap], [xb, yf(xb) - 0.2], [xa, yf(xa) - 0.2]]])
+    plan = CS.batch_boolean([CS([[[xa, y + p.shroud_gap], [xb, y + p.shroud_gap], [xb, yf(xb) - dm + 3], [xa, yf(xa) - dm + 3]]])
                              for (xa, xb), (_, y, _) in zip(cols, poses)], m3d.OpType.Add)
     parts.append(M.extrude(plan.simplify(0.01), p.shelf_t + 0.13).translate([0, 0, f_bot - p.shelf_t - 0.13]))
-    # end walls of the cavity: from the front back to the outer pods' faces
-    for (xa, xb), (_, y, _) in ((( -ow / 2 - 0.5, -p.end_wall_x), poses[0]), ((p.end_wall_x, ow / 2 + 0.5), poses[2])):
+    # end walls of the cavity: from the slot walls back to the outer pods' faces
+    for (xa, xb), (_, y, _) in (((-ow / 2 - 0.5, -p.end_wall_x), poses[0]), ((p.end_wall_x, ow / 2 + 0.5), poses[2])):
         sec = CS([[[xa, y + p.shroud_gap], [xb, y + p.shroud_gap], [xb, yf(xb) - 1], [xa, yf(xa) - 1]]])
         parts.append(M.extrude(sec, z_top - 0.5 - (f_bot - p.shelf_t - 0.37)).translate([0, 0, f_bot - p.shelf_t - 0.37]))
-    # the mouth: a band round the opening, the full depth from the front to the nearest pod face
-    dm = p.pod_recess + p.shroud_t
-    parts.append(box(-U, U, -dm, 0, f_bot - p.shelf_t - 0.37, z_top - 0.5).transform(F))
+    # black mask just in front of each pod: a plate with holes for the two lenses only
+    for (x, y, _) in poses:
+        plate = rrect(p.pod_face_w + p.pod_gap + 1.0, f_top - f_bot + 1.0, 1.0).translate([0, (f_top + f_bot) / 2])
+        for lx in (-18.5, 18.5):
+            plate = plate - CS.circle(p.mask_hole_r, 64).translate([lx, pod_zc(p)])
+        parts.append(plate_xz(plate, y + p.shroud_gap + p.mask_t, p.mask_t).translate([x, 0, 0]))
+    # where the pods step back, a thin wall joins one mask to the next so no pod shows between them
+    for a, b in zip(poses, poses[1:]):
+        xm = (a[0] + b[0]) / 2
+        y0, y1 = min(a[1], b[1]) + p.shroud_gap + 0.3, max(a[1], b[1]) + p.shroud_gap + p.mask_t - 0.3
+        parts.append(box(xm - p.mask_t / 2, xm + p.mask_t / 2, y0, y1, f_bot - 0.37, f_top + 0.21))
 
-    # top blade: slides in under the front of the headlight cover; rounded front edge
+    # top blade: thin and continuous, slides in under the front of the headlight cover
     rt = p.rail_t / 2
-    parts.append(box(-U, U, -p.blade_depth, -0.5, z_top - p.rail_t, z_top).transform(F))
-    # (round parts sit a hair off the front plane and the blade's top so their facets never
-    # land exactly on a flat face, which would leave the STL with pinched edges)
-    parts.append(M.hull_points(ball_pts(-U + rt + 0.2, 0.37, z_top - rt - 0.13, rt) +
-                               ball_pts(U - rt - 0.2, 0.37, z_top - rt - 0.13, rt)).transform(F))
-    # forked tab behind the blade, flush with its top: slides onto the clip under the cover
+    blade = [box(-U, U, -p.blade_depth, -0.5, z_top - p.rail_t, z_top),
+             M.hull_points(ball_pts(-U + rt + 0.2, 0.37, z_top - rt - 0.13, rt) +
+                           ball_pts(U - rt - 0.2, 0.37, z_top - rt - 0.13, rt))]
     uf = p.fork_x / kx
-    parts.append(box(uf - p.fork_w / 2, uf + p.fork_w / 2, -p.blade_depth - p.fork_len, -p.blade_depth + 1,
-                     z_top - p.fork_t, z_top).transform(F))
+    blade.append(box(uf - p.fork_w / 2, uf + p.fork_w / 2, -p.blade_depth - p.fork_len, -p.blade_depth + 1,
+                     z_top - p.fork_t, z_top))
+    parts.append(warp(M.batch_boolean(blade, m3d.OpType.Add)).transform(F))
 
-    # rolled lip: along the bottom (sticking out lip_ext), round the bottom corners and up
-    # both ends; the front slopes down and forward from the tunnel floors to meet it
-    r, R, cr = p.rim_r, p.lip_ext - p.rim_r, p.corner_r
-    up = U - r - 0.2
-    rim = []                                        # (u, n, z) of the rim's centre line, below the tunnels
-    for side in (-1, 1):
-        ue = side * up
-        zc = zb(ue) + r + cr                        # centre of the bottom corner arc
-        arc = [(ue - side * cr + side * cr * math.sin(math.radians(a)),
-                0.37 + R * math.cos(math.radians(a)),
-                zc - cr * math.cos(math.radians(a))) for a in range(0, 91, 15)]
-        side_pts = [(ue, 0.37, z) for z in np.linspace(zc, f_bot - r - 1, 5)[1:]]
-        rim += (arc + side_pts) if side > 0 else (side_pts[::-1] + arc[::-1])
-    for u in np.linspace(-up + cr, up - cr, 11):     # the bottom run bows forward in the middle
-        rim.append((u, 0.37 + R + p.front_bow * (1 - (u / U) ** 2), zb(u) + r))
-    pts = []
-    for (u, n, z) in rim:
-        pts += ball_pts(u, n, z, r) + [[u, -2.5, z - r]]
-    pts += [[u, -0.4, f_bot - 0.3] for u in (-up, up)] + [[u, -2.5, zb(u)] for u in np.linspace(-up + cr, up - cr, 9)]
-    parts.append(M.hull_points(pts).transform(F))   # the lip seen from the front is convex: one hull
-    # rounded upright edges above the lip, beside the outer tunnels, up to the blade
-    for u in (-up, up):
-        parts.append(M.hull_points(ball_pts(u * 0.999, 0.37, f_bot - r - 3, r * 0.9) +
-                                   ball_pts(u * 0.999, 0.37, z_top - rt - 0.13, rt)).transform(F))
-
-    # side wings (ears): full side walls like the stock ears, from the front back past the
-    # pods to just in front of the arm and the pad, and from the blade down over the carrier
+    # side wings (ears): full side walls from the face back past the pods to just in front of
+    # the arm and the pad
     wy, wz, wr_ = p.wing_screw_y, p.wing_screw_z, p.wing_r
     for side in (1, -1):
         xo, xi = side * (ow / 2 + 0.5), side * (ow / 2 - p.wing_t)      # outer face trimmed below
         yfr = min(yf(xo), yf(xi)) - 0.71
-        zlow = zb(side * up) + r + cr - 1.3         # where the bottom corner turns up (tucked into the lip)
+        ze = zb(side * U) + p.corner_r * 0.6        # where the rounded bottom corner meets the side
         yb_, zbk = p.wing_back_y + wr_, p.wing_back_z + wr_
         corners = [[yb_ + wr_ * math.cos(a / 8 * math.pi), zc_ + wr_ * math.sin(a / 8 * math.pi)]
                    for zc_ in (z_top - wr_, zbk) for a in range(16)]
-        prof = CS.hull_points([[yfr, zlow], [yfr, z_top], [yfr - 20, z_top]] +
+        prof = CS.hull_points([[yfr + bulge(side * U, ze) - 1.0, ze], [yfr, z_top], [yfr - 20, z_top]] +
                               [q for q in corners if q[1] <= z_top])
         x0 = min(xo, xi)
         parts.append(M.extrude(prof, p.wing_t + 0.5).transform([[0, 0, 1, x0], [1, 0, 0, 0], [0, 1, 0, 0]]))
 
     # front tabs reaching back under the carrier floor for two M4 screws (forward-only slots)
+    zt_ = -p.floor_t - p.lip_h
     for (x, ys), pose in zip(shroud_tabs(p), (poses[0], poses[2])):
-        parts.append(box(x - 9, x + 9, ys - p.bezel_travel - 7, yf(x) - 0.5,
-                         -p.floor_t - p.lip_h - 3, -p.floor_t - p.lip_h))   # reaches forward into the lip
+        yface = yf(x) + bulge(x / kx, zt_) - p.face_t + 1.0
+        parts.append(box(x - 9, x + 9, ys - p.bezel_travel - 7, yface, zt_ - 3, zt_))
     body = M.batch_boolean(parts, m3d.OpType.Add)
 
     cuts = []
-    # the fork's slot, open at the back, with a rounded end
+    # the slot itself, and a shadow line along the underside of the blade at its top
+    cuts.append(warp(M.batch_boolean(slot_secs(0.0, 3.0, -dm - 1.0), m3d.OpType.Add)).transform(F))
+    cuts.append(warp(box(-uo, uo, -3.0, 3.0, ztop - 0.5, f_top + p.shadow_line)).transform(F))
     sl = CS.square([p.fork_slot, p.fork_len], center=True).offset(p.fork_slot / 2 * 0.999, m3d.JoinType.Round)
     sl = sl ^ CS.square([p.fork_slot + 2, p.fork_len + p.fork_slot], center=True).translate([0, -p.fork_slot / 2])
-    cuts.append(M.extrude(sl.translate([uf, -p.blade_depth - p.fork_len / 2 - 0.01 - 4]), p.fork_t + 2)
-                .translate([0, 0, z_top - p.fork_t - 1]).transform(F))
+    cuts.append(warp(M.extrude(sl.translate([uf, -p.blade_depth - p.fork_len / 2 - 0.01 - 4]), p.fork_t + 2)
+                     .translate([0, 0, z_top - p.fork_t - 1])).transform(F))
     for (x, ys) in shroud_tabs(p):
         cuts.append(slot_z(p.shroud_tab_screw_d + 0.6, p.bezel_travel + p.shroud_tab_screw_d + 0.6,
                            -40, 0, x, ys - p.bezel_travel / 2))
-    # access hole in the hood-end wing (-X) for the aiming adjuster, like the stock ear
     ay, az = p.access_hole_yz
     cuts.append(cyl_x(p.access_hole_d, -ow / 2 - 5, -ow / 2 + p.wing_t + 5, ay, az))
-    # wing slots: the screw sits at the front end, so the bezel can slide forward (never back)
     for side in (1, -1):
         sl = CS.square([p.bezel_travel, 0.01], center=True).offset((p.shroud_tab_screw_d + 0.6) / 2, m3d.JoinType.Round)
         sl = sl.translate([wy - p.bezel_travel / 2, wz])
         cuts.append(M.extrude(sl, 20).transform([[0, 0, 1, side * ow / 2 - 10], [1, 0, 0, 0], [0, 1, 0, 0]]))
-    # the mouth opening: round-cornered, wider at the front on the sides and bottom (the top
-    # blade stays one clean line), narrowing back to just outside the pods
-    # loft of 12 sections from the front edge back to the pods, easing in on a curve so the
-    # ends wrap round and the floor rolls down into the lip
-    uo = (p.end_wall_x - 0.4) / kx
-    ztop = f_top - 0.29                             # (clear of the nose's lowest facets)
-    secs = []
-    for i in range(13):
-        t = i / 12                                   # 0 at the front edge, 1 at the back
-        e = (1 - t) ** 2
-        half = uo + p.mouth_wrap * e
-        zlo = f_bot - p.mouth_flare * e
-        rad = p.mouth_r + p.mouth_wrap * e
-        n = 3.0 - t * (dm + 4.0)
-        zt = ztop - 0.03 * i                         # tops a hair apart, never coplanar
-        secs.append(plate_xz(rrect(2 * half, zt - zlo, rad).translate([0, (zt + zlo) / 2]), n, 0.2))
-    cuts += [M.batch_hull([a_, b_]).transform(F) for a_, b_ in zip(secs, secs[1:])]
     out = M.batch_boolean([body] + cuts, m3d.OpType.Subtract)
 
-    # posts: slightly elongated front to back, with trumpet flares into the shelf and the blade,
-    # trimmed flat behind so they never reach the pods
+    # rolled rim round the slot's front edge: down one side, along the bottom, up the other,
+    # its ends buried in the blade
+    rr = p.rim_r
+    hw = uo + p.mouth_wrap + rr * 0.6
+    zl = f_bot - p.mouth_flare - rr * 0.6
+    rc = p.mouth_r + p.mouth_wrap + rr * 0.6
+    zt_end = z_top - p.rail_t / 2
+    path = [(-hw, z) for z in np.arange(zt_end, zl + rc, -2.0)]
+    path += [(-hw + rc - rc * math.cos(a), zl + rc - rc * math.sin(a)) for a in np.linspace(0, math.pi / 2, 16)]
+    path += [(u, zl) for u in np.arange(-hw + rc + 2.0, hw - rc - 1.0, 2.0)]
+    path += [(hw - rc + rc * math.sin(a), zl + rc - rc * math.cos(a)) for a in np.linspace(0, math.pi / 2, 16)]
+    path += [(hw, z) for z in np.arange(zl + rc + 2.0, zt_end + 0.01, 2.0)]
+    clean = [path[0]]
+    for q in path[1:]:
+        if math.hypot(q[0] - clean[-1][0], q[1] - clean[-1][1]) > 0.5:
+            clean.append(q)
+    rim = warp(tube(clean, rr, -rr * 0.35), 2.0)
+
+    # posts: slightly elongated front to back, spreading into the floor like roots and only
+    # just flaring into the blade, trimmed flat behind so they never reach the pods
     sec = CS.square([0.01, max(p.post_len - p.post_d, 0.01)], center=True).offset(p.post_d / 2 - 0.005, m3d.JoinType.Round)
     h = f_top - f_bot + 1.0                         # 0.5 mm into the shelf and the blade
+    hwp, hlp = p.post_d / 2, p.post_len / 2
+
+    def flare(v):
+        z = v[:, 2]
+        g_ = p.post_root_w * np.clip(1 - z / p.post_root_h, 0, 1) ** 2 + \
+            p.post_cap_w * np.clip(1 - (h - z) / p.post_cap_h, 0, 1) ** 2
+        out = v.copy()
+        out[:, 0] *= (hwp + g_) / hwp
+        out[:, 1] *= (hlp + g_) / hlp
+        return out
     posts = []
     for (x, y, y_min) in post_xy(p):
-        # one smooth trumpet curve at each end: extra width = W (1 - d/H)^2, applied to a finely
-        # divided extrusion so the flare is a single smooth surface
-        W, H = p.post_flare_w, p.post_flare_h
-        hw, hl = p.post_d / 2, p.post_len / 2
-
-        def trumpet(v, W=W, H=H, hw=hw, hl=hl, h=h):
-            d = np.minimum(v[:, 2], h - v[:, 2])
-            g_ = W * np.clip(1 - d / H, 0, 1) ** 2
-            out = v.copy()
-            out[:, 0] *= (hw + g_) / hw
-            out[:, 1] *= (hl + g_) / hl
-            return out
-        post = M.extrude(sec, h, n_divisions=int(h / 0.6)).warp_batch(trumpet).translate([x, y, f_bot - 0.5])
-        post = post ^ box(x - 30, x + 30, y_min, y + 40, f_bot - 1, f_top + 1)
+        post = M.extrude(sec, h, n_divisions=int(h / 0.6)).warp_batch(flare).translate([x, y, f_bot - 0.5])
+        post = post ^ box(x - 30, x + 30, y_min + p.mask_t, y + 40, f_bot - 1, f_top + 1)
         posts.append(post ^ box(-U, U, -300, -0.8, -300, 300).transform(F))   # stays behind the front edge
-    out = M.batch_boolean([out] + posts, m3d.OpType.Add)
+    out = M.batch_boolean([out, rim.transform(F)] + posts, m3d.OpType.Add)
     return out ^ box(-ow / 2, ow / 2, -300, 300, -300, 300)
 
 

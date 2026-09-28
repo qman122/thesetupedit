@@ -86,41 +86,38 @@ stock bezel is held three ways, and so is this one:
   M4 × 16 screw up into a boss under the carrier floor.
 
 **Shape:**
-- **Front outline:** like the stock bezel, taller at the hood end than at the fender end:
-  about 100 mm and 78 mm (`bezel_h_hood`, `bezel_h_fender`).
-  - The band below the opening is kept short, like KnightDriveTV's, so the opening fills
-    most of the pocket under the door.
-  - The lip's lower edge rises toward the fender.
-  - These heights are estimates until the stock bezel is measured.
-- **Lower lip:** below the lights, the front slopes down and forward to a rolled lip. The
-  lip runs along the bottom, round the bottom corners and up both ends.
-- **Open frame, like KnightDriveTV's CAD and scan:** one rounded "mouth" across all
-  three pods.
-  - **Opening:** lofted through 13 sections that ease in on a curve. It is 9 mm wider at
-    the front edge at the ends and 4 mm lower along the bottom, so the ends wrap round
-    instead of showing a flat side, and the floor rolls down into the lip. Corners are
-    10 mm at the back and 19 mm at the front.
-  - **Top blade:** stays one clean, continuous line above the opening.
-  - **Pods:** sit 14 mm deeper than they have to (`pod_recess`), so the lenses glow from
-    back in the shadow. The cavity floor (a shelf just under the pod faces), end walls and
-    top blade form one continuous shell.
-  - **Posts:** stand in front of each gap between pods, 9 mm wide and 13 mm front to back.
-    Each end flares in one smooth trumpet curve: 7 mm extra width at the shelf and the
-    blade, easing to nothing over 12 mm. They're trimmed flat behind so they never touch
-    the pods.
+- **Built like KnightDriveTV's:** a curved 3 mm face with a letterbox slot cut through it,
+  not a box with a front.
+  - **Outline:** follows the stock bezel and the door. It is a rounded rectangle with
+    28 mm lower corners sweeping up into the sides and 10 mm corners under the door.
+    It's about 100 mm tall at the hood end and 78 mm at the fender end
+    (`bezel_h_hood`, `bezel_h_fender`; estimates until the stock bezel is measured).
+  - **Curve:** the face bows 6 mm forward in the middle, and its lower edge sits 6 mm
+    forward of its top (`front_bow`, `lip_ext`). Following the body exactly needs profiles
+    of the nose; see "What changed in v6".
+  - **Slot:** about 5:1, lofted back to the pods through 13 sections that ease in. It is
+    9 mm wider at the ends and 4 mm lower along the bottom at the front, so the ends wrap
+    round. A 3 mm shell forms its walls.
+  - **Rim:** a 6 mm rolled rim runs down each side and along the bottom of the slot. Its
+    ends tuck into the top blade.
+  - **Shadow line:** a 1.5 mm groove runs under the blade along the top of the slot.
+  - **Mask:** a black plate just in front of each pod has holes for the two lenses only.
+    Thin walls join the masks where the pods step back, so only the lenses show and the
+    pod bodies stay in shadow.
+  - **Posts:** one in front of each gap between pods, 9 mm wide and 13 mm front to back.
+    They spread into the floor like roots (9 mm extra over 22 mm) and only just flare into
+    the blade.
+  - **Pods:** sit 14 mm deeper than they have to (`pod_recess`).
   - **Light the posts block** (checked by casting rays from each lens, seen from above at
     lens height):
     - Every lens is completely clear for at least 11° either side of straight ahead.
       `check.py` tests 10°.
-    - The lens on the hood side of the middle and fender pods sits 12 mm behind the post
-      in front of it, so at wide angles toward the hood it loses some light: about 18% at
-      20° and 27% at 30°.
-    - Setting `pod_recess` to 0 brings that down to 0% at 20° and 9% at 30°, but the lenses
-      then sit almost at the front edge.
-  - **Lower lip:** bows 6 mm forward in the middle to follow the nose (`front_bow`). It
-    isn't built off the body surface: that needs a scan of the car's nose (see below).
-  - **Settings:** `post_*`, `pod_recess`, `mouth_*`, `front_bow`, `shelf_t` and
-    `end_wall_x` in `generate.py`.
+    - The lens on the hood side of the middle and fender pods loses some light at wide
+      angles toward the hood: about 18% at 20° and 27% at 30°.
+  - **Not copied:** KnightDriveTV's fender end flares outward like a bell and their hood
+    end runs into a long flat tongue. Both follow the pocket past the 279 mm opening, so
+    they need the nose profiles. The side walls here stay straight, 5 mm inside the
+    opening.
 
 **Before printing the full bezel,** print `stl/fit_test_blade_driver.stl`. It's just the
 top blade and fork, 3.7 mm thick. Slide it in under the front of the headlight cover the
@@ -139,10 +136,9 @@ and check the lip and wings don't touch anything as it goes down into the pocket
 
 - **The top slides into the headlight cover like the stock bezel,** with the same flat top
   blade and forked tab onto the cover's clip. This replaces the foam strip.
-- **The front is an open frame like KnightDriveTV's.** It has a lofted mouth whose ends
-  wrap round, the pods set 14 mm deeper, and smooth trumpet-flared posts between them,
-  instead of a tunnel per pod. The band below the opening is about half as tall as
-  before.
+- **The bezel is built like KnightDriveTV's:** a curved shell face with a letterbox slot
+  cut through it. It has a rolled rim, a door-shaped outline with big lower corners, a
+  lens-only mask, and root-flared posts, instead of a box with a front face.
 - **To follow the body exactly, the face needs a scan of the nose.** A LiDAR iPhone with
   Polycam, exported as STL or OBJ, is enough. Profiles from a contour gauge at 3–4 places
   across the headlight pocket also work.
