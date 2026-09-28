@@ -92,10 +92,14 @@ class Params:
     shroud_margin_top: float = 8.0   # bezel top (the cover's underside) above the pod tops (ESTIMATE)
     bezel_h_hood: float = 148.0   # front height at the hood end, top of the blade to the bottom of the lip (ESTIMATE, from video)
     bezel_h_fender: float = 102.0  # front height at the fender end (ESTIMATE, from video)
-    block_bot: float = -20.0      # solid behind the front stops here; the lip's scoop carries on below
     bezel_travel: float = 16.0    # the bezel's screw slots let it slide this far forward of the pods (never back)
-    cell_depth: float = 12.0      # each window gets its own sleeve reaching back around the pod bezel
-    cell_wall: float = 1.4
+    # KnightDriveTV-style open frame: a floor shelf just under the pods, and a thin round post
+    # with flared ends in front of each gap between pods, set back from the front edge
+    post_d: float = 9.0
+    post_flare: float = 3.5       # extra radius where each post meets the blade and the shelf
+    post_flare_h: float = 7.0
+    post_recess: float = 4.0      # posts sit this far behind the front edge
+    shelf_t: float = 3.0
     rail_t: float = 4.0           # top blade thickness; its front edge is rounded
     blade_depth: float = 30.0     # flat top blade, from the front edge back (slides under the cover)
     fork_len: float = 25.0        # forked tab behind the blade: slides onto the clip under the cover
@@ -106,9 +110,7 @@ class Params:
     lip_ext: float = 10.0         # how far the rolled lower lip sticks out past the front
     rim_r: float = 4.0            # radius of the rolled lip
     corner_r: float = 22.0        # bottom corners, seen from the front
-    flare_bot: float = 4.0        # each tunnel opens this much lower at the front than at the pod
-    front_clear: float = 1.0      # front opening: pod face + this much each side (the posts hide the gaps)
-    end_flare: float = 2.0        # outer tunnels open this much wider toward the ends
+    end_wall_x: float = 123.0     # end walls of the frame start this far out (just past the outer pods)
     wing_t: float = 3.0           # side wings (ears)
     wing_screw_y: float = -54.0   # M4 screw through each wing into a boss on the carrier
     wing_screw_z: float = 4.0
@@ -384,13 +386,22 @@ def shroud_tabs(p):
     return out
 
 
+def post_xy(p):
+    """(x, y) of the round posts: one in front of each gap between neighbouring pods, just ahead
+    of the forward pod's face."""
+    poses = pod_poses(p)
+    r = p.post_d / 2
+    return [((a[0] + b[0]) / 2, max(a[1], b[1]) + p.shroud_gap + r + 0.8) for a, b in zip(poses, poses[1:])]
+
+
 def front_line(p):
-    """The bezel front seen from above, y = c0 + s * x. It follows the pods' step and sits far
-    enough forward to leave shroud_t of plastic at the shallow side of every tunnel."""
+    """The bezel front seen from above, y = c0 + s * x. It follows the pods' step, clears every
+    pod face, and sits post_recess in front of the posts."""
     poses = pod_poses(p)
     s = (poses[-1][1] - poses[0][1]) / (poses[-1][0] - poses[0][0])
     half = p.pod_face_w / 2 + p.window_clear_x
     c0 = max(y + p.shroud_gap + p.shroud_t - s * (x + dx) for (x, y, _) in poses for dx in (-half, half))
+    c0 = max([c0] + [y + p.post_d / 2 + p.post_recess - s * x for (x, y) in post_xy(p)])
     return s, c0
 
 
@@ -421,7 +432,9 @@ def shroud(p):
     copies: a flat top blade that slides in under the front of the headlight cover, with a forked
     tab that slides onto the clip under the cover; a front that is taller at the hood end, with a
     rolled lip running along the bottom and up both ends; and a wing (ear) at each end that screws
-    to the carrier. The front sweeps back along the pods' step, and a tunnel runs back to each pod."""
+    to the carrier. Like the KnightDriveTV bezel it is an open frame: the pods sit just above a
+    floor shelf, behind thin round posts that hide the gaps between them. The front sweeps back
+    along the pods' step."""
     ow = p.opening_w - 2 * p.opening_side_clear
     z_top, zb_hood, zb_fender = bezel_z(p)
     s, c0 = front_line(p)
@@ -429,11 +442,8 @@ def shroud(p):
     kx = F[0][0]                                    # cos of the sweep angle
     U = ow / 2 / kx                                 # the ends, measured along the front
     poses = pod_poses(p)
-    win_w = p.pod_face_w + 2 * p.window_clear_x
-    win_h = p.pod_face_h + 2 * p.window_clear_y
-    wr = p.pod_face_r + min(p.window_clear_x, p.window_clear_y)
-    win_bot = pod_zc(p) - win_h / 2
-    f_bot, f_top = win_bot - p.flare_bot, z_top - p.rail_t      # front openings, top and bottom
+    f_bot = pod_zc(p) - p.pod_face_h / 2 - 1.2      # top of the floor shelf, just under the pod faces
+    f_top = z_top - p.rail_t                        # underside of the top blade
 
     def yf(x):
         return c0 + s * x
@@ -443,14 +453,25 @@ def shroud(p):
         return zb_hood + t * (zb_fender - zb_hood)
 
     parts = []
-    # solid behind the front, one column per pod, each stopping just in front of its pod's face.
-    # A rearward column reaches 2 mm past the midpoint to wrap its neighbour's cell.
+    # floor shelf: from the front back to just in front of each pod's face
     xs = [x for (x, _, _) in poses]
     mids = [(xs[0] + xs[1]) / 2, (xs[1] + xs[2]) / 2]
     cols = [(-ow / 2 - 0.5, mids[0]), (mids[0] - 2, mids[1]), (mids[1] - 2, ow / 2 + 0.5)]   # ends trimmed below
-    plan = CS.batch_boolean([CS([[[xa, y + p.shroud_gap], [xb, y + p.shroud_gap], [xb, yf(xb)], [xa, yf(xa)]]])
+    plan = CS.batch_boolean([CS([[[xa, y + p.shroud_gap], [xb, y + p.shroud_gap], [xb, yf(xb) - 0.2], [xa, yf(xa) - 0.2]]])
                              for (xa, xb), (_, y, _) in zip(cols, poses)], m3d.OpType.Add)
-    parts.append(M.extrude(plan.simplify(0.01), z_top - p.block_bot).translate([0, 0, p.block_bot]))
+    parts.append(M.extrude(plan.simplify(0.01), p.shelf_t + 0.13).translate([0, 0, f_bot - p.shelf_t - 0.13]))
+    # round posts with flared ends, from the shelf up to the blade
+    pr, fr, fh = p.post_d / 2, p.post_d / 2 + p.post_flare, p.post_flare_h
+    for (x, y) in post_xy(p):
+        h = f_top - f_bot + 1.0
+        post = M.batch_boolean([M.cylinder(h, pr),
+                                M.cylinder(fh, fr, pr),
+                                M.cylinder(fh, pr, fr).translate([0, 0, h - fh])], m3d.OpType.Add)
+        parts.append(post.translate([x, y, f_bot - 0.5]))
+    # end walls of the frame, between the outer pods and the wings
+    for side in (-1, 1):
+        u0, u1 = sorted([side * p.end_wall_x / kx, side * (U + 1)])
+        parts.append(box(u0, u1, -14, -0.1, f_bot - p.shelf_t - 0.37, z_top - 0.5).transform(F))
 
     # top blade: slides in under the front of the headlight cover; rounded front edge
     rt = p.rail_t / 2
@@ -492,7 +513,7 @@ def shroud(p):
     wy, wz, wr_ = p.wing_screw_y, p.wing_screw_z, p.wing_r
     for side in (1, -1):
         xo, xi = side * (ow / 2 + 0.5), side * (ow / 2 - p.wing_t)      # outer face trimmed below
-        yfr = min(yf(xo), yf(xi)) - 0.2
+        yfr = min(yf(xo), yf(xi)) - 0.33
         zlow = zb(side * up) + r + cr               # where the bottom corner turns up
         yb_, zbk = p.wing_back_y + wr_, p.wing_back_z + wr_
         corners = [[yb_ + wr_ * math.cos(a / 8 * math.pi), zc_ + wr_ * math.sin(a / 8 * math.pi)]
@@ -502,35 +523,13 @@ def shroud(p):
         x0 = min(xo, xi)
         parts.append(M.extrude(prof, p.wing_t + 0.5).transform([[0, 0, 1, x0], [1, 0, 0, 0], [0, 1, 0, 0]]))
 
-    # a sleeve (cell) behind each tunnel, round the pod's own bezel, hiding the gaps between pods
-    cw_, ch_, cr_ = win_w + 0.2, win_h + 0.2, 2.5
-    for pose in poses:
-        ring = (rrect(cw_ + 2 * p.cell_wall, ch_ + 2 * p.cell_wall, cr_ + p.cell_wall)
-                - rrect(cw_, ch_, cr_)).translate([0, pod_zc(p)])
-        parts.append(at_pose(plate_xz(ring, p.shroud_gap + 0.5, p.cell_depth - p.shroud_t + 0.5), pose))
-
     # front tabs reaching back under the carrier floor for two M4 screws (forward-only slots)
     for (x, ys), pose in zip(shroud_tabs(p), (poses[0], poses[2])):
-        parts.append(box(x - 9, x + 9, ys - p.bezel_travel - 7, pose[1] + p.shroud_gap + 1,
-                         -p.floor_t - p.lip_h - 3, -p.floor_t - p.lip_h))
+        parts.append(box(x - 9, x + 9, ys - p.bezel_travel - 7, yf(x) - 0.5,
+                         -p.floor_t - p.lip_h - 3, -p.floor_t - p.lip_h))   # reaches forward into the lip
     body = M.batch_boolean(parts, m3d.OpType.Add)
 
     cuts = []
-    # tunnels: from the opening in the front back to the window in front of each pod
-    for i, pose in enumerate(poses):
-        uc = pose[0] / kx
-        hw = (p.pod_face_w / 2 + p.front_clear) / kx
-        u0, u1 = uc - hw, uc + hw
-        if i == 0:
-            u0 -= p.end_flare
-        if i == len(poses) - 1:
-            u1 += p.end_flare
-        front = plate_xz(rrect(u1 - u0, f_top - f_bot, wr + 1).translate([(u0 + u1) / 2, (f_top + f_bot) / 2]),
-                         3, 3.3).transform(F)      # starts 0.3 behind the front
-        win = rrect(win_w, win_h, wr).translate([0, pod_zc(p)])
-        back = at_pose(plate_xz(win, p.shroud_gap + 0.3, 0.2), pose)
-        cuts.append(M.batch_hull([front, back]))
-        cuts.append(at_pose(plate_xz(win, p.shroud_gap + 0.5, 3.0), pose))
     # the fork's slot, open at the back, with a rounded end
     sl = CS.square([p.fork_slot, p.fork_len], center=True).offset(p.fork_slot / 2 * 0.999, m3d.JoinType.Round)
     sl = sl ^ CS.square([p.fork_slot + 2, p.fork_len + p.fork_slot], center=True).translate([0, -p.fork_slot / 2])

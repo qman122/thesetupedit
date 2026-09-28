@@ -65,7 +65,7 @@ At 18 mm it hits the arm's nuts.
 ## The bezel
 
 The bezel copies the outside of the stock C5 bezel (GM 10435411 left, 10435412 right).
-The KnightDriveTV TripLED bezel copies it too, then adds a tunnel for each light. The
+The KnightDriveTV TripLED bezel copies it too, then opens the front up for three lights. The
 stock bezel is held three ways, and so is this one:
 
 - **Top blade into the headlight cover.** The stock bezel has a flat top that slides in
@@ -93,10 +93,14 @@ stock bezel is held three ways, and so is this one:
   lower part tucks down behind the body, so there's no gap under the lights.
 - **Lower lip:** below the lights, the front slopes down and forward to a rolled lip. The
   lip runs along the bottom, round the bottom corners and up both ends.
-- **Tunnels:** the front sweeps back along the pods' step. Each pod sits at the back of its
-  own tunnel, which is shallow on its hood side (3.5 mm) and deeper on its fender side
-  (14 mm). The thin posts between the tunnels hide the gaps between the pods, and a 12 mm
-  sleeve behind each tunnel wraps the pod's own bezel.
+- **Open frame, like KnightDriveTV's CAD and scan:** the front is one opening across all
+  three pods, framed by the top blade, the end walls and a floor shelf. The shelf sits
+  just under the pod faces.
+  - **Posts:** a thin 9 mm round post with flared ends stands in front of each gap
+    between pods, 4 mm behind the front edge. The posts hide the gaps.
+  - **Front line:** it sweeps back along the pods' step and sits far enough forward to
+    clear the posts. The hood-side pod face is about 8 mm behind it.
+  - **Settings:** `post_*`, `shelf_t` and `end_wall_x` in `generate.py`.
 
 **Before printing the full bezel,** print `stl/fit_test_blade_driver.stl`. It's just the
 top blade and fork, 3.7 mm thick. Slide it in under the front of the headlight cover the
@@ -115,6 +119,8 @@ and check the lip and wings don't touch anything as it goes down into the pocket
 
 - **The top slides into the headlight cover like the stock bezel,** with the same flat top
   blade and forked tab onto the cover's clip. This replaces the foam strip.
+- **The front is an open frame like KnightDriveTV's,** with round posts between the pods
+  and a floor shelf under them, instead of a solid face with a tunnel per pod.
 - **The outside follows the stock and KnightDriveTV shape.** It's taller at the hood end,
   with a rolled lip along the bottom and up both ends, so it goes all the way down.
 - **New quick print, `fit_test_blade_*.stl`:** the top blade and fork only, to check the
@@ -183,8 +189,8 @@ The small-bed split files were dropped: the stepped bezel doesn't split cleanly,
    the front of the headlight cover like the stock bezel, and check the fork finds the clip.
 4. `stl/carrier_driver.stl` and `stl/bezel_driver.stl`, then the passenger pair. Wait for
    the measurements on `diagrams/measure_stock_bezel.png` before printing the bezel. It
-   prints upside down, standing on its flat top blade. Turn supports on for the tunnel
-   roofs, the lip and the tabs under the front.
+   prints upside down, standing on its flat top blade. Turn supports on for the
+   shelf, the lip and the tabs under the front.
 5. `stl/spacer_washers.stl`: only if a tab doesn't sit flat against the arm or the pad.
 
 **Material:** ASA or ABS is best; PETG works. Don't use PLA, which softens in a hot engine
@@ -208,8 +214,8 @@ bay. Use 4 walls, 40% gyroid infill, and 6 top and bottom layers.
    where you want them in the opening, then tighten.
 4. Slide the bezel's top blade in under the front of the headlight cover until the fork
    is on the clip, like the stock bezel. Then screw it on: two screws up through the tabs
-   under the front and one through each wing. If the lenses don't sit at the back of the
-   tunnels, slide the pods forward in their slots to meet it.
+   under the front and one through each wing. If the lenses sit too far back behind the
+   posts, slide the pods forward in their slots to meet it.
 5. Cycle the lights slowly by hand with the motor knob and check nothing touches the door
    or the body, then tighten everything.
 6. Aim the lights with the stock adjusters.
