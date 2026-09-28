@@ -84,6 +84,8 @@ class Params:
     shroud_return: float = 78.0   # how far the top, bottom and sides wrap back from the face
     bezel_rear_screw_y: float = -56.0  # two more M4 screws up through the bezel bottom into the carrier
     bezel_travel: float = 16.0    # the bezel's screw slots let it slide this far forward with the pods (never back)
+    cell_depth: float = 12.0      # each window gets its own sleeve reaching back around the pod bezel
+    cell_wall: float = 2.0
     foam_channel_w: float = 10.0  # recess on top for adhesive foam weatherstrip (seals to the door)
     foam_channel_d: float = 1.0
     foam_channel_y: float = -14.0  # centre of the recess, behind the face
@@ -233,14 +235,15 @@ def carrier(p):
     parts.append(box(lip_x0, lip_x1, y_back, y_back + p.wall_t, -p.floor_t - p.lip_h, 0))
 
     # locating ribs: two end cheeks plus two dividers
+    rib_front = -p.shroud_gap - p.cell_depth - 3      # ribs stop behind the bezel's window cells
     for x in [-half + p.wall_t / 2, half - p.wall_t / 2]:
         # stop short of the wall so the mounting nuts have room
         parts.append(box(x - p.wall_t / 2, x + p.wall_t / 2,
-                         -p.pod_depth - 2, y_front, 0, p.divider_h))
+                         -p.pod_depth - 2, rib_front, 0, p.divider_h))
     for i in range(2):
         x = pod_x(p)[i] + (p.pod_body_w + p.pod_gap) / 2
         parts.append(box(x - p.wall_t / 2, x + p.wall_t / 2,
-                         -p.pod_depth + 5, y_front, 0, p.divider_h))
+                         -p.pod_depth + 5, rib_front, 0, p.divider_h))
 
     # mounting tabs behind the pods, one at the arm and one at the pad; the middle stays open
     for (x0, x1, z0, z1) in (arm_ear, pad_ear):
@@ -374,8 +377,15 @@ def shroud(p):
         t = t - slot_z(p.shroud_tab_screw_d + 0.6, p.bezel_travel + p.shroud_tab_screw_d + 0.6,
                        -40, 0, x, ys - p.bezel_travel / 2)
         tabs.append(t)
+    # a sleeve behind each window so every lens sits in its own cell
+    cells = []
+    cw_, ch_, cr = win_w + 0.6, win_h + 0.6, 2.5       # inside: a hair bigger than the window, squarer corners
+    for x in pod_x(p):
+        ring = (rrect(cw_ + 2 * p.cell_wall, ch_ + 2 * p.cell_wall, cr + p.cell_wall)
+                - rrect(cw_, ch_, cr)).translate([x, pod_zc(p)])
+        cells.append(plate_xz(ring, y_face - p.shroud_t + 0.5, p.cell_depth - p.shroud_t + 0.5))
     # the tabs run 1 mm into the back of the face, which ties them on
-    body = M.batch_boolean([shell] + tabs, m3d.OpType.Add)
+    body = M.batch_boolean([shell] + tabs + cells, m3d.OpType.Add)
     cuts = list(wins)
     # shallow recess along the top for a strip of foam weatherstrip
     cuts.append(box(-ow / 2 + 20, ow / 2 - 20,

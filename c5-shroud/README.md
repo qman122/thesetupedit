@@ -40,6 +40,9 @@ bottom and both sides, so with the door up you see only the bezel face and the t
 lenses. The carrier, bolts and pocket stay hidden. The back is open for the wiring and
 stops 3.5 mm short of the mounting nuts.
 
+- **Cells:** each window has its own 12 mm deep sleeve around the pod bezel, so every lens
+  sits in its own recess and the gaps between the pods are hidden. The carrier's locating
+  ribs stop behind the cells.
 - **Mounting:** four M4 × 16 self-tapping screws. Two go up through the front tabs into
   bosses under the carrier floor, and two go up through the bottom wall into posts at the
   back of the floor. All four holes are 16 mm slots, so the bezel can slide forward
