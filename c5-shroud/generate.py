@@ -47,6 +47,9 @@ class Params:
     pod_arc_deg: float = 0.0
     pod_bolt_d: float = 8.6       # slot width for the bracket stud (about 8 mm / 5/16 in)
     pod_stud_d: float = 8.0       # stud diameter, from the drawing
+    nut_channel: float = 13.4     # rails under each slot, this far apart: an M8 (13 mm) or 5/16 in (1/2 in) nut slides but can't turn
+    nut_rail_w: float = 3.0
+    nut_rail_h: float = 4.0
     pod_bolt_y: float = -31.5     # slot centre, measured back from the pod face
     pod_slot_len: float = 34.6    # fore-aft adjustment: 16 mm forward (bezel follows), 10 mm back
     pod_bolt_nominal_y: float = -34.5  # stud position in the default spot (1.36 in behind the face)
@@ -104,7 +107,7 @@ class Params:
     shadow_line: float = 1.5      # groove along the underside of the blade at the top of the slot
     post_recess: float = 5.0      # posts sit this far behind the front edge
     pod_recess: float = 14.0      # the pods sit this much deeper in the mouth (lenses back in the shadow)
-    mouth_r: float = 10.0         # corner radius of the opening
+    mouth_r: float = 16.0         # corner radius of the slot at the back (25 mm at the front edge): near-round ends like the reference scan
     mouth_flare: float = 4.0      # the opening widens this much at the front edge along the bottom
     mouth_wrap: float = 9.0       # ...and this much at the ends, so the ends curve round instead of a flat side
     front_bow: float = 6.0        # the face bows forward this much in the middle, following the nose
@@ -356,6 +359,20 @@ def carrier(p):
         parts.append(box(xa, xb, -89, p.wing_screw_y + 7, -p.floor_t, 0))           # ties into the tab floor
         xa2, xb2 = (row_w(p) / 2 + 1.25, xb) if xb > 0 else (xa, -row_w(p) / 2 - 1.25)
         parts.append(box(xa2, xb2, p.wing_screw_y - 7, p.wing_screw_y + 7, -p.floor_t, p.wing_screw_z + 8))
+
+    # nut channel under each pod slot (from the owner's bracket sketch): two rails hold the
+    # pod's nut so it can slide with the stud but can't turn, so each pod bolts on from above
+    ax4, z4 = [(x, z) for (n, x, z, _) in mount_points(p) if n == "arm hole 4"][0]
+    pivot_keepout = box(ax4 - 21, ax4 + 21, y_back - 6, y_back + p.mount_wall_t + 31, z4 - 46, z4 - 19)
+    for pose in pod_poses(p):
+        sx_, sy_ = pose_pt(pose, 0, p.pod_bolt_nominal_y)
+        ln = fwd + back + p.pod_bolt_d + 12
+        yc = sy_ + (fwd - back) / 2
+        for side in (-1, 1):
+            xr = sx_ + side * (p.nut_channel / 2 + p.nut_rail_w / 2)
+            rail = box(xr - p.nut_rail_w / 2, xr + p.nut_rail_w / 2, yc - ln / 2, yc + ln / 2,
+                       -p.floor_t - p.nut_rail_h, -p.floor_t + 0.5)
+            parts.append(rail - pivot_keepout)          # stays clear of the arm's pivot bolt
 
     body = M.batch_boolean(parts, m3d.OpType.Add)
 

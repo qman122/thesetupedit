@@ -97,7 +97,8 @@ stock bezel is held three ways, and so is this one:
     of the nose; see "What changed in v6".
   - **Slot:** about 5:1, lofted back to the pods through 13 sections that ease in. It is
     9 mm wider at the ends and 4 mm lower along the bottom at the front, so the ends wrap
-    round. A 3 mm shell forms its walls.
+    round. A 3 mm shell forms its walls. Its corners are 16 mm at the back and 25 mm at
+    the front edge, so the ends are nearly round, like the reference scan.
   - **Rim:** a 6 mm rolled rim runs down each side and along the bottom of the slot. Its
     ends tuck into the top blade.
   - **Shadow line:** a 1.5 mm groove runs under the blade along the top of the slot.
@@ -223,7 +224,9 @@ bay. Use 4 walls, 40% gyroid infill, and 6 top and bottom layers.
 - 4 × M6 × 1.0 × 20 mm bolts and 10 mm flange nuts (the stock headlight bolts work), with a flat
   washer under each nut so it doesn't dig into the plastic. The nut can't pull through: the slots
   are 6.3 mm wide and an M6 nut is 10 mm across.
-- 3 × M6 bolts, washers and nylon lock nuts for the pods, through the floor slots
+- The pods' own studs and nuts, through the floor slots. Under each slot, two rails hold
+  the nut (M8 or 5/16 in) so it slides with the stud but can't turn, and each pod
+  tightens from above with one hand, as in the owner's bracket sketch.
 - 2 × M4 × 16 and 2 × M4 × 12 self-tapping screws for the bezel
 
 ## Fitting
