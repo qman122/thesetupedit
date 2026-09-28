@@ -110,9 +110,10 @@ stock bezel is held three ways, and so is this one:
   - **Rim:** a 6 mm rolled rim runs down each side and along the bottom of the slot. Its
     ends tuck into the top blade.
   - **Shadow line:** a 1.5 mm groove runs under the blade along the top of the slot.
-  - **Mask:** a black plate just in front of each pod has holes for the two lenses only.
-    Thin walls join the masks where the pods step back, so only the lenses show and the
-    pod bodies stay in shadow.
+  - **Mask:** a black plate just in front of each pod has one rounded window the size of
+    the pod face. The window uses the 1-notch test frame's gap (2.0 mm each side, 1.6 mm
+    top and bottom), which fit on the car. Thin walls join the masks where the pods step
+    back, so the gaps between pods stay hidden.
   - **Posts:** one in front of each gap between pods, 9 mm wide and 13 mm front to back.
     They spread into the floor like roots (9 mm extra over 22 mm) and only just flare into
     the blade.

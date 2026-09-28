@@ -119,8 +119,7 @@ class Params:
     face_t: float = 3.0           # the face is a shell this thick, with the slot cut through it
     top_corner_r: float = 10.0    # outline corners at the top, under the door
     mouth_wall: float = 3.0       # the slot's walls, from the face back to the pods
-    mask_t: float = 1.5           # black mask just in front of each pod: only the lenses show through
-    mask_hole_r: float = 16.5     # (lens radius 16 plus 0.5)
+    mask_t: float = 1.5           # black mask just in front of each pod, with one window the size of the pod face
     shelf_t: float = 3.0
     rail_t: float = 4.0           # top blade thickness; its front edge is rounded
     blade_depth: float = 30.0     # flat top blade, from the front edge back (slides under the cover)
@@ -609,11 +608,12 @@ def shroud(p):
     for (xa, xb), (_, y, _) in (((-ow / 2 - 0.5, -p.end_wall_x), poses[0]), ((p.end_wall_x, ow / 2 + 0.5), poses[2])):
         sec = CS([[[xa, y + p.shroud_gap], [xb, y + p.shroud_gap], [xb, yf(xb) - 1], [xa, yf(xa) - 1]]])
         parts.append(M.extrude(sec, z_top - 0.5 - (f_bot - p.shelf_t - 0.37)).translate([0, 0, f_bot - p.shelf_t - 0.37]))
-    # black mask just in front of each pod: a plate with holes for the two lenses only
+    # black mask just in front of each pod: a plate with one rounded window per pod, sized like the
+    # 1-notch test frame that fit (pod face + window_clear), so the whole pod face shows
     for (x, y, _) in poses:
         plate = rrect(p.pod_face_w + p.pod_gap + 1.0, f_top - f_bot + 0.87, 1.0).translate([0, (f_top + f_bot) / 2 - 0.065])
-        for lx in (-18.5, 18.5):
-            plate = plate - CS.circle(p.mask_hole_r, 64).translate([lx, pod_zc(p)])
+        plate = plate - rrect(p.pod_face_w + 2 * p.window_clear_x, p.pod_face_h + 2 * p.window_clear_y,
+                              p.pod_face_r + min(p.window_clear_x, p.window_clear_y)).translate([0, pod_zc(p)])
         parts.append(plate_xz(plate, y + p.shroud_gap + p.mask_t, p.mask_t).translate([x, 0, 0]))
     # where the pods step back, a thin wall joins one mask to the next so no pod shows between them
     for a, b in zip(poses, poses[1:]):
