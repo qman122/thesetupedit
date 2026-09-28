@@ -1,4 +1,4 @@
-# C5 sleepy-eye pod carrier and bezel (v6)
+# C5 sleepy-eye pod carrier and bezel (v7)
 
 For a 2000 C5 Corvette with the headlight door stops already fitted, holding three
 3.0 × 1.8 in dual-lens LED pods per side. Like the KnightDriveTV kit, each side is one
@@ -13,7 +13,8 @@ Assembly diagrams: `diagrams/exploded.png`, `diagrams/front.png`, `diagrams/rear
 Step size options (6, 9, 12 and 15 mm) side by side: `diagrams/step_options.png`.
 What to measure on the stock bezel and headlight: `diagrams/measure_stock_bezel.png`.
 How the pods sit on the bracket (carrier), with the bezel hidden: `diagrams/pods_on_bracket.png`.
-How the bezel attaches (fork into the cover, 4 screws): `diagrams/bezel_attach.png`.
+How the bezel attaches (tongue onto the door's clip, 4 screws): `diagrams/bezel_attach.png`.
+The bezel against the owner's model of the headlight doors: `diagrams/cover_fit.png`.
 
 ## Measurements used
 
@@ -75,8 +76,9 @@ stock bezel is held three ways, and so is this one:
   underside of the cover. Corvette Central's how-to describes it: "the tab on the top of
   the bezel that slides onto a clip on the underside of the headlight cover". The
   KnightDriveTV install video shows it too: at 13:02, "Remove bezel by rotating downward and
-  forward, while spreading the outer ears". This bezel has the same 30 mm flat top blade
-  with a forked tab behind its middle (`blade_depth`, `fork_*` in `generate.py`).
+  forward, while spreading the outer ears". This bezel has the same 30 mm top blade, with
+  a tongue behind its middle that clicks onto the clip (`blade_depth`, `clip_*`, `tongue_*`
+  in `generate.py`). Both are fitted to the owner's model of the doors (see below).
 - **Ears (wings) at both ends.** Like the stock and KnightDriveTV ears, they are full
   side walls. Each runs from the front back past the pods to 5 mm in front of the arm and
   the pad, and from the top blade down over the carrier, so the sides are covered too.
@@ -130,9 +132,10 @@ stock bezel is held three ways, and so is this one:
     opening.
 
 **Before printing the full bezel,** print `stl/fit_test_blade_driver.stl`. It's just the
-top blade and fork, 3.7 mm thick. Slide it in under the front of the headlight cover the
-way the stock bezel went, and check three things:
-- the fork finds the clip,
+top blade and clip tongue, 3.7 mm thick, following the door's lip. Slide it in under the
+front of the headlight cover the way the stock bezel went, and check four things:
+- the tongue clicks onto the clip (the clip's cross bar drops into the groove),
+- the door's lip sits down on the blade at both ends, with no gap and no rocking,
 - the front edge lines up with the cover,
 - the ends sit inside the opening.
 
@@ -141,6 +144,47 @@ get set from them.
 
 **Fit on the car:** it's 269 mm wide in the 279 mm opening. Cycle the door slowly by hand
 and check the lip and wings don't touch anything as it goes down into the pocket.
+
+## What changed in v7: fitted to the headlight doors
+
+The owner sent a full model of the C5 headlight doors (`Covers.stl`, the pair, about 190 MB,
+not kept here). `cover_scan.py` measures it and puts the door on the bezel; run it with the
+file's path.
+
+- **The clip under the door** is a U-shaped rib hanging about 9 mm under the skin. It is a
+  cross bar 3.5 mm thick with a short leg running back from each end, 26 mm apart inside.
+  It's about 61 mm behind the front edge, a little toward the hood from the middle. The bar
+  runs about 20° off square to the edge, nearer the edge at the fender end. The v6 fork
+  stopped about 8 mm short of it, so it never engaged.
+- **New clip tongue:** the blade carries on back under the clip as a 23 mm tongue that fits
+  between the legs. A groove across it, skewed to match the bar, takes the bar's bottom
+  (it hangs 1.2 mm below the lip). Behind the groove a chamfered tooth ramps under the bar
+  as the blade slides in, so it clicks in. It comes out the stock way: tip the bezel down
+  and pull forward. The tongue is flush with the blade, so nothing sticks up.
+- **The top follows the door's lip.** The lip is about level over the hood half and drops
+  about 9 mm toward the fender, so a level blade would have hit it on the fender half.
+  - The blade and everything above the pod windows now rise to meet it: up to 9 mm at the
+    hood end, nothing at the fender end.
+  - The slot gets that much taller toward the hood, with the black mask filling in above
+    the pods, like the stock bezel, which is taller at the hood end.
+  - The pods, windows and screws don't move.
+  - `lip_follow` (0 = level top) and `lip_roll` (extra tilt, degrees) adjust it.
+- **The front curve already matched.** Seen from above, the door's front edge follows the
+  bezel's 12 mm bow to within 1.4 mm across the middle 220 mm. At the very corners the
+  door rounds back 2–4 mm further than the bezel.
+- **Printing:** the top is no longer flat, so the bezel is tipped to lay the blade as flat
+  as it goes. The blade ends then sit up to about 4 mm off the bed; turn on supports (tree
+  supports are fine; that face hides under the door).
+- **Fixed:** the blade test print was trimming up to 6 mm off the front of the curved nose.
+- **New checks (42 now):**
+  - the lip sits on the blade all the way across,
+  - the bar sits in the groove,
+  - pulled forward, the bar catches on the tooth,
+  - the tongue fits between the legs.
+- **Still an assumption:** how the door sits relative to the bezel. The door is placed with
+  its lip on the blade at the clip and its front edge 1 mm behind the blade's nose. Its tilt
+  is taken as it lies in the file. The blade test print on the car checks exactly this; if
+  one end gaps or rocks, change `lip_roll`.
 
 ## What changed in v6
 
@@ -192,7 +236,7 @@ and check the lip and wings don't touch anything as it goes down into the pocket
 
 ## Checks
 
-`python3 check.py` runs 38 checks. They all pass:
+`python3 check.py` runs 42 checks. They all pass:
 
 - The hole spacing matches A, H, B and D.
 - Every slot is open, with solid material past its ends.
@@ -201,11 +245,13 @@ and check the lip and wings don't touch anything as it goes down into the pocket
   7 mm behind them for the wiring.
 - The pods clear the bezel, which clears the carrier.
 - Every lens has a clear view 10° either side of straight ahead.
+- The door's lip sits on the top blade all the way across, the clip's cross bar sits in the
+  tongue's groove and catches on its tooth, and the tongue fits between the clip's legs.
 - The bezel fits the opening.
 - The carrier stays clear of the arm's pivot bolt and the pad's square adjuster, and the
   middle of the back is open.
 - The driver part is a true mirror of the passenger part.
-- Every STL is one watertight solid lying flat on the bed.
+- Every STL is one watertight solid lying on the bed.
 
 The small-bed split files were dropped: the stepped bezel doesn't split cleanly, and bed size isn't a concern for this build.
 
@@ -217,12 +263,15 @@ The small-bed split files were dropped: the stepped bezel doesn't split cleanly,
 2. `stl/fit_test_mount_driver.stl` (about 20 minutes, two small flat tabs). Bolt the taller
    tab to the arm (holes 1 and 4) and the shorter one to the aiming pad (both holes).
    The bolts should go through snugly without forcing. Already done: the spacing fit.
-3. `stl/fit_test_blade_driver.stl` (about 40 minutes, one flat strip). Slide it in under
-   the front of the headlight cover like the stock bezel, and check the fork finds the clip.
+3. `stl/fit_test_blade_driver.stl` (about 40 minutes, one strip; supports on, since it
+   follows the door's lip). Slide it in under the front of the headlight cover like the
+   stock bezel, and check the tongue clicks onto the clip and the lip sits down on it at
+   both ends.
 4. `stl/carrier_driver.stl` and `stl/bezel_driver.stl`, then the passenger pair. Wait for
    the measurements on `diagrams/measure_stock_bezel.png` before printing the bezel. It
-   prints upside down, standing on its flat top blade. Turn supports on for the
-   shelf, the lip and the tabs under the front.
+   prints upside down, standing on its top blade (tipped so the blade lies as flat as it
+   can). Turn supports on for the blade ends, the shelf, the lip and the tabs under the
+   front.
 5. `stl/spacer_washers.stl`: only if a tab doesn't sit flat against the arm or the pad.
 
 **Material:** ASA or ABS is best; PETG works. Don't use PLA, which softens in a hot engine
@@ -246,8 +295,8 @@ bay. Use 4 walls, 40% gyroid infill, and 6 top and bottom layers.
 2. If there's a gap at the arm or the pad, fill it with spacer washers.
 3. Bolt the pods on through the floor slots. Slide them forward or back so the lenses sit
    where you want them in the opening, then tighten.
-4. Slide the bezel's top blade in under the front of the headlight cover until the fork
-   is on the clip, like the stock bezel. Then screw it on: two screws up through the tabs
+4. Slide the bezel's top blade in under the front of the headlight cover until the tongue
+   clicks onto the clip, like the stock bezel. Then screw it on: two screws up through the tabs
    under the front and one through each wing. If the lenses sit too far back behind the
    posts, slide the pods forward in their slots to meet it.
 5. Cycle the lights slowly by hand with the motor knob and check nothing touches the door

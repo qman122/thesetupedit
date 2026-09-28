@@ -134,6 +134,45 @@ for (px, py, _) in g.pod_poses(P):
 check("every lens has a clear view 10 degrees either side of straight ahead", blocked == 0,
       f"{blocked} blocked rays")
 
+# 6d. the headlight door (measured from the owner's model, cover_scan.py): its lip rests on the
+#     top blade all the way across, and the clip's cross bar drops into the groove in the tongue
+F_ = g.front_frame(P)
+U_ = (P.opening_w / 2 - P.opening_side_clear) / F_[0][0]
+z_top = g.bezel_z(P)[0]
+nose = 2.37 - P.cover_edge_n
+
+
+def bow(u):
+    return P.front_bow * (1 - min(abs(u) / U_, 1) ** 2)
+
+
+lip_min = min(np.interp(u, g.COVER_LIP_U, g.COVER_LIP_Z) for u in np.linspace(-U_ - 3, U_ + 3, 200))
+lip_gap, lip_touch = [], []
+for u in np.arange(-U_ + 12, U_ - 11, 10.0):
+    zl = z_top + float(np.interp(u, g.COVER_LIP_U, g.COVER_LIP_Z)) - lip_min
+    strip = g.box(u - 4, u + 4, nose + bow(u) - 5, nose + bow(u), zl, zl + 5).transform(F_)
+    lip_gap.append(overlap(shroud, strip))
+    lip_touch.append(overlap(shroud, strip.translate([0, 0, -0.4])))
+pen = max(lip_gap) / 40                                             # the strips are 8 x 5 mm
+check("the door's lip sits on the top blade all the way across (no clash, no gap)",
+      pen < 0.15 and min(lip_touch) > 1, f"{len(lip_gap)} places along the front, at most {pen:.2f} mm deep")
+
+
+def bar(dn=0.0, dz=0.0):
+    hw = P.clip_leg_gap / 2 + 2
+    zc = z_top + float(g.top_rise(P, P.clip_u)) - 1.2 + dz          # bar bottom, 1.2 mm under the lip
+    pts = [[u, g.clip_n(P, u) + bow(u) + dn - t_, z] for u in (P.clip_u - hw, P.clip_u + hw)
+           for t_ in (0.0, P.clip_bar_t) for z in (zc, zc + 9)]
+    return M.hull_points(pts).transform(F_)
+
+
+check("the clip's cross bar sits in the groove across the tongue", overlap(shroud, bar()) < 1e-3)
+check("pulled forward, the bar catches on the tongue's tooth",
+      overlap(shroud, bar(dn=-(P.clip_bar_t + 2 * P.groove_clear))) > 1)
+tw = P.tongue_w
+check(f"the tongue ({tw:.0f} mm) fits between the clip's legs ({P.clip_leg_gap:.0f} mm apart)",
+      P.clip_leg_gap - tw >= 2)
+
 # 7. shroud fits the 11 in opening
 sb = shroud.bounding_box()
 sw = sb[3] - sb[0]

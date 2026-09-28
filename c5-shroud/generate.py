@@ -89,7 +89,7 @@ class Params:
     # --- bezel: the outside shape of the stock C5 bezel (GM 10435411/12), which the
     # KnightDriveTV TripLED bezel copies, with a tunnel back to each pod ---
     # Like the stock one, its flat top blade slides in under the front of the headlight cover and
-    # a forked tab on the blade slides onto the clip under the cover. A wing (ear) at each end
+    # a tongue on the blade clicks onto the clip under the cover. A wing (ear) at each end
     # screws to the carrier. It is taller at the hood end than at the fender end.
     shroud_t: float = 3.0         # thinnest wall (at the shallow side of each tunnel)
     shroud_margin_top: float = 8.0   # bezel top (the cover's underside) above the pod tops (ESTIMATE)
@@ -123,11 +123,26 @@ class Params:
     shelf_t: float = 3.0
     rail_t: float = 4.0           # top blade thickness; its front edge is rounded
     blade_depth: float = 30.0     # flat top blade, from the front edge back (slides under the cover)
-    fork_len: float = 25.0        # forked tab behind the blade: slides onto the clip under the cover
-    fork_w: float = 26.0
-    fork_slot: float = 5.0
-    fork_t: float = 2.5
-    fork_x: float = 0.0           # fork centre, across the car from the middle of the bezel
+    # the clip under the cover, measured from the owner's model of the covers (Covers.stl, see
+    # cover_scan.py): a U-shaped rib hanging about 9 mm under the skin behind the front edge,
+    # a cross bar with two short legs running back from its ends
+    clip_u: float = -5.5          # clip centre across the front, from the middle of the bezel (hood end is -)
+    clip_back: float = 61.2       # front face of the cross bar, behind the cover's front edge
+    clip_bar_t: float = 3.5       # cross bar thickness
+    clip_skew: float = 0.36       # the bar runs 0.36 mm further forward per mm toward the fender (20 deg)
+    clip_leg_gap: float = 26.0    # between the legs' inner faces
+    cover_edge_n: float = 1.0     # the cover's front edge sits this far behind the blade's rounded nose
+    # a tongue on the blade runs back under the clip: the bar drops into a groove across it and the
+    # legs sit either side of it (it prints flush with the blade, so the blade still lies flat)
+    tongue_w: float = 23.0
+    groove_clear: float = 1.0     # groove is this much wider than the bar front and back
+    groove_depth: float = 2.0     # the bar hangs about 1.2 mm below the cover's lip
+    tooth_len: float = 4.5        # tongue behind the groove, chamfered so it ramps under the bar
+    # the door's lip is not level: in the owner's model it runs about level over the hood half and
+    # drops about 9 mm toward the fender. The top of the bezel follows it so the door sits down on
+    # the blade all the way across (COVER_LIP below).
+    lip_follow: float = 1.0       # 1 = follow the door's lip as measured, 0 = level top
+    lip_roll: float = 0.0         # extra tilt of the top toward the fender, degrees (+ = fender end lower)
     rim_r: float = 3.0            # the rolled rim round the slot is a tube this radius (6 mm lip)
     corner_r: float = 28.0        # bottom corners of the outline, sweeping up into the sides
     end_wall_x: float = 123.0     # end walls of the frame start this far out (just past the outer pods)
@@ -192,6 +207,13 @@ def slot_z(w, length, z0, z1, x, y):
 def pod_zc(p):
     """Height of the pod face centre above the carrier floor (the bracket lifts the body)."""
     return p.pod_lift + p.pod_body_h / 2
+
+
+# the underside of the door's front lip, measured from the owner's model of the covers
+# (cover_scan.py): across the front from the hood end (-) to the fender end (+), mm
+COVER_LIP_U = list(range(-140, 141, 10))
+COVER_LIP_Z = [23.4, 24.0, 24.4, 24.6, 24.7, 24.8, 24.8, 24.8, 24.7, 24.6, 24.4, 24.2, 24.0, 23.7, 23.5,
+               23.2, 22.8, 22.3, 21.8, 21.3, 20.9, 20.3, 19.8, 19.2, 18.5, 17.9, 16.9, 15.8, 14.4]
 
 
 def pod_top(p):
@@ -466,6 +488,43 @@ def bezel_z(p):
     return z_top, z_top - p.bezel_h_hood, z_top - p.bezel_h_fender
 
 
+def top_rise(p, u):
+    """How far the bezel's top is raised at u (along the front) to follow the door's lip.
+    It is never lowered: the lowest point of the lip, at the fender end, is where the top was."""
+    U = (p.opening_w / 2 - p.opening_side_clear) / front_frame(p)[0][0]
+
+    def lip(u_):
+        return np.interp(u_, COVER_LIP_U, COVER_LIP_Z) - math.tan(math.radians(p.lip_roll)) * np.asarray(u_)
+    ref = lip(np.linspace(-U - 3, U + 3, 200)).min()
+    return p.lip_follow * np.maximum(lip(u) - ref, 0.0)
+
+
+def lift_top(p, man):
+    """Raise the top of the bezel to follow the door's lip. Everything from the blade's underside
+    up moves as one; the thin band between the tops of the pod windows and the blade stretches
+    to take it up, so the windows and everything round the pods stay where they are."""
+    z_top = bezel_z(p)[0]
+    z0 = pod_zc(p) + p.pod_face_h / 2 + p.window_clear_y + 0.2
+    z1 = z_top - p.rail_t - 0.3
+    s, c0 = front_line(p)
+    k = 1 / math.hypot(1, s)
+
+    def f(v):
+        out = v.copy()
+        u = k * v[:, 0] + s * k * (v[:, 1] - c0)
+        t = np.clip((v[:, 2] - z0) / (z1 - z0), 0, 1)
+        out[:, 2] += top_rise(p, u) * t * t * (3 - 2 * t)
+        return out
+    return man.refine_to_length(6.0).warp_batch(f)
+
+
+def top_tilt(p):
+    """Slope (rise per mm along the front) of the straight line that best fits the bezel's top."""
+    U = (p.opening_w / 2 - p.opening_side_clear) / front_frame(p)[0][0]
+    u = np.linspace(-U + 5, U - 5, 100)
+    return float(np.polyfit(u, top_rise(p, u), 1)[0])
+
+
 def tube(path, r, n0, segs=20):
     """A closed-ended tube of radius r along a polyline of (u, z) points, centred at n = n0
     (front frame coordinates), built directly as a mesh so it is one clean solid."""
@@ -496,13 +555,39 @@ def tube(path, r, n0, segs=20):
     return man if man.volume() > 0 else M(m3d.Mesh(np.asarray(verts, np.float32), np.asarray(tris, np.uint32)[:, ::-1].copy()))
 
 
+def clip_n(p, u):
+    """Front face of the clip's cross bar at u, in the front's own frame (before the bow)."""
+    return 2.37 - p.cover_edge_n - p.clip_back + p.clip_skew * (u - p.clip_u)    # the nose is at n = 2.37
+
+
+def clip_tongue(p, z_top):
+    """The tongue on the blade that clicks onto the cover's clip, and the groove the bar drops
+    into, in the front's own frame (before the bow). The tongue fits between the clip's legs
+    and ends in a chamfered tooth that ramps under the bar as the blade slides in."""
+    ul, ur = p.clip_u - p.tongue_w / 2, p.clip_u + p.tongue_w / 2
+    g0 = [clip_n(p, u) + p.groove_clear for u in (ul, ur)]                 # groove front edge
+    g1 = [clip_n(p, u) - p.clip_bar_t - p.groove_clear for u in (ul, ur)]  # groove back edge
+    tb = [n - p.tooth_len for n in g1]                                      # end of the tooth
+    zb = z_top - p.rail_t
+    plan = CS([[[ul, tb[0]], [ur, tb[1]], [ur, -p.blade_depth + 1], [ul, -p.blade_depth + 1]]])
+    tongue = M.extrude(plan, p.rail_t).translate([0, 0, zb])
+    # chamfer the back of the tooth: 1.8 mm down at its end, running out 3 mm in
+    ch = M.hull_points([[u, n + dn, z] for (u, n) in ((ul - 1, tb[0] - p.clip_skew), (ur + 1, tb[1] + p.clip_skew))
+                        for (dn, z) in ((-1, z_top - 2.4), (-1, z_top + 1), (4.67, z_top + 1))])
+    tongue = tongue - ch
+    gr = CS([[[ul - 1, g1[0] - p.clip_skew], [ur + 1, g1[1] + p.clip_skew],
+              [ur + 1, g0[1] + p.clip_skew], [ul - 1, g0[0] - p.clip_skew]]])
+    groove = M.extrude(gr, p.groove_depth + 1).translate([0, 0, z_top - p.groove_depth])
+    return tongue, groove
+
+
 def shroud(p):
     """The bezel, built like KnightDriveTV's: a curved face that fills the pocket under the door,
     with a letterbox slot cut through it and a rolled rim round the slot. The face's outline
     follows the stock C5 bezel and the door: big rounded lower corners, taller at the hood end.
     Inside the slot the pods sit back in shadow behind a black mask with holes for the lenses
     only, and thin posts that spread into the floor like roots. The flat top blade slides in under
-    the front of the headlight cover with a forked tab onto its clip, like the stock bezel, and a
+    the front of the headlight cover with a tongue that clicks onto its clip, like the stock bezel, and a
     wing (ear) at each end screws to the carrier."""
     ow = p.opening_w - 2 * p.opening_side_clear
     z_top, zb_hood, zb_fender = bezel_z(p)
@@ -626,9 +711,8 @@ def shroud(p):
     blade = [box(-U, U, -p.blade_depth, -0.5, z_top - p.rail_t, z_top),
              M.hull_points(ball_pts(-U + rt + 0.2, 0.37, z_top - rt - 0.13, rt) +
                            ball_pts(U - rt - 0.2, 0.37, z_top - rt - 0.13, rt))]
-    uf = p.fork_x / kx
-    blade.append(box(uf - p.fork_w / 2, uf + p.fork_w / 2, -p.blade_depth - p.fork_len, -p.blade_depth + 1,
-                     z_top - p.fork_t, z_top))
+    tongue, groove = clip_tongue(p, z_top)
+    blade.append(tongue)
     parts.append(warp(M.batch_boolean(blade, m3d.OpType.Add)).transform(F))
 
     # side wings (ears): full side walls from the face back past the pods to just in front of
@@ -658,10 +742,7 @@ def shroud(p):
     # the slot itself, and a shadow line along the underside of the blade at its top
     cuts.append(warp(M.batch_boolean(slot_secs(0.0, 3.0, -dm - 1.0), m3d.OpType.Add)).transform(F))
     cuts.append(warp(box(-uo, uo, -3.0, 3.0, ztop - 0.5, f_top + p.shadow_line)).transform(F))
-    sl = CS.square([p.fork_slot, p.fork_len], center=True).offset(p.fork_slot / 2 * 0.999, m3d.JoinType.Round)
-    sl = sl ^ CS.square([p.fork_slot + 2, p.fork_len + p.fork_slot], center=True).translate([0, -p.fork_slot / 2])
-    cuts.append(warp(M.extrude(sl.translate([uf, -p.blade_depth - p.fork_len / 2 - 0.01 - 4]), p.fork_t + 2)
-                     .translate([0, 0, z_top - p.fork_t - 1])).transform(F))
+    cuts.append(warp(groove, 1.0).transform(F))
     for (x, ys) in shroud_tabs(p):
         cuts.append(slot_z(p.shroud_tab_screw_d + 0.6, p.bezel_travel + p.shroud_tab_screw_d + 0.6,
                            -40, 0, x, ys - p.bezel_travel / 2))
@@ -714,7 +795,7 @@ def shroud(p):
         post = post ^ box(x - 30, x + 30, y_min + p.mask_t, y + 40, f_bot - 1, f_top + 1)
         posts.append(post ^ box(-U, U, -300, -0.8, -300, 300).transform(F))   # stays behind the front edge
     out = M.batch_boolean([out, rim.transform(F), edge.transform(F)] + posts, m3d.OpType.Add)
-    return out ^ box(-ow / 2, ow / 2, -300, 300, -300, 300)
+    return lift_top(p, out ^ box(-ow / 2, ow / 2, -300, 300, -300, 300))
 
 
 def fit_test(p):
@@ -734,12 +815,13 @@ def fit_test(p):
 
 
 def fit_test_blade(p):
-    """Quick print: just the bezel's top blade and fork, 3.7 mm thick. Slide it in under the
-    front of the headlight cover to check the fork finds the clip and the front edge lines up."""
+    """Quick print: just the bezel's top blade and clip tongue, 3.7 mm thick, following the door's lip. Slide it in under
+    the front of the headlight cover to check the tongue clicks onto the clip and the front edge
+    lines up."""
     z_top = bezel_z(p)[0]
     F = front_frame(p)
     U = (p.opening_w / 2 - p.opening_side_clear) / F[0][0]
-    keep = box(-U - 5, U + 5, -p.blade_depth - p.fork_len - 2, 8, z_top - p.rail_t + 0.3, z_top + 1).transform(F)
+    keep = lift_top(p, box(-U - 5, U + 5, -p.clip_back - 30, p.front_bow + 8, z_top - p.rail_t + 0.3, z_top + 1).transform(F))
     return shroud(p) ^ keep
 
 
@@ -808,9 +890,18 @@ def mirror_x(man):
     return man.mirror([1, 0, 0])
 
 
-def print_orient_shroud(man):
-    """Print the bezel upside down, standing on its flat top rail."""
-    return man.rotate([180, 0, 0])
+def print_orient_shroud(man, p=None):
+    """Print the bezel (passenger side as modelled) upside down, standing on its top blade.
+    The top follows the door's lip, so it's first tipped to lay the blade as flat as it goes;
+    the ends of the blade then sit up to about 3 mm off the bed (turn on supports)."""
+    p = p or P
+    s, _ = front_line(p)
+    k = 1 / math.hypot(1, s)
+    a = math.atan(top_tilt(p))
+    ax = np.array([-s * k, k, 0.0])
+    K = np.array([[0, -ax[2], ax[1]], [ax[2], 0, -ax[0]], [-ax[1], ax[0], 0]])
+    R = np.eye(3) + math.sin(a) * K + (1 - math.cos(a)) * K @ K
+    return man.transform(np.hstack([R, np.zeros((3, 1))])).rotate([180, 0, 0])
 
 
 def print_orient_carrier(man):
@@ -868,11 +959,13 @@ if __name__ == "__main__":
     sides = [("passenger", c, s, 1), ("driver", mirror_x(c), mirror_x(s), -1)]
     for side, cc, ss, _ in sides:
         save(print_orient_carrier(cc), os.path.join(out, f"carrier_{side}.stl"))
-        save(print_orient_shroud(ss), os.path.join(out, f"bezel_{side}.stl"))
+    # the driver bezel is printed as the mirror image of the passenger one, tipped the other way
+    save(print_orient_shroud(s), os.path.join(out, "bezel_passenger.stl"))
+    save(mirror_x(print_orient_shroud(s)), os.path.join(out, "bezel_driver.stl"))
     save(fit_test(P), os.path.join(out, "fit_test_window.stl"))
     blade = fit_test_blade(P)
     save(print_orient_shroud(blade), os.path.join(out, "fit_test_blade_passenger.stl"))
-    save(print_orient_shroud(mirror_x(blade)), os.path.join(out, "fit_test_blade_driver.stl"))
+    save(mirror_x(print_orient_shroud(blade)), os.path.join(out, "fit_test_blade_driver.stl"))
     save(fit_test_mount(P), os.path.join(out, "fit_test_mount_passenger.stl"))
     save(mirror_x(fit_test_mount(P)), os.path.join(out, "fit_test_mount_driver.stl"))
     save(spacers(P), os.path.join(out, "spacer_washers.stl"))
