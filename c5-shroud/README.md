@@ -33,6 +33,24 @@ is a short slot, sized snug (6.3 mm) on an M6 bolt so the bolt stays put while y
 the pod height relative to the holes (arm hole 4 is 14 mm above the carrier floor). The
 long pod slots and the shroud's slotted tabs take up the fore-aft part of that.
 
+## The bezel
+
+The front piece is a full bezel, not just a frame. Its edge wraps back 78 mm on the top,
+bottom and both sides, so with the door up you see only the bezel face and the three
+lenses. The carrier, bolts and pocket stay hidden. The back is open for the wiring and
+stops 3.5 mm short of the mounting nuts.
+
+- **Mounting:** four M4 × 16 self-tapping screws. Two go up through the front tabs into
+  bosses under the carrier floor, and two go up through the bottom wall into posts at the
+  back of the floor. All four holes are 16 mm slots, so the bezel can slide forward
+  (never back) to follow the pods if you move them forward.
+- **Sealing to the door:** the top has a 10 mm wide, 1 mm deep recess. Stick a strip of
+  adhesive foam weatherstrip in it (about 10 mm wide, thick enough to touch the underside
+  of the door) to close the last gap. The gap between the bezel and the door wasn't
+  measured, so the foam takes it up.
+- **Fit on the car:** it's 269 mm wide in the 279 mm opening. Cycle the door slowly by hand
+  and check the wrap doesn't touch anything inside the pocket.
+
 ## What changed in v3
 
 - **The back is two small tabs instead of a full wall.** On the first mount test, the
@@ -68,7 +86,7 @@ long pod slots and the shroud's slotted tabs take up the fore-aft part of that.
 2. `stl/fit_test_mount_driver.stl` (about 20 minutes, two small flat tabs). Bolt the taller
    tab to the arm (holes 1 and 4) and the shorter one to the aiming pad (both holes).
    The bolts should go through snugly without forcing.
-3. `stl/carrier_driver.stl` and `stl/shroud_driver.stl`, then the passenger pair.
+3. `stl/carrier_driver.stl` and `stl/bezel_driver.stl`, then the passenger pair. The bezel prints face down.
 4. `stl/spacer_washers.stl`: only if a tab doesn't sit flat against the arm or the pad.
 
 `stl/split/` has the same parts cut in two, joined with a floor splice plate, for small beds.
@@ -82,7 +100,8 @@ bay. Use 4 walls, 40% gyroid infill, and 6 top and bottom layers.
   washer under each nut so it doesn't dig into the plastic. The nut can't pull through: the slots
   are 6.3 mm wide and an M6 nut is 10 mm across.
 - 3 × M6 bolts, washers and nylon lock nuts for the pods, through the floor slots
-- 2 × M4 × 16 self-tapping screws for the shroud tabs
+- 4 × M4 × 16 self-tapping screws for the bezel
+- Adhesive foam weatherstrip, about 10 mm wide, for the top of the bezel
 
 ## Fitting
 

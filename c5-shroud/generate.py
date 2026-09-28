@@ -40,8 +40,8 @@ class Params:
     pod_gap: float = 8.0          # space between neighbouring pods
     pod_bolt_d: float = 8.6       # slot width for the bracket stud (about 8 mm / 5/16 in)
     pod_stud_d: float = 8.0       # stud diameter, from the drawing
-    pod_bolt_y: float = -28.5     # slot centre, measured back from the pod face
-    pod_slot_len: float = 40.0    # fore-aft adjustment: 22 mm forward, 10 mm back from nominal
+    pod_bolt_y: float = -31.5     # slot centre, measured back from the pod face
+    pod_slot_len: float = 34.6    # fore-aft adjustment: 16 mm forward (bezel follows), 10 mm back
     pod_bolt_nominal_y: float = -34.5  # stud position in the default spot (1.36 in behind the face)
 
     # --- carrier ---
@@ -79,7 +79,14 @@ class Params:
     shroud_margin_top: float = 8.0
     shroud_margin_bot: float = 25.0  # below the floor; owner says there's plenty of room
     shroud_r: float = 14.0        # outer corner radius
-    shroud_return: float = 12.0   # depth of the lip that wraps back from the face
+    # The shroud is a full bezel: its edge wraps back on all four sides so only the face and
+    # the three lenses show when the door goes up. It stops short of the mounting nuts.
+    shroud_return: float = 78.0   # how far the top, bottom and sides wrap back from the face
+    bezel_rear_screw_y: float = -56.0  # two more M4 screws up through the bezel bottom into the carrier
+    bezel_travel: float = 16.0    # the bezel's screw slots let it slide this far forward with the pods (never back)
+    foam_channel_w: float = 10.0  # recess on top for adhesive foam weatherstrip (seals to the door)
+    foam_channel_d: float = 1.0
+    foam_channel_y: float = -14.0  # centre of the recess, behind the face
     # Window gap around the pod bezel, per side. The 4-notch test frame (1.8 / 1.8) fit but
     # needed to be a little wider and a little shorter, so: 1 mm wider, 1 mm shorter overall.
     window_clear_x: float = 2.3   # each side, left and right
@@ -255,6 +262,10 @@ def carrier(p):
     boss_z0 = -p.floor_t - p.lip_h
     for x in shroud_tab_x(p):
         parts.append(cyl_z(11, boss_z0, -p.floor_t + 0.01, x, y_front - 12))
+    # standoffs down to the bezel's bottom wall for its two rear screws
+    bez_in = -p.shroud_margin_bot - p.floor_t + p.shroud_t
+    for x in bezel_rear_x(p):
+        parts.append(cyl_z(11, bez_in, -p.floor_t + 0.01, x, p.bezel_rear_screw_y))
 
     body = M.batch_boolean(parts, m3d.OpType.Add)
 
@@ -269,6 +280,9 @@ def carrier(p):
     for x in shroud_tab_x(p):
         # blind pilot hole for an M4 self-tapping screw, stops 1.5 mm under the floor top
         cuts.append(cyl_z(p.shroud_tab_screw_d - 0.4, boss_z0 - 1, -1.5, x, y_front - 12))
+
+    for x in bezel_rear_x(p):
+        cuts.append(cyl_z(p.shroud_tab_screw_d - 0.4, bez_in - 1, -1.5, x, p.bezel_rear_screw_y))
     # splice holes: countersunk from the top of the floor so the pods sit flat
     for (hx, hy) in splice_floor_holes(p):
         cuts.append(cyl_z(p.splice_screw_d, -p.floor_t - 1, 1, hx, hy))
@@ -307,6 +321,10 @@ def pitch(p):
 
 def split_x(p):
     return pitch(p) / 2
+
+
+def bezel_rear_x(p):
+    return [-pitch(p) / 2, pitch(p) / 2]
 
 
 def shroud_tab_x(p):
@@ -349,14 +367,25 @@ def shroud(p):
     tabs = []
     tab_y0 = -p.floor_front_setback - 20
     for x in shroud_tab_x(p):
-        t = box(x - 9, x + 9, tab_y0 - p.shroud_tab_slot / 2, y_face - p.shroud_t + 1,
+        ys = -p.floor_front_setback - 12                    # screw position with the bezel all the way back
+        t = box(x - 9, x + 9, ys - p.bezel_travel - 7, y_face - p.shroud_t + 1,
                 -p.floor_t - p.lip_h - 3, -p.floor_t - p.lip_h)
-        t = t - slot_z(p.shroud_tab_screw_d + 0.6, p.shroud_tab_slot + p.shroud_tab_screw_d,
-                       -40, 0, x, -p.floor_front_setback - 12)
+        # forward-only slot: as the bezel slides forward, the screw moves back along the slot
+        t = t - slot_z(p.shroud_tab_screw_d + 0.6, p.bezel_travel + p.shroud_tab_screw_d + 0.6,
+                       -40, 0, x, ys - p.bezel_travel / 2)
         tabs.append(t)
     # the tabs run 1 mm into the back of the face, which ties them on
     body = M.batch_boolean([shell] + tabs, m3d.OpType.Add)
-    return M.batch_boolean([body] + wins, m3d.OpType.Subtract)
+    cuts = list(wins)
+    # shallow recess along the top for a strip of foam weatherstrip
+    cuts.append(box(-ow / 2 + 20, ow / 2 - 20,
+                    p.foam_channel_y - p.foam_channel_w / 2, p.foam_channel_y + p.foam_channel_w / 2,
+                    z_top - p.foam_channel_d, z_top + 1))
+    # rear screw holes in the bottom wall
+    for x in bezel_rear_x(p):
+        cuts.append(slot_z(p.shroud_tab_screw_d + 0.6, p.bezel_travel + p.shroud_tab_screw_d + 0.6,
+                           z_bot - 1, z_bot + p.shroud_t + 1, x, p.bezel_rear_screw_y - p.bezel_travel / 2))
+    return M.batch_boolean([body] + cuts, m3d.OpType.Subtract)
 
 
 def fit_test(p):
@@ -496,7 +525,7 @@ if __name__ == "__main__":
     sides = [("passenger", c, s, 1), ("driver", mirror_x(c), mirror_x(s), -1)]
     for side, cc, ss, _ in sides:
         save(print_orient_carrier(cc), os.path.join(out, f"carrier_{side}.stl"))
-        save(print_orient_shroud(ss), os.path.join(out, f"shroud_{side}.stl"))
+        save(print_orient_shroud(ss), os.path.join(out, f"bezel_{side}.stl"))
     save(fit_test(P), os.path.join(out, "fit_test_window.stl"))
     save(fit_test_mount(P), os.path.join(out, "fit_test_mount_passenger.stl"))
     save(mirror_x(fit_test_mount(P)), os.path.join(out, "fit_test_mount_driver.stl"))
@@ -508,9 +537,9 @@ if __name__ == "__main__":
         save(print_orient_carrier(b), os.path.join(sd, f"carrier_{side}_A.stl"))
         save(print_orient_carrier(a), os.path.join(sd, f"carrier_{side}_B.stl"))
         a, b = ss.split_by_plane([sgn, 0, 0], split_x(P))
-        save(print_orient_shroud(b), os.path.join(sd, f"shroud_{side}_A.stl"))
-        save(print_orient_shroud(a), os.path.join(sd, f"shroud_{side}_B.stl"))
+        save(print_orient_shroud(b), os.path.join(sd, f"bezel_{side}_A.stl"))
+        save(print_orient_shroud(a), os.path.join(sd, f"bezel_{side}_B.stl"))
     fp, _ = splice_plates(P)
     save(fp, os.path.join(sd, "splice_floor_x2.stl"))
-    save(shroud_splice(P), os.path.join(sd, "shroud_splice_x2.stl"))
+    save(shroud_splice(P), os.path.join(sd, "bezel_splice_x2.stl"))
     preview(P, os.path.join(here, "preview", "assembly.png"))

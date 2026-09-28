@@ -86,6 +86,26 @@ check(f"window gap {P.window_clear_x} mm each side, {P.window_clear_y} mm top an
 ov = overlap(shroud, carrier)
 check("shroud and carrier don't overlap", ov < 1e-3, f"overlap {ov:.4f} mm^3")
 
+# 6b. the bezel slides forward with the pods (0 to bezel_travel); it never goes back
+worst_nut = worst_car = worst_pod = 0.0
+for s_ in (0.0, P.bezel_travel / 2, P.bezel_travel):
+    bz = shroud.translate([0, s_, 0])
+    worst_car = max(worst_car, overlap(bz, carrier))
+    worst_pod = max(worst_pod, overlap(bz, g.pod_dummy(P, s_)))
+    for n, (x, z, ax) in pts.items():
+        ln = P.arm_slot_len if ax == "x" else P.pad_slot_len
+        tr = (ln - P.mount_hole_d) / 2
+        for d_ in (-tr, tr):
+            px, pz = (x + d_, z) if ax == "x" else (x, z + d_)
+            worst_nut = max(worst_nut, overlap(bz, g.cyl_y(2 * P.nut_r, y_back + t + 0.01, y_back + t + 8, px, pz)))
+check(f"bezel clears the carrier anywhere in its {P.bezel_travel:.0f} mm of forward travel", worst_car < 1e-3)
+check("bezel clears the pods when both slide forward together", worst_pod < 1e-6)
+check("bezel wrap clears all four mounting nuts", worst_nut < 1e-6)
+check("pods can also sit up to 10 mm further back with the bezel in place",
+      max(overlap(shroud, g.pod_dummy(P, -s_)) for s_ in (0, back)) < 1e-6)
+gap = (shroud.bounding_box()[1]) - (y_back + t + 8)
+check(f"bezel back edge sits {gap:.1f} mm in front of the nuts", gap > 2)
+
 # 7. shroud fits the 11 in opening
 sb = shroud.bounding_box()
 sw = sb[3] - sb[0]
