@@ -93,14 +93,21 @@ stock bezel is held three ways, and so is this one:
   lower part tucks down behind the body, so there's no gap under the lights.
 - **Lower lip:** below the lights, the front slopes down and forward to a rolled lip. The
   lip runs along the bottom, round the bottom corners and up both ends.
-- **Open frame, like KnightDriveTV's CAD and scan:** the front is one opening across all
-  three pods, framed by the top blade, the end walls and a floor shelf. The shelf sits
-  just under the pod faces.
-  - **Posts:** a thin 9 mm round post with flared ends stands in front of each gap
-    between pods, 4 mm behind the front edge. The posts hide the gaps.
-  - **Front line:** it sweeps back along the pods' step and sits far enough forward to
-    clear the posts. The hood-side pod face is about 8 mm behind it.
-  - **Settings:** `post_*`, `shelf_t` and `end_wall_x` in `generate.py`.
+- **Open frame, like KnightDriveTV's CAD and scan:** one rounded "mouth" across all
+  three pods.
+  - **Opening:** 10 mm corners. It flares 4 mm wider at the front edge on the sides and
+    bottom, and narrows back to just outside the pods.
+  - **Top blade:** stays one clean, continuous line above the opening.
+  - **Pods:** sit 14 mm deeper than they have to (`pod_recess`), so the lenses glow from
+    back in the shadow. The cavity floor (a shelf just under the pod faces), end walls and
+    top blade form one continuous shell.
+  - **Posts:** stand in front of each gap between pods, 9 mm wide and 13 mm front to back,
+    with trumpet flares into the shelf and the blade. They're trimmed flat behind so they
+    never touch the pods.
+  - **Lower lip:** bows 6 mm forward in the middle to follow the nose (`front_bow`). It
+    isn't built off the body surface: that needs a scan of the car's nose (see below).
+  - **Settings:** `post_*`, `pod_recess`, `mouth_*`, `front_bow`, `shelf_t` and
+    `end_wall_x` in `generate.py`.
 
 **Before printing the full bezel,** print `stl/fit_test_blade_driver.stl`. It's just the
 top blade and fork, 3.7 mm thick. Slide it in under the front of the headlight cover the
@@ -119,8 +126,11 @@ and check the lip and wings don't touch anything as it goes down into the pocket
 
 - **The top slides into the headlight cover like the stock bezel,** with the same flat top
   blade and forked tab onto the cover's clip. This replaces the foam strip.
-- **The front is an open frame like KnightDriveTV's,** with round posts between the pods
-  and a floor shelf under them, instead of a solid face with a tunnel per pod.
+- **The front is an open frame like KnightDriveTV's,** with a rounded mouth, the pods set
+  14 mm deeper, and trumpet-flared posts between them instead of a tunnel per pod.
+- **To follow the body exactly, the face needs a scan of the nose.** A LiDAR iPhone with
+  Polycam, exported as STL or OBJ, is enough. Profiles from a contour gauge at 3–4 places
+  across the headlight pocket also work.
 - **The outside follows the stock and KnightDriveTV shape.** It's taller at the hood end,
   with a rolled lip along the bottom and up both ends, so it goes all the way down.
 - **New quick print, `fit_test_blade_*.stl`:** the top blade and fork only, to check the
