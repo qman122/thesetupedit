@@ -155,17 +155,16 @@ class Params:
     wing_back_z: float = -20.0    # bottom of the wings at their rear edge (under the carrier's tabs)
     wing_r: float = 10.0          # rounded rear corners
     access_hole_d: float = 28.0   # hood-end wing: hole to reach the aiming adjuster, like the stock ear
-    access_hole_yz: tuple = (-72.0, 18.0)   # moved down clear of the ear screw above it
-    # ear screws where the stock bezel's ears screw on: the slotted hole in each side flange of the
-    # headlight door (measured from the owner's model, cover_scan.py). Each is (x, y, z) of the slot
-    # on the flange's inside face and the flange's outward normal; hood side first. A pad on the
-    # wing comes out to sit against the flange, and a screw from outside goes through the door's
-    # slot into it, as the stock screw does into the stock ear.
-    ear_slots: tuple = ((-139.4, -72.2, 46.5, (-0.967, -0.044, -0.252)),
-                        (139.2, -87.6, 38.8, (0.943, 0.262, -0.208)))
-    ear_pad_d: float = 16.0
-    ear_gap: float = 0.5          # between the pad and the door flange
-    ear_hole_d: float = 3.4       # pilot for an M4 self-tapping screw (drill out to suit the stock screw)
+    access_hole_yz: tuple = (-72.0, 38.0)
+    # ears like the stock bezel's: a side panel each end, outside the headlight door's side flange,
+    # held by screws through it and the flange's holes into the headlight, as the stock ears are
+    # (owner's photo of a stock headlight). They follow the flange's shape, measured from the
+    # owner's model of the doors (cover_sides.json, from cover_scan.py), and print as separate parts.
+    ear_t: float = 3.0
+    ear_gap: float = 0.8          # between the ear and the door
+    ear_hole_d: float = 6.5       # clearance for the stock ear screws, at every hole in the flange
+    ear_access_d: float = 40.0    # hood-end ear: hole for the aiming adjuster's access plug (from the photo)
+    ear_access_yz: tuple = (-132.0, 16.0)
     # the front of the door's fender-side flange comes down over the top of the fender wing: the
     # wing is trimmed under it (from the owner's model). (x from, x to, y from, y to, z at x from,
     # drop per mm toward the fender)
@@ -595,33 +594,167 @@ def clip_tongue(p, z_top):
     return tongue, groove
 
 
-def ear_pads(p):
-    """Pads on the outside of the wings that come out to the door's side flanges at the stock
-    bezel's screw slots, faced parallel to the flange, and the screw holes through them (along
-    the flange's normal, so the screw goes straight through the door's slot)."""
+def face_profile(p, z):
+    """Side view of the bezel face: how far it swells forward (or rolls back) at height z."""
+    z_top, zb_hood, zb_fender = bezel_z(p)
+    zlow = min(zb_hood, zb_fender) - p.bottom_sag
+    t = np.clip((z_top - z) / (z_top - zlow), 0, 1)
+    return p.face_belly * np.sin(np.pi * t) - p.face_tuck * t ** 3
+
+
+_SIDES = {}
+
+
+def door_side(name):
+    """The door's side flange ("hood" or "fender") from cover_sides.json: its holes, and a function
+    giving how far out (|x|) the door reaches at (y, z). The map is filled straight down below the
+    flange and forward/back past its ends, and widened by one cell so it errs outward."""
+    if name not in _SIDES:
+        import json
+        with open(os.path.join(os.path.dirname(os.path.abspath(__file__)), "cover_sides.json")) as fh:
+            d = json.load(fh)[name]
+        ys, zs = np.asarray(d["y"]), np.asarray(d["z"])
+        X = np.array([[np.nan if q is None else q for q in row] for row in d["x"]], float)
+        for i in range(len(ys)):                     # fill each column down from its lowest point, and up
+            col = X[i]
+            ok = np.flatnonzero(~np.isnan(col))
+            if len(ok):
+                col[:ok[0]] = col[ok[0]]
+                col[ok[-1] + 1:] = col[ok[-1]]
+        have = np.flatnonzero(~np.isnan(X[:, 0]))
+        for i in range(len(ys)):                     # columns past the ends take the nearest one
+            if np.isnan(X[i, 0]):
+                X[i] = X[have[np.argmin(np.abs(have - i))]]
+        Xd = X.copy()
+        for di in (-1, 0, 1):
+            for dj in (-1, 0, 1):
+                Xd = np.fmax(Xd, np.roll(np.roll(X, di, 0), dj, 1))
+        # smooth it so the ear is a fair surface, but never inside the door itself
+        S = Xd.copy()
+        for _ in range(3):
+            P_ = np.pad(S, 1, mode="edge")
+            S = sum(P_[1 + di:P_.shape[0] - 1 + di, 1 + dj:P_.shape[1] - 1 + dj]
+                    for di in (-1, 0, 1) for dj in (-1, 0, 1)) / 9
+        Xd = np.fmax(S, X)
+
+        def reach(y, z):
+            fy = np.clip((np.asarray(y) - ys[0]) / (ys[1] - ys[0]), 0, len(ys) - 1.001)
+            fz = np.clip((np.asarray(z) - zs[0]) / (zs[1] - zs[0]), 0, len(zs) - 1.001)
+            i, j = fy.astype(int), fz.astype(int)
+            a, b = fy - i, fz - j
+            return ((1 - a) * (1 - b) * Xd[i, j] + a * (1 - b) * Xd[i + 1, j] +
+                    (1 - a) * b * Xd[i, j + 1] + a * b * Xd[i + 1, j + 1])
+        _SIDES[name] = (d["holes"], reach)
+    return _SIDES[name]
+
+
+def ear(p, name):
+    """A side ear like the stock bezel's ("hood" or "fender" end), passenger side as modelled.
+
+    It lies just outside the door's side flange, following its shape, from the bezel face back
+    past the flange's last hole. Its front bends in to meet the side of the bezel face, and its
+    outline below follows the stock ear in the owner's photo: down to the bezel's bottom corner
+    at the front, then rising back to the last hole. There's a screw hole at every hole in the
+    flange; the stock ear screws go through the ear and the flange into the headlight."""
     ow = p.opening_w - 2 * p.opening_side_clear
-    pads, holes = [], []
-    r = p.ear_pad_d / 2
-    for (x, y, z, nrm) in p.ear_slots:
-        side = 1 if x > 0 else -1
-        nrm = np.asarray(nrm, float)
-        e1 = np.cross([0.0, 0.0, 1.0], nrm)
-        e1 /= np.linalg.norm(e1)
-        e2 = np.cross(nrm, e1)
-        face = np.array([x, y, z]) - p.ear_gap * nrm
-        xw = side * (ow / 2 - p.wing_t / 2)            # middle of the wing
-        ring = [a / 16 * 2 * math.pi for a in range(16)]
-        pts = [face + r * (math.cos(a) * e1 + math.sin(a) * e2) for a in ring]
-        pts += [[xw, y + (r + 2) * math.cos(a), z + (r + 2) * math.sin(a)] for a in ring]
-        pads.append(M.hull_points(pts))
-        hole = M.cylinder(40, p.ear_hole_d / 2, p.ear_hole_d / 2, 24).translate([0, 0, -30])
-        # turn the cylinder's axis (z) onto the flange normal and put its top 10 mm past the face
-        k = np.cross([0, 0, 1], nrm)
-        ang = math.acos(np.clip(nrm[2], -1, 1))
-        K = np.array([[0, -k[2], k[1]], [k[2], 0, -k[0]], [-k[1], k[0], 0]]) / (np.linalg.norm(k) or 1)
-        Rm = np.eye(3) + math.sin(ang) * K + (1 - math.cos(ang)) * K @ K
-        holes.append(hole.transform(np.hstack([Rm, (face + 10 * nrm)[:, None]])))
-    return pads, holes
+    holes, reach = door_side(name)
+    sx = -1 if name == "hood" else 1
+    z_top, zb_hood, zb_fender = bezel_z(p)
+    U = ow / 2 / front_frame(p)[0][0]
+    s, c0 = front_line(p)
+    y0 = c0 + s * sx * ow / 2                            # face front at this end, on the flat front line
+    z_face = z_top + float(top_rise(p, sx * U)) - p.top_corner_r * 0.3
+    ze = (zb_hood if sx < 0 else zb_fender) + p.corner_r * 0.6
+
+    def front(z):                                        # just behind the face's front at this end
+        return y0 + face_profile(p, z) - 0.3
+
+    def xin(y, z):                                       # inside face of the ear, as |x|
+        return np.maximum(reach(y, z) + p.ear_gap, ow / 2 + 1.0)
+
+    # top edge: a line 8 mm above the first hole and 7 above the last, never above the face's top
+    hf, hr = holes[0]["at"], holes[-1]["at"]
+    k = ((hf[2] + 8) - (hr[2] + 7)) / (hf[1] - hr[1])
+
+    def top(y):
+        return min(hf[2] + 8 + k * (y - hf[1]), z_face)
+    y_back = hr[1] - 12
+    L = front(z_face) - y_back
+    H = top(front(ze)) - ze
+    # the stock ear's outline behind the tip, from the photo: (distance back / length, depth / height)
+    rear = [(159 / 222, 0.746), (220 / 222, 0.22), (1.0, 0.0)]
+    zs_ = np.linspace(ze, z_face, 14)
+    outline = [[front(z), z] for z in zs_]
+    for (fa, fd) in reversed(rear):
+        y_ = front(z_face) - fa * L
+        outline.append([y_, top(y_) - fd * H])
+    tops = [[y_, top(y_)] for y_ in np.linspace(y_back, front(z_face), 12)]
+    outline = outline[:14] + tops[::-1][1:-1] + outline[14:]
+    cs = CS([np.asarray(outline)])
+    if cs.area() < 0:
+        cs = CS([np.asarray(outline)[::-1]])
+    panel = M.extrude(cs, p.ear_t).refine_to_length(3.0)   # (y, z, w): w = 0 inside to ear_t outside
+
+    def f(v):
+        out = np.empty_like(v)
+        out[:, 0] = xin(v[:, 0], v[:, 1]) + v[:, 2]
+        out[:, 1], out[:, 2] = v[:, 0], v[:, 1]
+        return out
+    panel = panel.warp_batch(f)
+    if panel.volume() < 0:
+        panel = panel.mirror([0, 0, 0])
+    # the front bends in to the side of the bezel face
+    zr = M.cube([1, p.ear_t, z_face - ze - 0.6]).translate([0, -p.ear_t + 0.23, ze + 0.31]).refine_to_length(2.0)
+
+    def g_(v):
+        out = np.empty_like(v)
+        x_out = xin(front(v[:, 2]), v[:, 2]) + p.ear_t - 0.41      # ends inside the panel, not flush with it
+        out[:, 0] = ow / 2 + 0.5 + v[:, 0] * (x_out - ow / 2 - 0.5)
+        out[:, 1] = front(v[:, 2]) + v[:, 1]
+        out[:, 2] = v[:, 2]
+        return out
+    parts = [panel, zr.warp_batch(g_)]
+    cuts = []
+    for h in holes:
+        at, nrm = np.asarray(h["at"], float) * [sx, 1, 1], np.asarray(h["normal"], float) * [sx, 1, 1]
+        # a boss from the flange out to the ear, so the screw clamps without bending the ear
+        parts.append(_along(M.cylinder(12, 7, 7, 32), nrm, at + 0.3 * nrm))
+        cuts.append(_along(M.cylinder(40, p.ear_hole_d / 2, p.ear_hole_d / 2, 24).translate([0, 0, -20]), nrm, at))
+    if name == "hood":
+        ay, az = p.ear_access_yz
+        cuts.append(cyl_x(p.ear_access_d, ow / 2 - 5, ow / 2 + 60, ay, az))
+    out = M.batch_boolean(parts, m3d.OpType.Add) - M.batch_boolean(cuts, m3d.OpType.Add)
+    return out.mirror([1, 0, 0]) if sx < 0 else out
+
+
+def _along(man, nrm, at):
+    """Turn a part built along +z onto the direction nrm and move its origin to at."""
+    nrm = np.asarray(nrm, float) / np.linalg.norm(nrm)
+    k = np.cross([0, 0, 1], nrm)
+    sn, cs_ = np.linalg.norm(k), nrm[2]
+    K = np.zeros((3, 3)) if sn < 1e-9 else np.array([[0, -k[2], k[1]], [k[2], 0, -k[0]], [-k[1], k[0], 0]]) / sn
+    Rm = np.eye(3) + sn * K + (1 - cs_) * K @ K
+    return man.transform(np.hstack([Rm, np.asarray(at, float)[:, None]]))
+
+
+def print_orient_ear(man):
+    """Lay an ear on its outside face (its bend and bosses point up), tipped to lie as flat as it goes."""
+    v = np.asarray(man.to_mesh().vert_properties)[:, :3]
+    c = v.mean(0)
+    nrm = np.linalg.svd(v - c, full_matrices=False)[2][2]
+    if nrm[0] * np.sign(c[0]) < 0:
+        nrm = -nrm                                      # pointing outward
+    return man.translate(-c).transform(np.hstack([_rot_to(nrm, [0, 0, -1]), np.zeros((3, 1))]))
+
+
+def _rot_to(a, b):
+    a, b = np.asarray(a, float) / np.linalg.norm(a), np.asarray(b, float) / np.linalg.norm(b)
+    k = np.cross(a, b)
+    sn, cs_ = np.linalg.norm(k), a @ b
+    if sn < 1e-9:
+        return np.eye(3) if cs_ > 0 else np.diag([1.0, -1.0, -1.0])
+    K = np.array([[0, -k[2], k[1]], [k[2], 0, -k[0]], [-k[1], k[0], 0]]) / sn
+    return np.eye(3) + sn * K + (1 - cs_) * K @ K
 
 
 def shroud(p):
@@ -654,8 +787,7 @@ def shroud(p):
     zlow = zmin - p.bottom_sag                      # lowest point of the face
 
     def profile(z):                                 # side view: swell forward, then roll back at the bottom
-        t = np.clip((z_top - z) / (z_top - zlow), 0, 1)
-        return p.face_belly * np.sin(np.pi * t) - p.face_tuck * t ** 3
+        return face_profile(p, z)
 
     def bulge(u, z):                                # how far the curved face sits in front of the flat front line
         return p.front_bow * (1 - min(abs(u) / U, 1) ** 2) + float(profile(z))
@@ -769,10 +901,7 @@ def shroud(p):
         corners = [[yb_ + wr_ * math.cos(a / 8 * math.pi), zc_ + wr_ * math.sin(a / 8 * math.pi)]
                    for zc_ in (z_top - wr_, zbk) for a in range(16)]
         front_edge = [[yfr + bulge(side * U, z) - 1.0, z] for z in np.linspace(ze, z_top, 12)]
-        # the wing reaches back far enough to carry the ear screw pad on its side
-        lobe = [[y_ + (p.ear_pad_d / 2 + 3) * math.cos(a / 8 * math.pi), z_ + (p.ear_pad_d / 2 + 3) * math.sin(a / 8 * math.pi)]
-                for (x_, y_, z_, _) in p.ear_slots if x_ * side > 0 for a in range(16)]
-        prof = CS.hull_points(front_edge + [[yfr - 20, z_top]] + lobe +
+        prof = CS.hull_points(front_edge + [[yfr - 20, z_top]] +
                               [q for q in corners if q[1] <= z_top])
         x0 = min(xo, xi)
         parts.append(M.extrude(prof, p.wing_t + 0.5).transform([[0, 0, 1, x0], [1, 0, 0, 0], [0, 1, 0, 0]]))
@@ -842,8 +971,7 @@ def shroud(p):
         posts.append(post ^ box(-U, U, -300, -0.8, -300, 300).transform(F))   # stays behind the front edge
     out = M.batch_boolean([out, rim.transform(F), edge.transform(F)] + posts, m3d.OpType.Add)
     out = out ^ box(-ow / 2, ow / 2, -300, 300, -300, 300)
-    pads, holes = ear_pads(p)
-    out = lift_top(p, M.batch_boolean([out] + pads, m3d.OpType.Add) - M.batch_boolean(holes, m3d.OpType.Add))
+    out = lift_top(p, out)
     x0, x1, y0, y1, z0, dz = p.door_corner_cut
     return out - M.hull_points([[x, y, z] for x in (x0, x1) for y in (y0, y1)
                                 for z in (z0 - dz * (x - x0), z0 + 40)])
@@ -1013,6 +1141,10 @@ if __name__ == "__main__":
     # the driver bezel is printed as the mirror image of the passenger one, tipped the other way
     save(print_orient_shroud(s), os.path.join(out, "bezel_passenger.stl"))
     save(mirror_x(print_orient_shroud(s)), os.path.join(out, "bezel_driver.stl"))
+    for name in ("hood", "fender"):
+        e = ear(P, name)
+        save(print_orient_ear(e), os.path.join(out, f"ear_{name}_passenger.stl"))
+        save(print_orient_ear(mirror_x(e)), os.path.join(out, f"ear_{name}_driver.stl"))
     save(fit_test(P), os.path.join(out, "fit_test_window.stl"))
     blade = fit_test_blade(P)
     save(print_orient_shroud(blade), os.path.join(out, "fit_test_blade_passenger.stl"))

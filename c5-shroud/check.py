@@ -180,19 +180,20 @@ check(f"shroud width {sw:.1f} mm fits the {P.opening_w:.1f} mm opening",
       sw <= P.opening_w - 2 * P.opening_side_clear + 0.01,
       f"{(P.opening_w - sw) / 2:.1f} mm clear each side")
 
-# 7a. an ear pad on each wing comes out to the door's side flange, 0.5 mm short of it, with its
-#     screw hole on the door's slot (where the stock bezel's ear screws on)
-sv = np.asarray(shroud.to_mesh().vert_properties)[:, :3]
-for (x, y, z, nrm) in P.ear_slots:
-    nrm = np.asarray(nrm)
-    rel = sv - [x, y, z]
-    near = sv[np.linalg.norm(rel - np.outer(rel @ nrm, nrm), axis=1) < P.ear_pad_d / 2 + 0.5]   # on the pad
-    reach = float(((near - [x, y, z]) @ nrm).max())                      # pad face vs the flange
-    hole = [x, y, z] - nrm * np.arange(1.0, 8.0, 0.5)[:, None]          # along the screw, into the pad
-    side = "hood" if x < 0 else "fender"
-    solid_at = [overlap(shroud, g.box(q[0] - 0.4, q[0] + 0.4, q[1] - 0.4, q[1] + 0.4, q[2] - 0.4, q[2] + 0.4)) for q in hole]
-    check(f"{side} ear pad reaches the door's flange ({-reach:.1f} mm gap) with its hole on the door's slot",
-          0.3 < -reach < 0.8 and max(solid_at) < 1e-6)
+# 7a. the ears (separate parts, like the stock bezel's) sit outside the door's side flanges with
+#     a clear hole on every hole in the flange, and touch nothing else
+for name in ("hood", "fender"):
+    e = g.ear(P, name)
+    touch = max(overlap(e, shroud), overlap(e, carrier), overlap(e, pods))
+    holes, _ = g.door_side(name)
+    ok_holes = True
+    for h in holes:
+        at, nrm = np.asarray(h["at"]), np.asarray(h["normal"])                     # passenger frame
+        bore = g._along(M.cylinder(16, 2.2, 2.2, 16), nrm, at + 0.5 * nrm)          # screw path, clear
+        ring = g._along(M.cylinder(2, 6.5, 6.5, 32) - M.cylinder(2, 4.5, 4.5, 32), nrm, at + 3 * nrm)
+        ok_holes &= overlap(e, bore) < 1e-6 and overlap(e, ring) > 20              # material round it
+    check(f"{name} ear: clear of the bezel, carrier and pods, with a screw hole on each of the "
+          f"door's {len(holes)} flange holes", touch < 1e-6 and ok_holes)
 
 # 7b. keep clear of the car parts next to the holes (seen in the owner's photos)
 z4 = pts["arm hole 4"][1]
@@ -220,8 +221,9 @@ for f in sorted(glob.glob(os.path.join(here, "stl", "**", "*.stl"), recursive=Tr
                                                   & (tm.triangles_center[:, 2] < 0.01)].sum() > 50
     parts = len(M(m3d.Mesh(tm.vertices.astype("float32"), tm.faces.astype("uint32"))).decompose())
     multi = "spacer" in name or "fit_test_mount" in name or "fit_test_window" in name      # printed as separate pieces on purpose
-    ok = tm.is_watertight and tm.volume > 0 and flat and (parts == 1 or multi)
-    check(f"{name}: watertight, flat on the bed, {parts} piece(s)", ok)
+    curved = "ear_" in name                     # the ears follow the door's flange: they lie on it, with supports
+    ok = tm.is_watertight and tm.volume > 0 and tm.bounds[0][2] == 0 and (flat or curved) and (parts == 1 or multi)
+    check(f"{name}: watertight, {'on' if curved else 'flat on'} the bed, {parts} piece(s)", ok)
 
 print(f"\n{sum(results)}/{len(results)} checks passed")
 raise SystemExit(0 if all(results) else 1)

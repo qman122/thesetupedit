@@ -7,7 +7,8 @@ skin facing +z, the front edge toward -y, and the two doors mirrored about x = 0
 uses the +x door. It prints the measurements behind the clip_* parameters in generate.py, puts
 the door on the passenger bezel (front edge along the blade, lip on the blade), and draws
 diagrams/cover_fit.png. Given a lighter (decimated) copy of the same file as well, it also
-writes the placed door for the 3D mockup (mockup/cover_*.json).
+writes the placed door for the 3D mockup (mockup/cover_*.json). It also writes
+cover_sides.json: the holes in the door's side flanges and their shape, for the bezel's ears.
 """
 
 import os
@@ -81,9 +82,17 @@ def main(path, view_path=None):
     bez_local = g.shroud(P).transform(np.linalg.inv(np.vstack([F, [0, 0, 0, 1]]))[:3])
     ov = (front ^ bez_local).volume()
     print(f"bezel and door overlap: {ov:.1f} mm^3 (0 = no clash)")
+    door_m = local.transform(np.vstack([np.asarray(F, float), [0, 0, 0, 1]])[:3])
+    if os.path.exists(os.path.join(os.path.dirname(os.path.abspath(__file__)), "cover_sides.json")):
+        for name in ("hood", "fender"):
+            iv = door_m ^ g.ear(P, name)
+            print(f"{name} ear and door overlap: {iv.volume():.1f} mm^3")
+            for pc in iv.decompose():
+                if pc.volume() > 0.5:
+                    print("   at", np.round(pc.bounding_box(), 1))
     if view_path:
         export_view(view_path, A, F)
-    find_slots(local.transform(np.vstack([np.asarray(F, float), [0, 0, 0, 1]])[:3]))
+    find_sides(local.transform(np.vstack([np.asarray(F, float), [0, 0, 0, 1]])[:3]))
 
     # blade top against the lip, along the front
     gaps = lip - lip_c - (g.top_rise(P, u) - g.top_rise(P, uc))
@@ -126,38 +135,62 @@ def main(path, view_path=None):
     print("diagram ->", out)
 
 
-def find_slots(door_m):
-    """The slotted holes in the door's two side flanges, where the stock bezel's ears screw on,
-    in the passenger model frame: centre on the flange's inner face, the flange's outward
-    normal, and the slot size."""
+def find_sides(door_m):
+    """The door's two side flanges, in the passenger model frame, for the bezel's ears: every hole
+    in them (where the stock ears screw on) and a map of how far out the door reaches at each
+    height and fore-aft position. Written to cover_sides.json for generate.py."""
+    import json
     mm = door_m.to_mesh()
     v, f = np.asarray(mm.vert_properties)[:, :3], np.asarray(mm.tri_verts)
     c = v[f].mean(1)
     n = np.cross(v[f[:, 1]] - v[f[:, 0]], v[f[:, 2]] - v[f[:, 0]])
     a = np.linalg.norm(n, axis=1)
     n = n / (a[:, None] + 1e-12)
+    pts = np.vstack([v, c])
+    out = {}
     for name, sx in (("hood", -1), ("fender", 1)):
-        sel = (c[:, 0] * sx > 125) & (c[:, 1] > -110) & (c[:, 1] < -55) & (c[:, 2] > 25) & (c[:, 2] < 70) & (n[:, 0] * sx > 0.6)
-        cen = (c[sel] * a[sel, None]).sum(0) / a[sel].sum()
-        e3 = np.linalg.svd((c[sel] - cen) * np.sqrt(a[sel])[:, None], full_matrices=False)[2][2]
-        e3 = e3 * np.sign(e3[0] * sx)
-        e1 = np.cross([0, 0, 1], e3)
-        e1 /= np.linalg.norm(e1)
-        e2 = np.cross(e3, e1)
-        T = np.array([np.r_[e1, -e1 @ cen], np.r_[e2, -e2 @ cen], np.r_[e3, -e3 @ cen]])
-        R = door_m.transform(T)
-        for poly in (R ^ M.cube([120, 90, 24], True)).project().to_polygons():
-            q = np.asarray(poly)
-            ar = 0.5 * np.sum(q[:, 0] * np.roll(q[:, 1], -1) - np.roll(q[:, 0], -1) * q[:, 1])
-            w, h = q.max(0) - q.min(0)
-            if -70 < ar < -25 and h > 1.5 * w:                      # a hole, taller than wide: the slot
+        holes = []
+        for y0 in range(-260, 0, 20):                  # windows along the flange: fit its plane, find holes
+            sel = (c[:, 0] * sx > 110) & (np.abs(c[:, 1] - y0) < 25) & (n[:, 0] * sx > 0.5)
+            if sel.sum() < 50:
+                continue
+            cen = (c[sel] * a[sel, None]).sum(0) / a[sel].sum()
+            e3 = np.linalg.svd((c[sel] - cen) * np.sqrt(a[sel])[:, None], full_matrices=False)[2][2]
+            e3 = e3 * np.sign(e3[0] * sx)
+            e1 = np.cross([0, 0, 1], e3)
+            e1 /= np.linalg.norm(e1)
+            e2 = np.cross(e3, e1)
+            R = door_m.transform(np.array([np.r_[e1, -e1 @ cen], np.r_[e2, -e2 @ cen], np.r_[e3, -e3 @ cen]]))
+            for poly in (R ^ M.cube([50, 160, 30], True)).project().to_polygons():
+                q = np.asarray(poly)
+                ar = 0.5 * np.sum(q[:, 0] * np.roll(q[:, 1], -1) - np.roll(q[:, 0], -1) * q[:, 1])
+                if not -150 < ar < -15:
+                    continue
                 ctr = q.mean(0)
-                # inner face of the flange at the slot, along the normal
-                ring = R ^ M.cube([w + 8, h + 8, 30], True).translate([ctr[0], ctr[1], 0])
-                zin = ring.bounding_box()[2]
-                p_in = cen + ctr[0] * e1 + ctr[1] * e2 + zin * e3
-                print(f"{name} slot {w:.1f} x {h:.1f} mm, inner face at "
-                      f"({p_in[0]:.1f}, {p_in[1]:.1f}, {p_in[2]:.1f}), normal ({e3[0]:.3f}, {e3[1]:.3f}, {e3[2]:.3f})")
+                w, h = q.max(0) - q.min(0)
+                ring = R ^ M.cube([w + 6, h + 6, 30], True).translate([ctr[0], ctr[1], 0])
+                p_out = cen + ctr[0] * e1 + ctr[1] * e2 + ring.bounding_box()[5] * e3
+                if all(np.linalg.norm(p_out - np.array(h_["at"])) > 4 for h_ in holes):
+                    holes.append({"at": [round(float(q_), 1) for q_ in p_out],
+                                  "normal": [round(float(q_), 3) for q_ in e3],
+                                  "size": [round(float(w), 1), round(float(h), 1)]})
+        holes.sort(key=lambda h_: -h_["at"][1])
+        for h_ in holes:
+            print(f"{name} flange hole {h_['size'][0]} x {h_['size'][1]} mm, outside face at {tuple(h_['at'])}")
+        # how far out the door reaches (|x|), on a 4 mm grid of (y, z)
+        ys, zs = np.arange(-240.0, 48.0, 4.0), np.arange(-60.0, 88.0, 4.0)
+        X = np.full((len(ys), len(zs)), np.nan)
+        s_ = pts[pts[:, 0] * sx > 112]
+        iy = np.rint((s_[:, 1] - ys[0]) / 4).astype(int)
+        iz = np.rint((s_[:, 2] - zs[0]) / 4).astype(int)
+        ok = (iy >= 0) & (iy < len(ys)) & (iz >= 0) & (iz < len(zs))
+        np.fmax.at(X, (iy[ok], iz[ok]), s_[ok, 0] * sx)
+        out[name] = {"holes": holes, "y": ys.tolist(), "z": zs.tolist(),
+                     "x": [[None if np.isnan(q_) else round(float(q_), 1) for q_ in row] for row in X]}
+    path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "cover_sides.json")
+    with open(path, "w") as fh:
+        json.dump(out, fh, separators=(",", ":"))
+    print("door side flanges ->", path)
 
 
 def export_view(view_path, A, F):
