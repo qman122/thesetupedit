@@ -1,13 +1,15 @@
 # C5 sleepy-eye pod carrier and shroud (v3)
 
 For a 2000 C5 Corvette with the headlight door stops already fitted, holding three
-2.9 × 1.8 in dual-lens LED pods per side. Like the KnightDriveTV kit, each side is one
+3.0 × 1.8 in dual-lens LED pods per side. Like the KnightDriveTV kit, each side is one
 carrier that bolts to the stock headlight mounting points (the fender-side arm and the
 hood-side aiming pad), plus a front shroud that frames the three pods. The geometry is an
 original design; see `../notes/c5-sleepy-eye-video.md` for the install video notes it follows.
 
 ![assembly preview](preview/assembly.png)
 ![mounting tabs from behind](preview/rear.png)
+
+Assembly diagrams: `diagrams/exploded.png`, `diagrams/front.png`, `diagrams/rear.png`, `diagrams/side.png`.
 
 ## Measurements used
 
@@ -22,8 +24,9 @@ is a short slot, sized snug (6.3 mm) on an M6 bolt so the bolt stays put while y
 | D | Pad upper hole above arm hole 4 | 0.76 in (19.3 mm) | pad slots ±1.8 mm up and down |
 | C | Pad face vs arm face, front to back | unknown | printed spacer washers, 2 / 4 / 6 mm |
 | F | Front opening width | 11 in (279.4 mm) | shroud is 269.4 mm, 5 mm clear each side |
-| — | Shroud windows | pod face + 1.3 mm each side | 0.8 mm was too tight on the first fit test |
-| — | Pods | 2.9 × 1.8 × 2.8 in | pod slots: 22 mm forward, 10 mm back |
+| — | Shroud windows | pod face + 1.0 mm each side, centred 0.3 in up for the bracket lift | the first fit test used the listing's 2.9 in width |
+| — | Pods | 3.0 × 1.8 in face, 1.8 in deep, 2.1 in tall with the bracket (maker's drawing) | pod slots: 22 mm forward, 10 mm back |
+| — | Pod stud | about 8 mm (5/16 in), in 8.6 mm floor slots | — |
 | — | Mounting bolts | M6 × 1.0, 10 mm flange nuts | — |
 
 **Still estimated:** how far back the mounting wall sits behind the pod faces (95 mm) and
@@ -60,9 +63,9 @@ long pod slots and the shroud's slotted tabs take up the fore-aft part of that.
 ## Print order
 
 1. `stl/fit_test_window.stl` (about 20 minutes). It has four windows: 1, 2, 3 or 4 notches
-   on the top edge means 1.0, 1.3, 1.6 or 2.0 mm of gap around the pod face. Find the
-   smallest one the pod drops through easily. The shroud uses the 2-notch size (1.3 mm)
-   unless you say otherwise.
+   on the top edge means 0.6, 1.0, 1.4 or 1.8 mm of gap around the 3.0 × 1.8 in pod face.
+   Find the smallest one the pod drops through easily. The shroud uses the 2-notch size
+   (1.0 mm) unless you say otherwise.
 2. `stl/fit_test_mount_driver.stl` (about 20 minutes, two small flat tabs). Bolt the taller
    tab to the arm (holes 1 and 4) and the shorter one to the aiming pad (both holes).
    The bolts should go through snugly without forcing.

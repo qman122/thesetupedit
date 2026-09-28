@@ -27,18 +27,22 @@ CS = m3d.CrossSection
 
 @dataclass
 class Params:
-    # --- LED pod: listed size 2.9 x 1.8 x 2.8 in (W x H x D) ---
-    pod_face_w: float = 73.7      # front bezel width (2.9 in)
+    # --- LED pod: maker's dimension drawing, 3.0 x 1.8 in face, 1.8 in deep, 2.1 in tall with bracket ---
+    pod_face_w: float = 76.2      # front bezel width (3.0 in)
     pod_face_h: float = 45.7      # front bezel height (1.8 in)
     pod_face_r: float = 6.0       # front bezel corner radius
-    pod_body_w: float = 74.5      # body width, listed width plus a little room
-    pod_body_h: float = 46.5      # body height, listed height plus a little room
-    pod_depth: float = 71.1       # front to back (2.8 in)
-    pod_gap: float = 6.0          # space between neighbouring pods
-    pod_bolt_d: float = 6.6       # slot width for the pod bracket bolt (M6)
-    pod_bolt_y: float = -24.0     # slot centre, measured back from the pod face
-    pod_slot_len: float = 40.0    # fore-aft adjustment: 17 mm forward, 11 mm back from nominal
-    pod_bolt_nominal_y: float = -30.0  # where the pod's bolt sits in the default position
+    pod_body_w: float = 76.5      # body width (same as the bezel, plus a hair)
+    pod_body_h: float = 46.0      # body height
+    pod_depth: float = 45.7       # front to back (1.8 in)
+    pod_lift: float = 7.6         # the bracket holds the body this far above the floor (2.1 in overall minus the 1.8 in body)
+    pod_bracket_w: float = 43.0   # width of the bracket foot
+    pod_bracket_d: float = 21.0   # front-to-back length of the bracket foot
+    pod_gap: float = 8.0          # space between neighbouring pods
+    pod_bolt_d: float = 8.6       # slot width for the bracket stud (about 8 mm / 5/16 in)
+    pod_stud_d: float = 8.0       # stud diameter, from the drawing
+    pod_bolt_y: float = -28.5     # slot centre, measured back from the pod face
+    pod_slot_len: float = 40.0    # fore-aft adjustment: 22 mm forward, 10 mm back from nominal
+    pod_bolt_nominal_y: float = -34.5  # stud position in the default spot (1.36 in behind the face)
 
     # --- carrier ---
     floor_t: float = 5.0          # floor thickness
@@ -76,8 +80,8 @@ class Params:
     shroud_margin_bot: float = 25.0  # below the floor; owner says there's plenty of room
     shroud_r: float = 14.0        # outer corner radius
     shroud_return: float = 12.0   # depth of the lip that wraps back from the face
-    window_clear: float = 1.3     # clearance around each pod bezel (0.8 was too tight on the fit test)
-    window_ladder: tuple = (1.0, 1.3, 1.6, 2.0)  # clearances on the window fit test, 1-4 notches
+    window_clear: float = 1.0     # clearance around each 3.0 x 1.8 in pod bezel
+    window_ladder: tuple = (0.6, 1.0, 1.4, 1.8)  # clearances on the window fit test, 1-4 notches
     shroud_tab_screw_d: float = 3.4  # M4 self-tapping into the carrier floor
     shroud_gap: float = 0.5       # air gap between pod faces and the back of the shroud face
     shroud_tab_slot: float = 16.0  # fore-aft slot in each shroud tab, follows the pod slots
@@ -126,6 +130,15 @@ def slot_z(w, length, z0, z1, x, y):
     return M.extrude(s, z1 - z0).translate([x, y, z0])
 
 
+def pod_zc(p):
+    """Height of the pod face centre above the carrier floor (the bracket lifts the body)."""
+    return p.pod_lift + p.pod_body_h / 2
+
+
+def pod_top(p):
+    return p.pod_lift + p.pod_body_h
+
+
 def pod_x(p):
     pitch = p.pod_body_w + p.pod_gap
     return [-pitch, 0.0, pitch]
@@ -149,7 +162,7 @@ def mount_points(p):
 def wall_extent(p):
     """(x0, x1, z0, z1) of the mounting wall: covers the pod row and every slot plus a margin."""
     half = row_w(p) / 2 + p.wall_t
-    x0, x1, top = -half, half, p.pod_body_h + 10
+    x0, x1, top = -half, half, pod_top(p) + 10
     for (_, x, z, axis) in mount_points(p):
         hx = (p.arm_slot_len if axis == "x" else p.mount_hole_d) / 2
         hz = (p.pad_slot_len if axis == "z" else p.mount_hole_d) / 2
@@ -278,7 +291,7 @@ def shroud_splice(p):
     sx = split_x(p)
     bar = pitch(p) - (p.pod_face_w + 2 * p.window_clear)       # material between windows
     z_bot = -p.shroud_margin_bot - p.floor_t + p.shroud_t + 0.5
-    win_bot = p.pod_body_h / 2 - (p.pod_face_h / 2 + p.window_clear)
+    win_bot = pod_zc(p) - (p.pod_face_h / 2 + p.window_clear)
     strip = box(sx - bar / 2 + 0.6, sx + bar / 2 - 0.6, 0, 2.5, z_bot, win_bot + p.pod_face_h)
     foot = box(sx - 22, sx + 22, 0, 2.5, z_bot, win_bot - 0.5)
     return (strip + foot).rotate([-90, 0, 0]).translate([-sx, 0, 0])
@@ -309,7 +322,7 @@ def splice_wall_holes(p):
 def shroud(p):
     ow = p.opening_w - 2 * p.opening_side_clear
     z_bot = -p.shroud_margin_bot - p.floor_t
-    z_top = p.pod_body_h + p.shroud_margin_top
+    z_top = pod_top(p) + p.shroud_margin_top
     oh = z_top - z_bot
     zc = (z_top + z_bot) / 2
     y_face = p.shroud_t + p.shroud_gap     # front of the shroud face
@@ -325,7 +338,7 @@ def shroud(p):
     win_w = p.pod_face_w + 2 * p.window_clear
     win_h = p.pod_face_h + 2 * p.window_clear
     wins = [plate_xz(rrect(win_w, win_h, p.pod_face_r + p.window_clear)
-                     .translate([x, p.pod_body_h / 2]), y_face + 1, p.shroud_t + 2)
+                     .translate([x, pod_zc(p)]), y_face + 1, p.shroud_t + 2)
             for x in pod_x(p)]
 
     # tabs that reach back under the carrier floor for two M4 screws
@@ -387,16 +400,21 @@ def spacers(p):
     return M.batch_boolean(parts, m3d.OpType.Add)
 
 
-def pod_dummy(p):
-    """Stand-in pod used only in the preview images."""
+def pod_dummy(p, dy=0.0):
+    """Stand-in pod from the maker's drawing: body, bezel, bracket foot and stud.
+    dy slides the pods fore-aft (for the clearance checks)."""
     pods = []
     for x in pod_x(p):
         face = plate_xz(rrect(p.pod_face_w, p.pod_face_h, p.pod_face_r)
-                        .translate([x, p.pod_body_h / 2]), 0, 8)
+                        .translate([x, pod_zc(p)]), 0, 8)
         body = box(x - p.pod_body_w / 2, x + p.pod_body_w / 2, -p.pod_depth, -8,
-                   0, p.pod_body_h)
-        pods += [face, body]
-    return M.batch_boolean(pods, m3d.OpType.Add)
+                   p.pod_lift, pod_top(p))
+        ys = p.pod_bolt_nominal_y
+        foot = box(x - p.pod_bracket_w / 2, x + p.pod_bracket_w / 2,
+                   ys - p.pod_bracket_d / 2, ys + p.pod_bracket_d / 2, 0.01, p.pod_lift + 1)
+        stud = cyl_z(p.pod_stud_d, -p.floor_t - 12, 0.02, x, ys)
+        pods += [face, body, foot, stud]
+    return M.batch_boolean(pods, m3d.OpType.Add).translate([0, dy, 0])
 
 
 # ---------- output ----------

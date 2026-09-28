@@ -71,7 +71,7 @@ for n, (x, z, ax) in pts.items():
 half = (P.pod_slot_len - P.pod_bolt_d) / 2
 fwd = (P.pod_bolt_y + half) - P.pod_bolt_nominal_y
 back = P.pod_bolt_nominal_y - (P.pod_bolt_y - half)
-worst = max(overlap(carrier, pods.translate([0, s, 0])) for s in (-back, 0, fwd))
+worst = max(overlap(carrier, g.pod_dummy(P, s)) for s in (-back, 0, fwd))
 gap_nominal = -P.pod_depth - (y_back + t)
 gap_min = gap_nominal - back
 check(f"pods clear the carrier from {back:.1f} mm back to {fwd:.1f} mm forward", worst < 1e-6)

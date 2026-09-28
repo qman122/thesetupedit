@@ -504,9 +504,9 @@
       }));
     }
     // twin lenses on each pod face
-    for (const px of [-80.5, 0, 80.5]) for (const dx of [-17.5, 17.5]) {
-      const lens = new THREE.Mesh(new THREE.CircleGeometry(15.5, 32), lensMat);
-      lens.position.set(px + dx, 23.25, 0.4);
+    for (const px of [-84.5, 0, 84.5]) for (const dx of [-18.5, 18.5]) {
+      const lens = new THREE.Mesh(new THREE.CircleGeometry(16, 32), lensMat);
+      lens.position.set(px + dx, 30.6, 0.4);
       asm.add(lens);
     }
     const beam = new THREE.SpotLight(0xe6efff, 0, 9000, 0.42, 0.55, 1.2);
