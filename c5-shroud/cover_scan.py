@@ -25,6 +25,7 @@ import matplotlib.pyplot as plt  # noqa: E402
 import generate as g  # noqa: E402
 
 P, M = g.P, g.M
+IMPRINT_END = {"hood": -200.0, "fender": -172.0}   # rear end of the stock ear's imprint on each flange
 X_MID = 174.45     # centres the door's two side flanges (where they screw on) on the opening
 
 
@@ -174,6 +175,66 @@ def find_sides(door_m):
                                   "normal": [round(float(q_), 3) for q_ in e3],
                                   "size": [round(float(w), 1), round(float(h), 1)]})
         holes.sort(key=lambda h_: -h_["at"][1])
+        # the imprint the stock ear sits in: below a raised band along the top of the flange, the
+        # flange is recessed 3-5 mm. Record the band's lower edge (the step) and a smooth fit of
+        # the recessed surface
+        so = (c[:, 0] * sx > 110) & (n[:, 0] * sx > 0.35) & (c[:, 2] < 80)
+        Pq = c[so]
+        Xq = Pq[:, 0] * sx
+        Aq = np.c_[np.ones(len(Pq)), Pq[:, 1], Pq[:, 2]]
+        dev = Xq - Aq @ np.linalg.lstsq(Aq, Xq, rcond=None)[0]
+        yb = np.arange(-270.0, 30.0, 2.0)
+        step = []
+        for y0 in yb:                                    # walk down the raised band from the top of the flange
+            m = np.abs(Pq[:, 1] - y0) < 1.5
+            if m.sum() < 10:
+                step.append(np.nan)
+                continue
+            zz, dd = Pq[m, 2], dev[m]
+            zs_ = np.arange(zz.max(), zz.min() - 0.5, -0.5)
+            low = np.nan
+            for z_ in zs_:
+                w_ = np.abs(zz - z_) < 0.75
+                if not w_.any():
+                    if not np.isnan(low) and low - z_ > 2.0:     # a gap in the flange: the band ends
+                        break
+                    continue
+                if np.median(dd[w_]) > 0.8:
+                    low = z_
+                elif not np.isnan(low):
+                    break
+            step.append(float(low))
+        step = np.array(step)
+        ok_ = ~np.isnan(step)
+        sm = step.copy()
+        for i in np.flatnonzero(ok_):                   # median over 5 bins
+            w_ = step[max(i - 2, 0):i + 3]
+            sm[i] = float(np.nanmedian(w_))
+        # the raised rims round the screw pockets join the band and make dips in its edge: bridge
+        # over any point more than 3 mm under the line between its neighbours 6 mm either side
+        for _ in range(3):
+            keep_ = ok_.copy()
+            for i in np.flatnonzero(ok_):
+                if 3 <= i < len(yb) - 3 and ok_[i - 3] and ok_[i + 3]:
+                    if (sm[i - 3] + sm[i + 3]) / 2 - sm[i] > 3:
+                        keep_[i] = False
+            sm = np.where(ok_, np.interp(yb, yb[keep_], sm[keep_]), np.nan)
+        stp = np.interp(Pq[:, 1], yb[ok_], sm[ok_])
+        y_end = IMPRINT_END[name]                        # the imprint runs back to here
+        span = (Pq[:, 1] >= y_end) & (Pq[:, 1] <= -25)
+        rec = (dev < -0.8) & (Pq[:, 2] < stp - 1.0) & span
+        Pr = Pq[rec]
+        quad = lambda Q: np.c_[np.ones(len(Q)), Q[:, 1], Q[:, 2], Q[:, 1] ** 2, Q[:, 1] * Q[:, 2], Q[:, 2] ** 2]
+        coef = np.linalg.lstsq(quad(Pr), Pr[:, 0] * sx, rcond=None)[0]
+        below = (Pq[:, 2] < stp - 1.5) & span             # everything the ear covers, rims included
+        clear = float(np.max(Pq[below, 0] * sx - quad(Pq[below]) @ coef))
+        yr = Pr[:, 1]
+        print(f"{name} imprint: step from y {yb[ok_].max():.0f} to {yb[ok_].min():.0f}, recess y {yr.max():.0f}..{yr.min():.0f}, "
+              f"surface fit within {clear:.1f} mm")
+        imprint = {"step": [[float(y_), round(float(z_), 2)] for y_, z_ in zip(yb[ok_], sm[ok_])],
+                   "recess_fit": [float(q_) for q_ in coef], "recess_clear": round(clear, 2),
+                   "recess_y": [round(float(yr.min()), 1), round(float(yr.max()), 1)],
+                   "recess_zmin": round(float(Pr[:, 2].min()), 1), "end_y": y_end}
         for h_ in holes:
             print(f"{name} flange hole {h_['size'][0]} x {h_['size'][1]} mm, outside face at {tuple(h_['at'])}")
         # how far out the door reaches (|x|), on a 4 mm grid of (y, z)
@@ -184,7 +245,7 @@ def find_sides(door_m):
         iz = np.rint((s_[:, 2] - zs[0]) / 4).astype(int)
         ok = (iy >= 0) & (iy < len(ys)) & (iz >= 0) & (iz < len(zs))
         np.fmax.at(X, (iy[ok], iz[ok]), s_[ok, 0] * sx)
-        out[name] = {"holes": holes, "y": ys.tolist(), "z": zs.tolist(),
+        out[name] = {"holes": holes, "imprint": imprint, "y": ys.tolist(), "z": zs.tolist(),
                      "x": [[None if np.isnan(q_) else round(float(q_), 1) for q_ in row] for row in X]}
     # the door's underside over the front of the bezel: the lowest downward-facing door surface
     # in each 2 mm cell, so the bezel's top can be trimmed to clear it

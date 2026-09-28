@@ -13,7 +13,8 @@ Assembly diagrams: `diagrams/exploded.png`, `diagrams/front.png`, `diagrams/rear
 Step size options (6, 9, 12 and 15 mm) side by side: `diagrams/step_options.png`.
 What to measure on the stock bezel and headlight: `diagrams/measure_stock_bezel.png`.
 How the pods sit on the bracket (carrier), with the bezel hidden: `diagrams/pods_on_bracket.png`.
-The bezel on its own, in matte black: `diagrams/shell.png`.
+The bezel on its own, in matte black: `diagrams/shell.png`. How each ear fits the imprint the stock
+ear leaves on the door: `diagrams/ear_imprint.png` and `diagrams/ears_on_door.png`.
 The bezel against the owner's model of the headlight doors: `diagrams/cover_fit.png`, and
 rendered with the door on: `diagrams/with_door.png`.
 
@@ -75,13 +76,23 @@ reference photo. It's modelled in one piece and split in two for printing (see b
   - The front follows the nose's curve, which matches the door's front edge to within
     1.4 mm.
   - At each end it turns back round a 30 mm radius (`corner_r`) into a long, thin, flat ear.
-- **Ears:**
-  - Each ear lies 0.8 mm outside the door's side flange, flat and fitted to it from the
-    owner's model of the doors (`cover_sides.json`).
-  - It tapers toward its tip, which ends 15 mm past the last screw hole.
-  - There's a 6.5 mm hole at every hole in the flange, with a short boss behind it
-    reaching into the flange's recessed screw pocket. The stock ear screws go through the
-    ear and the flange into the headlight, as in the owner's photo of a stock headlight.
+- **Ears fill the imprint the stock ear leaves on the door.**
+  - Each door side flange has a raised band along its top. Below it, the flange is recessed
+    3–5 mm round the screw holes, and that recess is where the stock ear sits
+    (`diagrams/ear_imprint.png`).
+  - Each ear's top edge runs 1.5 mm under the band's lower edge (`ear_step_gap`), smoothed
+    and never above it.
+  - Its inside follows a smooth fit of the recessed surface, curved rather than flat,
+    clearing every point of the door it covers, including the raised rims round the screw
+    pockets.
+  - It runs back to the imprint's end and down to its lowest point. On the fender side it
+    sweeps down and back to the flange's bottom lobe; on the hood side it covers both sets
+    of screw tabs.
+  - `cover_scan.py` measures the band edge and the recess from the owner's model of the
+    doors and saves them in `cover_sides.json`.
+  - There's a 6.5 mm hole at every hole in the flange, with a boss behind it reaching the
+    flange. The stock ear screws go through the ear and the flange into the headlight, as
+    in the owner's photo of a stock headlight.
   - Hood end: the front and rear round holes and the slot between them. Fender end: the
     slot and the round hole.
 - **Three windows,** one rounded rectangle per pod with 15 mm corners (`window_r`).
@@ -142,8 +153,8 @@ Details are in "The bezel" above.
   - The carrier and pods haven't moved.
 - **The inside wings, masks, rolled rim and access hole are gone.** The hood-end access
   hole isn't in the photo.
-- **The ears reach the door's flange holes from outside.** They taper, as in the photo,
-  so the door's flange shows above the rear of each ear.
+- **The ears fill the stock ear's imprint on the door.** They're shaped to the recess below
+  the flange's raised band (see "The bezel"), so they fit in the way the stock ear does.
 - **The window gap round each pod is open.** You can see past the pods' tops into the
   headlight at the top of each window (there are no masks).
 
