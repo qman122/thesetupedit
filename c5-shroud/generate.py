@@ -162,6 +162,7 @@ class Params:
     # owner's model of the doors (cover_sides.json, from cover_scan.py), and print as separate parts.
     ear_t: float = 3.0
     ear_gap: float = 0.8          # between the ear and the door
+    ear_top_gap: float = 6.0      # ear's top edge this far under the top of the door's side
     ear_hole_d: float = 6.5       # clearance for the stock ear screws, at every hole in the flange
     ear_access_d: float = 40.0    # hood-end ear: hole for the aiming adjuster's access plug (from the photo)
     ear_access_yz: tuple = (-132.0, 16.0)
@@ -644,7 +645,16 @@ def door_side(name):
             a, b = fy - i, fz - j
             return ((1 - a) * (1 - b) * Xd[i, j] + a * (1 - b) * Xd[i + 1, j] +
                     (1 - a) * b * Xd[i, j + 1] + a * b * Xd[i + 1, j + 1])
-        _SIDES[name] = (d["holes"], reach)
+        # the door's side edge seen from the side: the top of the door over each fore-aft position
+        tops = np.array([zs[np.flatnonzero(~np.isnan(np.asarray([np.nan if q is None else q for q in row], float)))].max()
+                         if any(q is not None for q in row) else np.nan for row in d["x"]])
+        ok = ~np.isnan(tops)
+        tops = np.interp(ys, ys[ok], tops[ok])
+        tops = np.convolve(np.pad(tops, 2, mode="edge"), np.ones(5) / 5, mode="valid")
+
+        def door_top(y):
+            return np.interp(y, ys, tops)
+        _SIDES[name] = (d["holes"], reach, door_top)
     return _SIDES[name]
 
 
@@ -657,7 +667,7 @@ def ear(p, name):
     at the front, then rising back to the last hole. There's a screw hole at every hole in the
     flange; the stock ear screws go through the ear and the flange into the headlight."""
     ow = p.opening_w - 2 * p.opening_side_clear
-    holes, reach = door_side(name)
+    holes, reach, door_top = door_side(name)
     sx = -1 if name == "hood" else 1
     z_top, zb_hood, zb_fender = bezel_z(p)
     U = ow / 2 / front_frame(p)[0][0]
@@ -672,27 +682,26 @@ def ear(p, name):
     def xin(y, z):                                       # inside face of the ear, as |x|
         return np.maximum(reach(y, z) + p.ear_gap, ow / 2 + 1.0)
 
-    # top edge: a line 8 mm above the first hole and 7 above the last, never above the face's top
+    # top edge: up under the door's rolled side edge, as the stock ear is, covering the whole
+    # flange and all its holes; never above the bezel face's top at the front
     hf, hr = holes[0]["at"], holes[-1]["at"]
-    k = ((hf[2] + 8) - (hr[2] + 7)) / (hf[1] - hr[1])
 
     def top(y):
-        return min(hf[2] + 8 + k * (y - hf[1]), z_face)
+        return min(float(door_top(y)) - p.ear_top_gap, z_face)
     y_back = hr[1] - 12
-    L = front(z_face) - y_back
-    H = top(front(ze)) - ze
-    # the stock ear's outline behind the tip, from the photo: (distance back / length, depth / height)
-    rear = [(159 / 222, 0.746), (220 / 222, 0.22), (1.0, 0.0)]
+    # outline: down the front to the bezel's bottom corner, then (as the stock ear in the photo)
+    # rising back to pass 12 mm under the last screw, up the back and along the top
     zs_ = np.linspace(ze, z_face, 14)
     outline = [[front(z), z] for z in zs_]
-    for (fa, fd) in reversed(rear):
-        y_ = front(z_face) - fa * L
-        outline.append([y_, top(y_) - fd * H])
-    tops = [[y_, top(y_)] for y_ in np.linspace(y_back, front(z_face), 12)]
-    outline = outline[:14] + tops[::-1][1:-1] + outline[14:]
-    cs = CS([np.asarray(outline)])
-    if cs.area() < 0:
-        cs = CS([np.asarray(outline)[::-1]])
+    outline += [[y_, top(y_)] for y_ in np.linspace(front(z_face) - 4, y_back + 6, 16)]
+    outline += [[y_back, top(y_back) - 6], [y_back, hr[2] - 4], [hr[1] + 2, hr[2] - 12]]
+    if name == "hood":                                   # round the access plug, as in the photo
+        ay, az = p.ear_access_yz
+        outline += [[ay - p.ear_access_d / 2, az - p.ear_access_d / 2 - 4], [ay + p.ear_access_d / 2, az - p.ear_access_d / 2 - 9]]
+    o = np.asarray(outline)
+    if np.sum(o[:, 0] * np.roll(o[:, 1], -1) - np.roll(o[:, 0], -1) * o[:, 1]) < 0:
+        o = o[::-1]                                      # counter-clockwise
+    cs = CS([o])
     panel = M.extrude(cs, p.ear_t).refine_to_length(3.0)   # (y, z, w): w = 0 inside to ear_t outside
 
     def f(v):
@@ -717,8 +726,11 @@ def ear(p, name):
     cuts = []
     for h in holes:
         at, nrm = np.asarray(h["at"], float) * [sx, 1, 1], np.asarray(h["normal"], float) * [sx, 1, 1]
-        # a boss from the flange out to the ear, so the screw clamps without bending the ear
-        parts.append(_along(M.cylinder(12, 7, 7, 32), nrm, at + 0.3 * nrm))
+        # fill any gap between the flange and the ear round the hole, flush with the ear's face
+        x_face = float(xin(at[1], at[2])) + p.ear_t
+        reach_out = (x_face - at[0]) / nrm[0] - 0.3
+        if reach_out > 0.5:
+            parts.append(_along(M.cylinder(reach_out, 7, 7, 32), nrm, at + 0.3 * nrm))
         cuts.append(_along(M.cylinder(40, p.ear_hole_d / 2, p.ear_hole_d / 2, 24).translate([0, 0, -20]), nrm, at))
     if name == "hood":
         ay, az = p.ear_access_yz

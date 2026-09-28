@@ -185,7 +185,7 @@ check(f"shroud width {sw:.1f} mm fits the {P.opening_w:.1f} mm opening",
 for name in ("hood", "fender"):
     e = g.ear(P, name)
     touch = max(overlap(e, shroud), overlap(e, carrier), overlap(e, pods))
-    holes, _ = g.door_side(name)
+    holes = g.door_side(name)[0]
     ok_holes = True
     for h in holes:
         at, nrm = np.asarray(h["at"]), np.asarray(h["normal"])                     # passenger frame

@@ -16,7 +16,7 @@ How the pods sit on the bracket (carrier), with the bezel hidden: `diagrams/pods
 How the bezel attaches (tongue onto the door's clip, 4 screws): `diagrams/bezel_attach.png`.
 The bezel against the owner's model of the headlight doors: `diagrams/cover_fit.png`, and
 rendered with the door on: `diagrams/with_door.png`. The ears next to the stock one in the owner's
-photo: `diagrams/ears.png`.
+photo: `diagrams/ears.png`; cut through the screw holes: `diagrams/ear_sections.png`.
 
 ## Measurements used
 
@@ -94,9 +94,10 @@ stock bezel is held three ways, and so is this one:
     Each end now gets such an ear as a separate print (`stl/ear_hood_*.stl`,
     `stl/ear_fender_*.stl`):
     - It lies 0.8 mm outside the door's flange, following its shape from the owner's model
-      (`cover_sides.json`).
+      (`cover_sides.json`), and covers the whole flange up to 6 mm under the door's edge.
     - Its front bends in to meet the side of the bezel face.
-    - It has a clearance hole (6.5 mm) with a boss behind it at every hole in the flange:
+    - It has a clearance hole (6.5 mm) at every hole in the flange, flush with its face (a
+      boss fills any gap behind it). Cut through the holes: `diagrams/ear_sections.png`.
       - hood end: the front and rear round holes (the stock screws in the photo) and the
         slot between them,
       - fender end: the slot and the round hole.
