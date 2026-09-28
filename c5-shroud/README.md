@@ -1,10 +1,10 @@
-# C5 sleepy-eye pod carrier and bezel (v7)
+# C5 sleepy-eye pod carrier and bezel (v9)
 
 For a 2000 C5 Corvette with the headlight door stops already fitted, holding three
 3.0 × 1.8 in dual-lens LED pods per side. Like the KnightDriveTV kit, each side is one
 carrier that bolts to the stock headlight mounting points (the fender-side arm and the
-hood-side aiming pad), plus a front bezel with the outside shape of the stock C5 bezel,
-which the KnightDriveTV TripLED bezel also copies. The geometry is an original design; see `../notes/c5-sleepy-eye-video.md` for the install video notes it follows.
+hood-side aiming pad), plus a one-piece bezel: a thin shell that wraps round the lights
+and screws to the headlight door's side flanges where the stock bezel does. The geometry is an original design; see `../notes/c5-sleepy-eye-video.md` for the install video notes it follows.
 
 ![assembly preview](preview/assembly.png)
 ![mounting tabs from behind](preview/rear.png)
@@ -13,10 +13,9 @@ Assembly diagrams: `diagrams/exploded.png`, `diagrams/front.png`, `diagrams/rear
 Step size options (6, 9, 12 and 15 mm) side by side: `diagrams/step_options.png`.
 What to measure on the stock bezel and headlight: `diagrams/measure_stock_bezel.png`.
 How the pods sit on the bracket (carrier), with the bezel hidden: `diagrams/pods_on_bracket.png`.
-How the bezel attaches (tongue onto the door's clip, 4 screws): `diagrams/bezel_attach.png`.
+The bezel on its own, in matte black: `diagrams/shell.png`.
 The bezel against the owner's model of the headlight doors: `diagrams/cover_fit.png`, and
-rendered with the door on: `diagrams/with_door.png`. The ears next to the stock one in the owner's
-photo: `diagrams/ears.png`; cut through the screw holes: `diagrams/ear_sections.png`.
+rendered with the door on: `diagrams/with_door.png`.
 
 ## Measurements used
 
@@ -69,104 +68,84 @@ At 18 mm it hits the arm's nuts.
 
 ## The bezel
 
-The bezel copies the outside of the stock C5 bezel (GM 10435411 left, 10435412 right).
-The KnightDriveTV TripLED bezel copies it too, then opens the front up for three lights. The
-stock bezel is held three ways, and so is this one:
+One continuous shell, 3 mm thick everywhere and open at the back, modelled on the owner's
+reference photo. It's modelled in one piece and split in two for printing (see below).
 
-- **Top blade into the headlight cover.** The stock bezel has a flat top that slides in
-  under the front edge of the headlight cover. A forked tab on it slides onto a clip on the
-  underside of the cover. Corvette Central's how-to describes it: "the tab on the top of
-  the bezel that slides onto a clip on the underside of the headlight cover". The
-  KnightDriveTV install video shows it too: at 13:02, "Remove bezel by rotating downward and
-  forward, while spreading the outer ears". This bezel has the same 30 mm top blade, with
-  a tongue behind its middle that clicks onto the clip (`blade_depth`, `clip_*`, `tongue_*`
-  in `generate.py`). Both are fitted to the owner's model of the doors (see below).
-- **Ears (wings) at both ends.** Like the stock and KnightDriveTV ears, they are full
-  side walls. Each runs from the front back past the pods to 5 mm in front of the arm and
-  the pad, and from the top blade down over the carrier, so the sides are covered too.
-  - **Outside ears like the stock ones** (`diagrams/ears.png`). The owner's photo of a stock
-    headlight shows how the stock ear works:
-    - It's a side panel outside the door's side flange.
-    - Two screws near its top edge go through it and the flange's round holes into the
-      headlight.
-    - It carries the aiming adjuster's access plug.
+- **From above it's a U.**
+  - The front follows the nose's curve, which matches the door's front edge to within
+    1.4 mm.
+  - At each end it turns back round a 30 mm radius (`corner_r`) into a long, thin, flat ear.
+- **Ears:**
+  - Each ear lies 0.8 mm outside the door's side flange, flat and fitted to it from the
+    owner's model of the doors (`cover_sides.json`).
+  - It tapers toward its tip, which ends 15 mm past the last screw hole.
+  - There's a 6.5 mm hole at every hole in the flange, with a short boss behind it
+    reaching into the flange's recessed screw pocket. The stock ear screws go through the
+    ear and the flange into the headlight, as in the owner's photo of a stock headlight.
+  - Hood end: the front and rear round holes and the slot between them. Fender end: the
+    slot and the round hole.
+- **Three windows,** one rounded rectangle per pod with 15 mm corners (`window_r`).
+  - The outer two run round into the corners.
+  - The posts are what's left between the windows: 6 mm wide on the gaps between the
+    pods, flaring into the floor and the blade.
+  - They stand 4 mm back from the front edge (`post_setback`) so every lens still sees
+    10° either side of straight ahead.
+- **Below the windows:** just a rounded 7 mm lip (`lip_r`) rolling back into a shallow
+  22 mm floor. No apron.
+- **Top:** a flat 3 mm blade, 30 mm deep.
+  - A raised bead runs along its front edge (`bead_r`). The door's lip closes down behind
+    it.
+  - The blade follows the lip's height (up to about 9 mm higher at the hood end).
+  - It's trimmed wherever the door's underside comes lower (`door_clearance`, measured
+    from the door model), so the door touches only the blade.
+- **Clip tongue:** a flat tongue, tapered from 40 mm and slotted along its middle, runs
+  back from the middle of the blade.
+  - The clip's cross bar drops into a groove across it.
+  - A chamfered tooth behind the groove catches the bar, and the clip's legs sit either
+    side of it.
+- **No screws into the carrier.** The shell hangs from the door alone: the tongue on the
+  clip, and the ears screwed through the door's flanges, like the stock bezel.
+- **Printing:**
+  - It's split through the middle of the hood-side post into a hood piece (about
+    129 × 232 mm) and a fender piece (about 213 × 172 mm). Both fit the A1's 256 mm bed.
+  - Two 3 mm dowels, 12 mm long, cross the cut: one where the post meets the floor, one
+    where it meets the blade. Glue the joint as well.
+  - Each piece prints upside down on its blade, tipped to lie as flat as it goes. The bead
+    and the lip-following top mean it needs supports under the blade.
 
-    Each end now gets such an ear as a separate print (`stl/ear_hood_*.stl`,
-    `stl/ear_fender_*.stl`):
-    - It lies 0.8 mm outside the door's flange, following its shape from the owner's model
-      (`cover_sides.json`). It covers the whole flange, from the door's painted edge (8 mm under
-      the top of the door's side) down to the bezel's flat bottom, with no gap to the door.
-    - Its front bends in to meet the side of the bezel face.
-    - It has a clearance hole (6.5 mm) at every hole in the flange, flush with its face (a
-      boss fills any gap behind it). Cut through the holes: `diagrams/ear_sections.png`.
-      - hood end: the front and rear round holes (the stock screws in the photo) and the
-        slot between them,
-      - fender end: the slot and the round hole.
-    - The hood-end ear has a 40 mm hole for the access plug, placed from the photo
-      (`ear_access_*`).
-    - The fender-end ear's outline is an estimate; there's no photo of that side yet.
-  - Each wing also takes one M4 × 12 screw into a boss on the carrier, in a slot so the
-    bezel can sit further forward.
-  - The hood-end wing has a 28 mm hole for reaching the aiming adjuster. Its position is an
-    estimate (`access_hole_yz`).
-- **Two tabs under the front.** These are this design's own, not stock. Each takes an
-  M4 × 16 screw up into a boss under the carrier floor.
+**Before printing the bezel,** print the two halves of `stl/fit_test_blade_driver_*.stl`
+(the blade, bead and tongue only) and tape them together. Slide it in under the front of
+the headlight door and check:
+- the tongue clicks onto the clip,
+- the door's lip sits down on the blade at both ends, just behind the bead.
 
-**Shape:**
-- **Built like KnightDriveTV's:** a curved 3 mm face with a letterbox slot cut through it,
-  not a box with a front.
-  - **Outline:** follows the stock bezel and the door. It is a rounded rectangle with
-    28 mm lower corners sweeping up into the sides and 10 mm corners under the door.
-    It's about 100 mm tall at the hood end and 78 mm at the fender end
-    (`bezel_h_hood`, `bezel_h_fender`; estimates until the stock bezel is measured).
-  - **Curve:**
-    - The face bows 12 mm forward in the middle of its width.
-    - Seen from the side, it swells 7 mm forward halfway down and rolls 12 mm back at its
-      lower edge, like a chin.
-    - The lower edge curves 8 mm down in the middle instead of running straight.
-    - A 5 mm rolled edge runs right round the outside of the face.
-    - Settings: `front_bow`, `face_belly`, `face_tuck`, `bottom_sag` and `edge_r`.
-    - Following the body exactly needs profiles of the nose; see "What changed in v6".
-  - **Slot:** about 5:1, lofted back to the pods through 13 sections that ease in. It is
-    9 mm wider at the ends and 4 mm lower along the bottom at the front, so the ends wrap
-    round. A 3 mm shell forms its walls. Its corners are 16 mm at the back and 25 mm at
-    the front edge, so the ends are nearly round, like the reference scan. Its lower lip
-    dips 5 mm in the middle in a slight smile (`slot_smile`).
-  - **Rim:** a 6 mm rolled rim runs down each side and along the bottom of the slot. Its
-    ends tuck into the top blade.
-  - **Shadow line:** a 1.5 mm groove runs under the blade along the top of the slot.
-  - **Mask:** a black plate just in front of each pod has one rounded window the size of
-    the pod face. The window uses the 1-notch test frame's gap (2.0 mm each side, 1.6 mm
-    top and bottom), which fit on the car. Thin walls join the masks where the pods step
-    back, so the gaps between pods stay hidden.
-  - **Posts:** one in front of each gap between pods, 9 mm wide and 13 mm front to back.
-    They spread into the floor like roots (9 mm extra over 22 mm) and only just flare into
-    the blade.
-  - **Pods:** sit 14 mm deeper than they have to (`pod_recess`).
-  - **Light the posts block** (checked by casting rays from each lens, seen from above at
-    lens height):
-    - Every lens is completely clear for at least 11° either side of straight ahead.
-      `check.py` tests 10°.
-    - The lens on the hood side of the middle and fender pods loses some light at wide
-      angles toward the hood: about 18% at 20° and 27% at 30°.
-  - **Not copied:** KnightDriveTV's fender end flares outward like a bell and their hood
-    end runs into a long flat tongue. Both follow the pocket past the 279 mm opening, so
-    they need the nose profiles. The side walls here stay straight, 5 mm inside the
-    opening.
+## What changed in v9: one thin shell, like the owner's reference photo
 
-**Before printing the full bezel,** print `stl/fit_test_blade_driver.stl`. It's just the
-top blade and clip tongue, 3.7 mm thick, following the door's lip. Slide it in under the
-front of the headlight cover the way the stock bezel went, and check four things:
-- the tongue clicks onto the clip (the clip's cross bar drops into the groove),
-- the door's lip sits down on the blade at both ends, with no gap and no rocking,
-- the front edge lines up with the cover,
-- the ends sit inside the opening.
+The owner's reference photo is now the target.
+- **Before:** a curved face panel with a letterbox slot and rim, inside masks and set-back
+  round posts, separate ears, and screws into the carrier.
+- **Now:** one thin U-shaped shell:
+  - 30 mm corners into flat tapering ears,
+  - three rounded windows whose posts flare into the floor and blade,
+  - a small lip into a shallow floor,
+  - a flat blade with a bead and a tapered slotted tongue.
 
-Then send the numbers on `diagrams/measure_stock_bezel.png`, and the outline and position
-get set from them.
+Details are in "The bezel" above.
 
-**Fit on the car:** it's 269 mm wide in the 279 mm opening. Cycle the door slowly by hand
-and check the lip and wings don't touch anything as it goes down into the pocket.
+**What moved:**
+- **The door sits 5 mm further back relative to the bezel** (`cover_edge_n` 1 → 5), so its
+  lip closes down behind the new bead.
+  - The clip groove and the flange holes moved with it; `cover_scan.py` re-measured them.
+- **The bezel no longer screws to the carrier.**
+  - The wing screws and the tabs under the front are gone. The carrier's bosses for them
+    are still on the carrier, unused.
+  - The carrier and pods haven't moved.
+- **The inside wings, masks, rolled rim and access hole are gone.** The hood-end access
+  hole isn't in the photo.
+- **The ears reach the door's flange holes from outside.** They taper, as in the photo,
+  so the door's flange shows above the rear of each ear.
+- **The window gap round each pod is open.** You can see past the pods' tops into the
+  headlight at the top of each window (there are no masks).
 
 ## What changed in v8: marked up by the owner
 
@@ -285,7 +264,7 @@ file's path.
 
 ## Checks
 
-`python3 check.py` runs 48 checks. They all pass:
+`python3 check.py` runs 52 checks. They all pass:
 
 - The hole spacing matches A, H, B and D.
 - Every slot is open, with solid material past its ends.
@@ -296,15 +275,14 @@ file's path.
 - Every lens has a clear view 10° either side of straight ahead.
 - The door's lip sits on the top blade all the way across, the clip's cross bar sits in the
   tongue's groove and catches on its tooth, and the tongue fits between the clip's legs.
-- Each ear is clear of the bezel, carrier and pods, with a screw hole on every hole in the
-  door's side flange (`cover_scan.py` also checks the ears against the door itself).
-- The bezel fits the opening.
+- The bezel is one piece, with a screw hole on every hole in the door's side flanges
+  (`cover_scan.py` also checks the bezel against the door itself).
+- The two print pieces are each one solid and fit the 256 mm bed, and the dowel holes go
+  into both.
 - The carrier stays clear of the arm's pivot bolt and the pad's square adjuster, and the
   middle of the back is open.
 - The driver part is a true mirror of the passenger part.
 - Every STL is one watertight solid lying on the bed.
-
-The small-bed split files were dropped: the stepped bezel doesn't split cleanly, and bed size isn't a concern for this build.
 
 ## Print order
 
@@ -314,18 +292,17 @@ The small-bed split files were dropped: the stepped bezel doesn't split cleanly,
 2. `stl/fit_test_mount_driver.stl` (about 20 minutes, two small flat tabs). Bolt the taller
    tab to the arm (holes 1 and 4) and the shorter one to the aiming pad (both holes).
    The bolts should go through snugly without forcing. Already done: the spacing fit.
-3. `stl/fit_test_blade_driver.stl` (about 40 minutes, one strip; supports on, since it
-   follows the door's lip). Slide it in under the front of the headlight cover like the
-   stock bezel, and check the tongue clicks onto the clip and the lip sits down on it at
+3. `stl/fit_test_blade_driver_hood_piece.stl` and `..._fender_piece.stl` (about 40 minutes;
+   supports on). Tape them together and slide them in under the front of the headlight
+   door. Check the tongue clicks onto the clip and the lip sits down behind the bead at
    both ends.
-4. `stl/carrier_driver.stl` and `stl/bezel_driver.stl`, then the passenger pair. Wait for
-   the measurements on `diagrams/measure_stock_bezel.png` before printing the bezel. It
-   prints upside down, standing on its top blade (tipped so the blade lies as flat as it
-   can). Turn supports on for the blade ends, the shelf, the lip and the tabs under the
-   front.
-5. `stl/ear_hood_driver.stl` and `stl/ear_fender_driver.stl`, then the passenger pair. They lie
-   on their outside face; turn supports on, since they follow the door's curved flange.
-6. `stl/spacer_washers.stl`: only if a tab doesn't sit flat against the arm or the pad.
+4. `stl/carrier_driver.stl`, then `stl/bezel_driver_hood_piece.stl` and
+   `stl/bezel_driver_fender_piece.stl`, then the passenger set.
+   - The bezel pieces print upside down on the blade; turn supports on.
+   - Join them with two 3 mm × 12 mm dowel pins and glue.
+   - `bezel_*_one_piece.stl` is the whole bezel for reference; it's too wide for the A1.
+   - The carrier is 263 mm wide, still over the A1's bed.
+5. `stl/spacer_washers.stl`: only if a tab doesn't sit flat against the arm or the pad.
 
 **Material:** ASA or ABS is best; PETG works. Don't use PLA, which softens in a hot engine
 bay. Use 4 walls, 40% gyroid infill, and 6 top and bottom layers.
@@ -338,9 +315,9 @@ bay. Use 4 walls, 40% gyroid infill, and 6 top and bottom layers.
 - The pods' own studs and nuts, through the floor slots. Under each slot, two rails hold
   the nut (M8 or 5/16 in) so it slides with the stud but can't turn, and each pod
   tightens from above with one hand, as in the owner's bracket sketch.
-- 2 × M4 × 16 and 2 × M4 × 12 self-tapping screws for the bezel
 - The stock bezel ear screws, through each ear and the door's flange into the headlight, as
   stock (2 at the hood end in the photo; use the fender end's as found)
+- 2 × 3 mm × 12 mm dowel pins, and glue, for the two bezel pieces
 
 ## Fitting
 
@@ -350,13 +327,9 @@ bay. Use 4 walls, 40% gyroid infill, and 6 top and bottom layers.
 2. If there's a gap at the arm or the pad, fill it with spacer washers.
 3. Bolt the pods on through the floor slots. Slide them forward or back so the lenses sit
    where you want them in the opening, then tighten.
-4. Slide the bezel's top blade in under the front of the headlight cover until the tongue
-   clicks onto the clip, like the stock bezel. Then screw it on:
-   - the ears: hold each against the door's side flange and put the stock ear screws back in
-     through the ear and the flange,
-   - two screws up through the tabs under the front,
-   - one through each wing into the carrier. If the lenses sit too far back behind the
-   posts, slide the pods forward in their slots to meet it.
+4. Slide the bezel's top blade in under the front of the headlight door until the tongue
+   clicks onto the clip, like the stock bezel. Then hold each ear against the door's side
+   flange and put the stock ear screws back in through the ear and the flange.
 5. Cycle the lights slowly by hand with the motor knob and check nothing touches the door
    or the body, then tighten everything.
 6. Aim the lights with the stock adjusters.

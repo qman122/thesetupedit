@@ -139,7 +139,7 @@ check("every lens has a clear view 10 degrees either side of straight ahead", bl
 F_ = g.front_frame(P)
 U_ = (P.opening_w / 2 - P.opening_side_clear) / F_[0][0]
 z_top = g.bezel_z(P)[0]
-nose = 2.37 - P.cover_edge_n
+nose = -P.cover_edge_n                  # the door's front edge, behind the bead on the blade's front
 
 
 def bow(u):
@@ -173,27 +173,36 @@ tw = P.tongue_w
 check(f"the tongue ({tw:.0f} mm) fits between the clip's legs ({P.clip_leg_gap:.0f} mm apart)",
       P.clip_leg_gap - tw >= 2)
 
-# 7. shroud fits the 11 in opening (the ear pads further back reach out to the door's flanges)
-sb = (shroud ^ g.box(-300, 300, -60, 300, -300, 300)).bounding_box()
-sw = sb[3] - sb[0]
-check(f"shroud width {sw:.1f} mm fits the {P.opening_w:.1f} mm opening",
-      sw <= P.opening_w - 2 * P.opening_side_clear + 0.01,
-      f"{(P.opening_w - sw) / 2:.1f} mm clear each side")
-
-# 7a. the ears (separate parts, like the stock bezel's) sit outside the door's side flanges with
-#     a clear hole on every hole in the flange, and touch nothing else
+# 7. the bezel is one continuous shell; its ears lie outside the door's side flanges with a
+#    screw hole on every hole in the flange (where the stock bezel's ears screw on)
+check("the bezel is one piece", len(shroud.decompose()) == 1)
 for name in ("hood", "fender"):
-    e = g.ear(P, name)
-    touch = max(overlap(e, shroud), overlap(e, carrier), overlap(e, pods))
     holes = g.door_side(name)[0]
     ok_holes = True
     for h in holes:
         at, nrm = np.asarray(h["at"]), np.asarray(h["normal"])                     # passenger frame
         bore = g._along(M.cylinder(16, 2.2, 2.2, 16), nrm, at + 0.5 * nrm)          # screw path, clear
         ring = g._along(M.cylinder(2, 6.5, 6.5, 32) - M.cylinder(2, 4.5, 4.5, 32), nrm, at + 3 * nrm)
-        ok_holes &= overlap(e, bore) < 1e-6 and overlap(e, ring) > 20              # material round it
-    check(f"{name} ear: clear of the bezel, carrier and pods, with a screw hole on each of the "
-          f"door's {len(holes)} flange holes", touch < 1e-6 and ok_holes)
+        ok_holes &= overlap(shroud, bore) < 1e-6 and overlap(shroud, ring) > 20       # material round it
+    check(f"{name} ear: a screw hole on each of the door's {len(holes)} flange holes", ok_holes)
+
+# 7a. split for printing through the hood-side post: two pieces that each fit the A1's 256 mm bed,
+#     with the dowel holes open on both cut faces
+pieces = g.split_shell(P, shroud)
+fits = all(len(pc.decompose()) == 1 and max(np.ptp(np.asarray(g.print_orient_shroud(pc).to_mesh().vert_properties)[:, :2], 0)) <= 256
+           for pc in pieces)
+check("print pieces: each one solid and fits the 256 mm bed", fits,
+      " / ".join("%.0f x %.0f" % tuple(np.ptp(np.asarray(g.print_orient_shroud(pc).to_mesh().vert_properties)[:, :2], 0)) for pc in pieces))
+F_ = g.front_frame(P)
+us_ = g.split_plane_u(P)
+z_top_, z_bu_, z_wb_, _, _ = g.shell_levels(P)
+n_c = float(g.bow(P, us_)) - P.post_depth / 2 - P.post_setback
+dowels_ok = True
+for z in (z_wb_ - 0.2, z_bu_ + 0.2):
+    for du in (-P.dowel_depth + 1, P.dowel_depth - 1):
+        probe = g.lift_top(P, g.box(us_ + du - 0.5, us_ + du + 0.5, n_c - 0.4, n_c + 0.4, z - 0.4, z + 0.4).transform(F_))
+        dowels_ok &= all(overlap(pc, probe) < 1e-6 for pc in pieces)
+check("dowel holes go into both pieces", dowels_ok)
 
 # 7b. keep clear of the car parts next to the holes (seen in the owner's photos)
 z4 = pts["arm hole 4"][1]
@@ -221,7 +230,7 @@ for f in sorted(glob.glob(os.path.join(here, "stl", "**", "*.stl"), recursive=Tr
                                                   & (tm.triangles_center[:, 2] < 0.01)].sum() > 50
     parts = len(M(m3d.Mesh(tm.vertices.astype("float32"), tm.faces.astype("uint32"))).decompose())
     multi = "spacer" in name or "fit_test_mount" in name or "fit_test_window" in name      # printed as separate pieces on purpose
-    curved = "ear_" in name                     # the ears follow the door's flange: they lie on it, with supports
+    curved = "bezel_" in name or "fit_test_blade" in name   # the top follows the door and carries the bead: supports under it
     ok = tm.is_watertight and tm.volume > 0 and tm.bounds[0][2] == 0 and (flat or curved) and (parts == 1 or multi)
     check(f"{name}: watertight, {'on' if curved else 'flat on'} the bed, {parts} piece(s)", ok)
 

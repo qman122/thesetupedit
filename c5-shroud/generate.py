@@ -122,7 +122,7 @@ class Params:
     mouth_wall: float = 3.0       # the slot's walls, from the face back to the pods
     mask_t: float = 1.5           # black mask just in front of each pod, with one window the size of the pod face
     shelf_t: float = 3.0
-    rail_t: float = 4.0           # top blade thickness; its front edge is rounded
+    rail_t: float = 3.0           # top blade thickness; its front edge is rounded
     blade_depth: float = 30.0     # flat top blade, from the front edge back (slides under the cover)
     # the clip under the cover, measured from the owner's model of the covers (Covers.stl, see
     # cover_scan.py): a U-shaped rib hanging about 9 mm under the skin behind the front edge,
@@ -132,7 +132,7 @@ class Params:
     clip_bar_t: float = 3.5       # cross bar thickness
     clip_skew: float = 0.36       # the bar runs 0.36 mm further forward per mm toward the fender (20 deg)
     clip_leg_gap: float = 26.0    # between the legs' inner faces
-    cover_edge_n: float = 1.0     # the cover's front edge sits this far behind the blade's rounded nose
+    cover_edge_n: float = 5.0     # the door's front edge sits this far behind the blade's front, just behind the bead
     # a tongue on the blade runs back under the clip: the bar drops into a groove across it and the
     # legs sit either side of it (it prints flush with the blade, so the blade still lies flat)
     tongue_w: float = 23.0
@@ -145,7 +145,7 @@ class Params:
     lip_follow: float = 1.0       # 1 = follow the door's lip as measured, 0 = level top
     lip_roll: float = 0.0         # extra tilt of the top toward the fender, degrees (+ = fender end lower)
     rim_r: float = 3.0            # the rolled rim round the slot is a tube this radius (6 mm lip)
-    corner_r: float = 12.0        # bottom corners of the outline
+    corner_r: float = 30.0        # the front turns back into the ears round this radius, seen from above
     end_wall_x: float = 123.0     # end walls of the frame start this far out (just past the outer pods)
     wing_t: float = 3.0           # side wings (ears)
     wing_screw_y: float = -54.0   # M4 screw through each wing into a boss on the carrier
@@ -162,6 +162,23 @@ class Params:
     # (owner's photo of a stock headlight). They follow the flange's shape, measured from the
     # owner's model of the doors (cover_sides.json, from cover_scan.py), and print as separate parts.
     ear_t: float = 3.0
+    # the one-piece shell (owner's reference photo)
+    shell_t: float = 3.0          # wall thickness everywhere
+    post_w: float = 6.0           # posts between the windows, at their narrowest (on the gaps between pods)
+    post_setback: float = 4.0     # posts stand this far back from the front edge, clear of the lenses
+    post_depth: float = 13.0      # posts run this far back from the front
+    window_r: float = 15.0        # window corner radius: the posts flare into the floor and blade
+    window_wrap: float = 12.7     # the end windows run this far round into the corners
+    floor_depth: float = 22.0     # shallow floor under the pods, back from the front
+    lip_r: float = 3.5            # rounded lip along the bottom front edge (7 mm tall)
+    bead_r: float = 1.5           # raised bead along the blade's front edge, where the door seals
+    ear_start_y: tuple = (-35.0, -45.0)   # hood, fender: where the door's side flange starts
+    ear_tip_past: float = 15.0    # ears end this far past the last screw hole
+    ear_tip_above: float = 14.0   # ...and taper to this far above it (and 12 below)
+    tongue_root_w: float = 40.0   # clip tongue: width where it leaves the blade
+    tongue_slot_w: float = 5.0    # ...and the slot along it
+    dowel_d: float = 3.1          # dowel holes across the print split (3 mm pins)
+    dowel_depth: float = 6.0      # each side of the split
     ear_gap: float = 0.8          # between the ear and the door
     ear_top_gap: float = 8.0      # ear's top edge this far under the top of the door's side: up to its painted edge, no gap
     ear_hole_d: float = 6.5       # clearance for the stock ear screws, at every hole in the flange
@@ -170,7 +187,8 @@ class Params:
     # the front of the door's fender-side flange comes down over the top of the fender wing: the
     # wing is trimmed under it (from the owner's model). (x from, x to, y from, y to, z at x from,
     # drop per mm toward the fender)
-    door_corner_cut: tuple = (122.0, 140.0, -48.0, -3.0, 61.1, 0.225)
+    door_corner_cut: tuple = None  # replaced by door_clearance(), from the door's measured underside
+    door_clear: float = 0.25      # the bezel's top is trimmed this far under the door's underside
     # Window gap around the pod bezel, per side, at the back of each tunnel (the 1-notch test frame fit)
     window_clear_x: float = 2.0   # each side, left and right (the 1-notch test frame fit)
     window_clear_y: float = 1.6   # top and bottom
@@ -572,19 +590,25 @@ def tube(path, r, n0, segs=20):
 
 def clip_n(p, u):
     """Front face of the clip's cross bar at u, in the front's own frame (before the bow)."""
-    return 2.37 - p.cover_edge_n - p.clip_back + p.clip_skew * (u - p.clip_u)    # the nose is at n = 2.37
+    return -p.cover_edge_n - p.clip_back + p.clip_skew * (u - p.clip_u)          # the nose is at n = 0
 
 
 def clip_tongue(p, z_top):
     """The tongue on the blade that clicks onto the cover's clip, and the groove the bar drops
-    into, in the front's own frame (before the bow). The tongue fits between the clip's legs
+    into, in the front's own frame (before the bow). It tapers back from a wide root and has
+    a slot along its middle. The tongue fits between the clip's legs
     and ends in a chamfered tooth that ramps under the bar as the blade slides in."""
     ul, ur = p.clip_u - p.tongue_w / 2, p.clip_u + p.tongue_w / 2
     g0 = [clip_n(p, u) + p.groove_clear for u in (ul, ur)]                 # groove front edge
     g1 = [clip_n(p, u) - p.clip_bar_t - p.groove_clear for u in (ul, ur)]  # groove back edge
     tb = [n - p.tooth_len for n in g1]                                      # end of the tooth
     zb = z_top - p.rail_t
-    plan = CS([[[ul, tb[0]], [ur, tb[1]], [ur, -p.blade_depth + 1], [ul, -p.blade_depth + 1]]])
+    # tapered from a wide root at the blade to the tooth, with a slot along it (as in the photo)
+    rw = p.tongue_root_w / 2
+    n_r = -p.blade_depth + 1
+    n_n = min(g0) + 4                                    # the taper ends just ahead of the groove
+    plan = CS([[[ul, tb[0]], [ur, tb[1]], [ur, n_n], [p.clip_u + rw, n_r], [p.clip_u - rw, n_r], [ul, n_n]]])
+    plan = plan - CS.square([p.tongue_slot_w, n_r - 4 - (n_n - 2)]).translate([p.clip_u - p.tongue_slot_w / 2, n_n - 2])
     tongue = M.extrude(plan, p.rail_t).translate([0, 0, zb])
     # chamfer the back of the tooth: 1.8 mm down at its end, running out 3 mm in
     ch = M.hull_points([[u, n + dn, z] for (u, n) in ((ul - 1, tb[0] - p.clip_skew), (ur + 1, tb[1] + p.clip_skew))
@@ -655,89 +679,15 @@ def door_side(name):
 
         def door_top(y):
             return np.interp(y, ys, tops)
+        def reach_raw(y, z):                          # the same, without the widening and smoothing
+            fy = np.clip((np.asarray(y) - ys[0]) / (ys[1] - ys[0]), 0, len(ys) - 1.001)
+            fz = np.clip((np.asarray(z) - zs[0]) / (zs[1] - zs[0]), 0, len(zs) - 1.001)
+            i, j = fy.astype(int), fz.astype(int)
+            a, b = fy - i, fz - j
+            return np.fmax.reduce([X[i, j], X[i + 1, j], X[i, j + 1], X[i + 1, j + 1]])
+        reach.raw = reach_raw
         _SIDES[name] = (d["holes"], reach, door_top)
     return _SIDES[name]
-
-
-def ear(p, name):
-    """A side ear like the stock bezel's ("hood" or "fender" end), passenger side as modelled.
-
-    It lies just outside the door's side flange, following its shape, from the bezel face back
-    past the flange's last hole. Its front bends in to meet the side of the bezel face, and its
-    outline below follows the stock ear in the owner's photo: down to the bezel's bottom corner
-    at the front, then rising back to the last hole. There's a screw hole at every hole in the
-    flange; the stock ear screws go through the ear and the flange into the headlight."""
-    ow = p.opening_w - 2 * p.opening_side_clear
-    holes, reach, door_top = door_side(name)
-    sx = -1 if name == "hood" else 1
-    z_top, zb_hood, zb_fender = bezel_z(p)
-    U = ow / 2 / front_frame(p)[0][0]
-    s, c0 = front_line(p)
-    y0 = c0 + s * sx * ow / 2                            # face front at this end, on the flat front line
-    z_face = z_top + float(top_rise(p, sx * U)) - p.top_corner_r * 0.3
-    ze = (zb_hood if sx < 0 else zb_fender) + p.corner_r * 0.6
-
-    def front(z):                                        # just behind the face's front at this end
-        return y0 + face_profile(p, z) - 0.3
-
-    def xin(y, z):                                       # inside face of the ear, as |x|
-        return np.maximum(reach(y, z) + p.ear_gap, ow / 2 + 1.0)
-
-    # top edge: up under the door's rolled side edge, as the stock ear is, covering the whole
-    # flange and all its holes; never above the bezel face's top at the front
-    hf, hr = holes[0]["at"], holes[-1]["at"]
-
-    def top(y):
-        return float(door_top(y)) - p.ear_top_gap
-    y_back = hr[1] - 20
-    zbot = min(zb_hood, zb_fender)                       # level with the bezel's bottom
-    # outline: down the front to the bezel's bottom corner, then (as the stock ear in the photo)
-    # rising back to pass 12 mm under the last screw, up the back and along the top
-    zs_ = np.linspace(ze, z_face, 14)
-    outline = [[front(zbot), zbot]] + [[front(z), z] for z in zs_]
-    outline += [[y_, top(y_)] for y_ in np.linspace(front(z_face), y_back + 6, 18)]
-    # rear: down from the top, then a straight rise from the level bottom, as the owner marked it
-    y_rise = p.ear_access_yz[0] if name == "hood" else hr[1] + 20
-    outline += [[y_back, top(y_back) - 6], [y_back, hr[2] - 12], [y_rise, zbot]]
-    o = np.asarray(outline)
-    if np.sum(o[:, 0] * np.roll(o[:, 1], -1) - np.roll(o[:, 0], -1) * o[:, 1]) < 0:
-        o = o[::-1]                                      # counter-clockwise
-    cs = CS([o])
-    panel = M.extrude(cs, p.ear_t).refine_to_length(3.0)   # (y, z, w): w = 0 inside to ear_t outside
-
-    def f(v):
-        out = np.empty_like(v)
-        out[:, 0] = xin(v[:, 0], v[:, 1]) + v[:, 2]
-        out[:, 1], out[:, 2] = v[:, 0], v[:, 1]
-        return out
-    panel = panel.warp_batch(f)
-    if panel.volume() < 0:
-        panel = panel.mirror([0, 0, 0])
-    # the front bends in to the side of the bezel face
-    zr = M.cube([1, p.ear_t, z_face - zbot - 0.6]).translate([0, -p.ear_t + 0.23, zbot + 0.31]).refine_to_length(2.0)
-
-    def g_(v):
-        out = np.empty_like(v)
-        x_out = xin(front(v[:, 2]), v[:, 2]) + p.ear_t - 0.41      # ends inside the panel, not flush with it
-        out[:, 0] = ow / 2 + 0.5 + v[:, 0] * (x_out - ow / 2 - 0.5)
-        out[:, 1] = front(v[:, 2]) + v[:, 1]
-        out[:, 2] = v[:, 2]
-        return out
-    parts = [panel, zr.warp_batch(g_)]
-    cuts = []
-    for h in holes:
-        at, nrm = np.asarray(h["at"], float) * [sx, 1, 1], np.asarray(h["normal"], float) * [sx, 1, 1]
-        # fill any gap between the flange and the ear round the hole, flush with the ear's face
-        x_face = float(xin(at[1], at[2])) + p.ear_t
-        reach_out = (x_face - at[0]) / nrm[0] - 0.3
-        if reach_out > 0.5:
-            parts.append(_along(M.cylinder(reach_out, 7, 7, 32), nrm, at + 0.3 * nrm))
-        cuts.append(_along(M.cylinder(40, p.ear_hole_d / 2, p.ear_hole_d / 2, 24).translate([0, 0, -20]), nrm, at))
-    if name == "hood":
-        ay, az = p.ear_access_yz
-        cuts.append(cyl_x(p.ear_access_d, ow / 2 - 5, ow / 2 + 60, ay, az))
-    out = M.batch_boolean(parts, m3d.OpType.Add) - M.batch_boolean(cuts, m3d.OpType.Add)
-    return out.mirror([1, 0, 0]) if sx < 0 else out
 
 
 def _along(man, nrm, at):
@@ -750,16 +700,6 @@ def _along(man, nrm, at):
     return man.transform(np.hstack([Rm, np.asarray(at, float)[:, None]]))
 
 
-def print_orient_ear(man):
-    """Lay an ear on its outside face (its bend and bosses point up), tipped to lie as flat as it goes."""
-    v = np.asarray(man.to_mesh().vert_properties)[:, :3]
-    c = v.mean(0)
-    nrm = np.linalg.svd(v - c, full_matrices=False)[2][2]
-    if nrm[0] * np.sign(c[0]) < 0:
-        nrm = -nrm                                      # pointing outward
-    return man.translate(-c).transform(np.hstack([_rot_to(nrm, [0, 0, -1]), np.zeros((3, 1))]))
-
-
 def _rot_to(a, b):
     a, b = np.asarray(a, float) / np.linalg.norm(a), np.asarray(b, float) / np.linalg.norm(b)
     k = np.cross(a, b)
@@ -770,224 +710,322 @@ def _rot_to(a, b):
     return np.eye(3) + sn * K + (1 - cs_) * K @ K
 
 
-def shroud(p):
-    """The bezel, built like KnightDriveTV's: a curved face that fills the pocket under the door,
-    with a letterbox slot cut through it and a rolled rim round the slot. The face's outline
-    follows the stock C5 bezel and the door: big rounded lower corners, taller at the hood end.
-    Inside the slot the pods sit back in shadow behind a black mask with holes for the lenses
-    only, and thin posts that spread into the floor like roots. The flat top blade slides in under
-    the front of the headlight cover with a tongue that clicks onto its clip, like the stock bezel, and a
-    wing (ear) at each end screws to the carrier."""
-    ow = p.opening_w - 2 * p.opening_side_clear
-    z_top, zb_hood, zb_fender = bezel_z(p)
-    s, c0 = front_line(p)
-    F = front_frame(p)
-    kx = F[0][0]                                    # cos of the sweep angle
-    U = ow / 2 / kx                                 # the ends, measured along the front
-    poses = pod_poses(p)
-    f_bot = pod_zc(p) - p.pod_face_h / 2 - 1.2      # bottom of the slot, just under the pod faces
-    f_top = z_top - p.rail_t                        # top of the slot: the underside of the blade
-    dm = p.pod_recess + p.shroud_t                  # depth of the slot, front to the nearest pod face
-    zmin = min(zb_hood, zb_fender)
+# ---------------------------------------------------------------------------------------------
+# The bezel: one continuous thin shell, U-shaped from above (owner's reference photo)
+# ---------------------------------------------------------------------------------------------
 
-    def yf(x):
-        return c0 + s * x
+def bow(p, u):
+    """How far the front sits forward of the flat front line at u (the nose's curve)."""
+    U = (p.opening_w / 2 - p.opening_side_clear) / front_frame(p)[0][0]
+    return p.front_bow * (1 - np.minimum(np.abs(np.asarray(u, float)) / U, 1) ** 2)
 
-    def zb(u):                                      # bottom of the face; the hood end is -u
-        t = min(max((u + U) / (2 * U), 0.0), 1.0)
-        return zb_hood + t * (zb_fender - zb_hood)
 
-    zlow = zmin - p.bottom_sag                      # lowest point of the face
-
-    def profile(z):                                 # side view: swell forward, then roll back at the bottom
-        return face_profile(p, z)
-
-    def bulge(u, z):                                # how far the curved face sits in front of the flat front line
-        return p.front_bow * (1 - min(abs(u) / U, 1) ** 2) + float(profile(z))
-
-    def warp(man, edge=4.0):
-        """Bend a part built against the flat front onto the curved face."""
-        def f(v):
-            out = v.copy()
-            out[:, 1] += p.front_bow * (1 - np.clip(v[:, 0] / U, -1, 1) ** 2) + profile(v[:, 2])
-            return out
-        return man.refine_to_length(edge).warp_batch(f)
-
-    def u_path(inset=0.0, z_end=None):
-        """The face's outline below the top corners: down one side, round the big lower corner,
-        along the curved bottom, round the other corner and up; inset moves it inward."""
-        cr = p.corner_r - inset
-        zt_ = (z_top - p.top_corner_r) if z_end is None else z_end
-        ul, ur = -U + inset, U - inset
-        zl_, zr_ = zb(-U) + inset, zb(U) + inset
-        pts = [(ul, z) for z in np.arange(zt_, zl_ + p.corner_r, -3.0)]
-        pts += [(ul + p.corner_r - cr * math.cos(a), zl_ + cr * 0 + p.corner_r - cr * math.sin(a))
-                for a in np.linspace(0, math.pi / 2, 12)]
-        span = U - p.corner_r
-        pts += [(u, zb(u) + inset - p.bottom_sag * (1 - (u / span) ** 2))
-                for u in np.arange(-span + 3, span - 1.5, 3.0)]
-        pts += [(ur - p.corner_r + cr * math.sin(a), zr_ + p.corner_r - cr * math.cos(a))
-                for a in np.linspace(0, math.pi / 2, 12)]
-        pts += [(ur, z) for z in np.arange(zr_ + p.corner_r + 3, zt_ + 0.01, 3.0)]
-        clean = [pts[0]]
-        for q in pts[1:]:
-            if math.hypot(q[0] - clean[-1][0], q[1] - clean[-1][1]) > 0.8:
-                clean.append(q)
-        return clean
-
-    parts = []
-    # --- the face: a shell with the door-shaped outline, bent to the nose ---
-    tops = [(-U + p.top_corner_r, z_top - p.top_corner_r), (U - p.top_corner_r, z_top - p.top_corner_r)]
-    outline = CS.hull_points([list(q) for q in u_path()] +
-                             [[cu + p.top_corner_r * math.cos(a / 24 * math.pi), cz + p.top_corner_r * math.sin(a / 24 * math.pi)]
-                              for (cu, cz) in tops for a in range(48)])
-    face = plate_xz(outline, 0, p.face_t)            # n from -face_t to 0
-    # the slot's walls: a shell lofted from the face back to the pods, easing in on a curve
-    uo = (p.end_wall_x - 0.4) / kx
-    ztop = f_top - 0.29                             # (clear of the blade nose's lowest facets)
-
-    def slot_sec(half, zlo, zt, rad, smile):
-        """Rounded slot outline whose lower edge dips by `smile` in the middle (convex)."""
-        pts = [[cu + rad * math.cos(a / 24 * math.pi), cz + rad * math.sin(a / 24 * math.pi)]
-               for (cu, cz) in ((-half + rad, zt - rad), (half - rad, zt - rad),
-                                (-half + rad, zlo + rad), (half - rad, zlo + rad)) for a in range(48)]
-        span = max(half - rad, 1.0)
-        pts += [[u, zlo - smile * (1 - (u / span) ** 2)] for u in np.linspace(-span, span, 25)]
-        return CS.hull_points(pts)
-
-    def slot_secs(grow, n_front, n_back):
-        out = []
-        for i in range(13):
-            t = i / 12
-            e = (1 - t) ** 2
-            half = uo + p.mouth_wrap * e + grow
-            zlo = f_bot - p.mouth_flare * e - grow
-            rad = p.mouth_r + p.mouth_wrap * e + grow
-            zt = ztop - 0.03 * i + (grow and 0.6)     # the outer shell tucks up into the blade
-            out.append(plate_xz(slot_sec(half, zlo, zt, rad, p.slot_smile * e),
-                                n_front - t * (n_front - n_back), 0.2))
-        return [M.batch_hull([a_, b_]) for a_, b_ in zip(out, out[1:])]
-    walls = slot_secs(p.mouth_wall, -1.0, -dm)
-    parts.append(warp(M.batch_boolean([face] + walls, m3d.OpType.Add)).transform(F))
-
-    # floor shelf under the slot, from the slot walls back to just in front of each pod's face
-    xs = [x for (x, _, _) in poses]
-    mids = [(xs[0] + xs[1]) / 2, (xs[1] + xs[2]) / 2]
-    cols = [(-ow / 2 - 0.5, mids[0]), (mids[0] - 2, mids[1]), (mids[1] - 2, ow / 2 + 0.5)]   # ends trimmed below
-    plan = CS.batch_boolean([CS([[[xa, y + p.shroud_gap], [xb, y + p.shroud_gap], [xb, yf(xb) - dm + 3], [xa, yf(xa) - dm + 3]]])
-                             for (xa, xb), (_, y, _) in zip(cols, poses)], m3d.OpType.Add)
-    parts.append(M.extrude(plan.simplify(0.01), p.shelf_t + 0.13).translate([0, 0, f_bot - p.shelf_t - 0.13]))
-    # end walls of the cavity: from the slot walls back to the outer pods' faces
-    for (xa, xb), (_, y, _) in (((-ow / 2 - 0.5, -p.end_wall_x), poses[0]), ((p.end_wall_x, ow / 2 + 0.5), poses[2])):
-        sec = CS([[[xa, y + p.shroud_gap], [xb, y + p.shroud_gap], [xb, yf(xb) - 1], [xa, yf(xa) - 1]]])
-        parts.append(M.extrude(sec, z_top - 0.5 - (f_bot - p.shelf_t - 0.37)).translate([0, 0, f_bot - p.shelf_t - 0.37]))
-    # black mask just in front of each pod: a plate with one rounded window per pod, sized like the
-    # 1-notch test frame that fit (pod face + window_clear), so the whole pod face shows
-    for (x, y, _) in poses:
-        plate = rrect(p.pod_face_w + p.pod_gap + 1.0, f_top - f_bot + 0.87, 1.0).translate([0, (f_top + f_bot) / 2 - 0.065])
-        plate = plate - rrect(p.pod_face_w + 2 * p.window_clear_x, p.pod_face_h + 2 * p.window_clear_y,
-                              p.pod_face_r + min(p.window_clear_x, p.window_clear_y)).translate([0, pod_zc(p)])
-        parts.append(plate_xz(plate, y + p.shroud_gap + p.mask_t, p.mask_t).translate([x, 0, 0]))
-    # where the pods step back, a thin wall joins one mask to the next so no pod shows between them
-    for a, b in zip(poses, poses[1:]):
-        xm = (a[0] + b[0]) / 2
-        y0, y1 = min(a[1], b[1]) + p.shroud_gap + 0.3, max(a[1], b[1]) + p.shroud_gap + p.mask_t - 0.3
-        parts.append(box(xm - p.mask_t / 2, xm + p.mask_t / 2, y0, y1, f_bot - 0.37, f_top + 0.21))
-
-    # top blade: thin and continuous, slides in under the front of the headlight cover
-    rt = p.rail_t / 2
-    blade = [box(-U, U, -p.blade_depth, -0.5, z_top - p.rail_t, z_top),
-             M.hull_points(ball_pts(-U + rt + 0.2, 0.37, z_top - rt - 0.13, rt) +
-                           ball_pts(U - rt - 0.2, 0.37, z_top - rt - 0.13, rt))]
-    tongue, groove = clip_tongue(p, z_top)
-    blade.append(tongue)
-    parts.append(warp(M.batch_boolean(blade, m3d.OpType.Add)).transform(F))
-
-    # side wings (ears): full side walls from the face back past the pods to just in front of
-    # the arm and the pad
-    wy, wz, wr_ = p.wing_screw_y, p.wing_screw_z, p.wing_r
-    for side in (1, -1):
-        xo, xi = side * (ow / 2 + 0.5), side * (ow / 2 - p.wing_t)      # outer face trimmed below
-        yfr = min(yf(xo), yf(xi)) - 0.71
-        ze = zb(side * U) + p.corner_r * 0.6        # where the rounded bottom corner meets the side
-        yb_, zbk = p.wing_back_y + wr_, p.wing_back_z + wr_
-        corners = [[yb_ + wr_ * math.cos(a / 8 * math.pi), zc_ + wr_ * math.sin(a / 8 * math.pi)]
-                   for zc_ in (z_top - wr_, zbk) for a in range(16)]
-        front_edge = [[yfr + bulge(side * U, z) - 1.0, z] for z in np.linspace(ze, z_top, 12)]
-        prof = CS.hull_points(front_edge + [[yfr - 20, z_top]] +
-                              [q for q in corners if q[1] <= z_top])
-        x0 = min(xo, xi)
-        parts.append(M.extrude(prof, p.wing_t + 0.5).transform([[0, 0, 1, x0], [1, 0, 0, 0], [0, 1, 0, 0]]))
-
-    # front tabs reaching back under the carrier floor for two M4 screws (forward-only slots)
-    zt_ = -p.floor_t - p.lip_h
-    for (x, ys), pose in zip(shroud_tabs(p), (poses[0], poses[2])):
-        yface = yf(x) + bulge(x / kx, zt_) - p.face_t + 1.0
-        parts.append(box(x - 9, x + 9, ys - p.bezel_travel - 7, yface, zt_ - 3, zt_))
-    body = M.batch_boolean(parts, m3d.OpType.Add)
-
-    cuts = []
-    # the slot itself, and a shadow line along the underside of the blade at its top
-    cuts.append(warp(M.batch_boolean(slot_secs(0.0, 3.0, -dm - 1.0), m3d.OpType.Add)).transform(F))
-    cuts.append(warp(box(-uo, uo, -3.0, 3.0, ztop - 0.5, f_top + p.shadow_line)).transform(F))
-    cuts.append(warp(groove, 1.0).transform(F))
-    for (x, ys) in shroud_tabs(p):
-        cuts.append(slot_z(p.shroud_tab_screw_d + 0.6, p.bezel_travel + p.shroud_tab_screw_d + 0.6,
-                           -40, 0, x, ys - p.bezel_travel / 2))
-    ay, az = p.access_hole_yz
-    cuts.append(cyl_x(p.access_hole_d, -ow / 2 - 5, -ow / 2 + p.wing_t + 5, ay, az))
-    for side in (1, -1):
-        sl = CS.square([p.bezel_travel, 0.01], center=True).offset((p.shroud_tab_screw_d + 0.6) / 2, m3d.JoinType.Round)
-        sl = sl.translate([wy - p.bezel_travel / 2, wz])
-        cuts.append(M.extrude(sl, 20).transform([[0, 0, 1, side * ow / 2 - 10], [1, 0, 0, 0], [0, 1, 0, 0]]))
-    out = M.batch_boolean([body] + cuts, m3d.OpType.Subtract)
-
-    # rolled rim round the slot's front edge: down one side, along the bottom, up the other,
-    # its ends buried in the blade
-    rr = p.rim_r
-    hw = uo + p.mouth_wrap + rr * 0.6
-    zl = f_bot - p.mouth_flare - rr * 0.6
-    rc = p.mouth_r + p.mouth_wrap + rr * 0.6
-    zt_end = z_top - p.rail_t / 2
-    path = [(-hw, z) for z in np.arange(zt_end, zl + rc, -2.0)]
-    path += [(-hw + rc - rc * math.cos(a), zl + rc - rc * math.sin(a)) for a in np.linspace(0, math.pi / 2, 16)]
-    span_ = hw - rc
-    path += [(u, zl - p.slot_smile * (1 - (u / span_) ** 2)) for u in np.arange(-hw + rc + 2.0, hw - rc - 1.0, 2.0)]
-    path += [(hw - rc + rc * math.sin(a), zl + rc - rc * math.cos(a)) for a in np.linspace(0, math.pi / 2, 16)]
-    path += [(hw, z) for z in np.arange(zl + rc + 2.0, zt_end + 0.01, 2.0)]
-    clean = [path[0]]
-    for q in path[1:]:
-        if math.hypot(q[0] - clean[-1][0], q[1] - clean[-1][1]) > 0.5:
-            clean.append(q)
-    rim = warp(tube(clean, rr, -rr * 0.35), 2.0)
-    # rolled edge right round the outside of the face, its ends buried in the blade
-    edge = warp(tube(u_path(inset=p.edge_r * 0.53, z_end=z_top - p.rail_t / 2), p.edge_r, -p.face_t / 2), 2.0)
-
-    # posts: slightly elongated front to back, spreading into the floor like roots and only
-    # just flaring into the blade, trimmed flat behind so they never reach the pods
-    sec = CS.square([0.01, max(p.post_len - p.post_d, 0.01)], center=True).offset(p.post_d / 2 - 0.005, m3d.JoinType.Round)
-    h = f_top - f_bot + 1.0                         # 0.5 mm into the shelf and the blade
-    hwp, hlp = p.post_d / 2, p.post_len / 2
-
-    def flare(v):
-        z = v[:, 2]
-        g_ = p.post_root_w * np.clip(1 - z / p.post_root_h, 0, 1) ** 2 + \
-            p.post_cap_w * np.clip(1 - (h - z) / p.post_cap_h, 0, 1) ** 2
+def bow_warp(p, man, edge=4.0):
+    """Bend a part built against the flat front line (front frame) onto the curved front."""
+    def f(v):
         out = v.copy()
-        out[:, 0] *= (hwp + g_) / hwp
-        out[:, 1] *= (hlp + g_) / hlp
+        out[:, 1] += bow(p, v[:, 0])
         return out
-    posts = []
-    for (x, y, y_min) in post_xy(p):
-        post = M.extrude(sec, h, n_divisions=int(h / 0.6)).warp_batch(flare).translate([x, y, f_bot - 0.5])
-        post = post ^ box(x - 30, x + 30, y_min + p.mask_t, y + 40, f_bot - 1, f_top + 1)
-        posts.append(post ^ box(-U, U, -300, -0.8, -300, 300).transform(F))   # stays behind the front edge
-    out = M.batch_boolean([out, rim.transform(F), edge.transform(F)] + posts, m3d.OpType.Add)
-    out = out ^ box(-ow / 2, ow / 2, -300, 300, -300, 300)
-    out = lift_top(p, out)
-    x0, x1, y0, y1, z0, dz = p.door_corner_cut
-    return out - M.hull_points([[x, y, z] for x in (x0, x1) for y in (y0, y1)
-                                for z in (z0 - dz * (x - x0), z0 + 40)])
+    return man.refine_to_length(edge).warp_batch(f)
+
+
+def _fpt(F, u, n):
+    """Plan position (x, y) of front-frame point (u, n)."""
+    return np.array([F[0][0] * u + F[0][1] * n + F[0][3], F[1][0] * u + F[1][1] * n + F[1][3]])
+
+
+def front_uv(p, x, y):
+    """Front-frame u of plan point(s) (x, y)."""
+    s, c0 = front_line(p)
+    k = 1 / math.hypot(1, s)
+    return k * np.asarray(x) + s * k * (np.asarray(y) - c0)
+
+
+def shell_levels(p):
+    """Heights of the shell before the top is raised to follow the door: blade top, blade
+    underside, window bottom (= floor top), floor bottom, lip bottom."""
+    z_top = bezel_z(p)[0]
+    z_wb = pod_zc(p) - p.pod_face_h / 2 - p.window_clear_y
+    return z_top, z_top - p.rail_t, z_wb, z_wb - p.shell_t, z_wb - 2 * p.lip_r
+
+
+def shell_plan(p):
+    """The shell's outline from above, and each ear's flat plane.
+
+    The front follows the curved front line. At each end it turns back round a corner_r radius
+    into a short straight side, then into a long flat ear that lies just outside the door's
+    side flange, back past its last screw hole. Returns the outer outline (closed far behind),
+    and per side: the corner's tangent u on the front, the ear's inside line |x| = a + b y,
+    where the ear starts (y_k) and ends (y_tip), and the arc's end y."""
+    F = front_frame(p)
+    R = p.corner_r
+    z_top, _, _, _, z_lb = shell_levels(p)
+    front_pts = lambda u: _fpt(F, u, float(bow(p, u)))
+    sides = {}
+    for name, sx in (("hood", -1), ("fender", 1)):
+        holes, reach, door_top = door_side(name)
+        y_k = p.ear_start_y[0 if sx < 0 else 1]
+        y_tip = min(h["at"][1] for h in holes) - p.ear_tip_past
+        z_tip = min(h["at"][2] for h in holes) - 12
+        ys = np.linspace(y_tip, y_k, 40)
+        X = np.array([max(float(reach.raw(y, z)) for z in np.linspace(z_lb + (z_tip - z_lb) * (y - y_k) / (y_tip - y_k),
+                                                                   float(door_top(y)) - p.ear_top_gap, 12))
+                      for y in ys])
+        b = np.polyfit(ys, X, 1)[0]
+        a = float((X - b * ys).max()) + p.ear_gap            # the ear's inside clears the door
+        X_out = a + b * y_k + p.shell_t                      # outside of the straight side
+        # corner: the arc of radius R tangent to the front curve and to the straight side
+        def centre(u):
+            h = 0.5
+            t = front_pts(u + h) - front_pts(u - h)
+            t /= np.linalg.norm(t)
+            n_in = np.array([t[1], -t[0]])                   # pointing back from the front
+            if n_in @ np.array([-F[0][1], -F[1][1]]) < 0:
+                n_in = -n_in
+            return front_pts(u) + R * n_in
+        lo, hi = (-250.0, 0.0) if sx < 0 else (0.0, 250.0)
+        target = sx * (X_out - R)
+        for _ in range(60):
+            mid = (lo + hi) / 2
+            if (centre(mid)[0] - target) * sx > 0:
+                hi, lo = (mid, lo) if sx > 0 else (hi, mid)
+            else:
+                lo, hi = (mid, hi) if sx > 0 else (lo, mid)
+        u_t = (lo + hi) / 2
+        c = centre(u_t)
+        p0 = front_pts(u_t)
+        a0 = math.atan2(p0[1] - c[1], p0[0] - c[0])
+        a1 = 0.0 if sx > 0 else math.pi
+        if sx > 0:
+            while a0 < a1:
+                a0 += 2 * math.pi
+            while a0 - a1 > 2 * math.pi:
+                a0 -= 2 * math.pi
+        else:
+            while a0 > a1:
+                a0 -= 2 * math.pi
+            while a1 - a0 > 2 * math.pi:
+                a0 += 2 * math.pi
+        arc = [c + R * np.array([math.cos(t), math.sin(t)]) for t in np.linspace(a0, a1, 24)]
+        # straight side back to the start of the flange, a short blend, then the flat ear
+        y_k = min(y_k, c[1] - 26)                            # room for a short straight side
+        side = [np.array([sx * X_out, y]) for y in np.linspace(c[1] - 1, y_k + 12, 6)]
+        blend = []
+        for t in np.linspace(0, 1, 7)[1:-1]:
+            y_ = y_k + 12 - 24 * t
+            x_line = a + b * y_ + p.shell_t
+            w = t * t * (3 - 2 * t)
+            blend.append(np.array([sx * ((1 - w) * X_out + w * x_line), y_]))
+        ear = [np.array([sx * (a + b * y + p.shell_t), y]) for y in np.linspace(y_k - 12, y_tip, 12)]
+        sides[name] = dict(sx=sx, u_t=u_t, p0=p0, arc_end_y=c[1], y_k=y_k, y_tip=y_tip, z_tip=z_tip, a=a, b=b,
+                           path=arc + side + blend + ear, holes=holes, door_top=door_top)
+    hood, fen = sides["hood"], sides["fender"]
+    fr = [front_pts(u) for u in np.linspace(hood["u_t"], fen["u_t"], 80)]
+    outline = hood["path"][::-1] + fr[1:-1] + fen["path"]
+    outline += [np.array([fen["path"][-1][0], -600.0]), np.array([hood["path"][-1][0], -600.0])]
+    return np.asarray(outline)[::-1], sides              # counter-clockwise
+
+
+def _tube3(pts, r, segs=16):
+    """A round bar of radius r along a 3D polyline (hulls of spheres, unioned)."""
+    ball = M.sphere(r, segs)
+    parts = [M.batch_hull([ball.translate(list(a)), ball.translate(list(b))]) for a, b in zip(pts, pts[1:])]
+    return M.batch_boolean(parts, m3d.OpType.Add)
+
+
+def shell_parts(p):
+    """The one-piece bezel (passenger side as modelled), before it's split for printing."""
+    F = front_frame(p)
+    Fm = np.vstack([np.asarray(F, float), [0, 0, 0, 1]])
+    z_top, z_bu, z_wb, z_fb, z_lb = shell_levels(p)
+    outline, sides = shell_plan(p)
+    U3 = M.extrude(CS([outline]), 400).translate([0, 0, -150])            # inside the outline
+    hood, fen = sides["hood"], sides["fender"]
+    ua, ub = hood["u_t"], fen["u_t"]
+    t = p.shell_t
+
+    # --- the front, built against the flat front line, then bent onto the curve ---
+    wide = (ua - 60, ub + 60)
+    slab = box(ua - 30, ub + 30, -p.post_setback - p.post_depth, 0.3, z_fb, z_top)   # posts come out of this
+    blade = box(*wide, -p.blade_depth, 0.3, z_bu, z_top)
+    floor = box(*wide, -p.floor_depth, 0.3, z_fb, z_wb)
+    tongue, groove = clip_tongue(p, z_top)
+    front = M.batch_boolean([bow_warp(p, m) for m in (slab, blade, floor, tongue)], m3d.OpType.Add).transform(F)
+    front = front ^ M.extrude(CS([outline]).offset(-0.07, m3d.JoinType.Round), 400).translate([0, 0, -150])  # just inside the walls' face
+    # lip rolled along the bottom front edge, and a bead along the blade's front edge, both
+    # running round the corners
+    def edge_path(n_in, z):
+        fr = [np.append(_fpt(F, u, float(bow(p, u)) - n_in), z) for u in np.linspace(ua, ub, 60)]
+        out = []
+        for s_ in (hood, fen):
+            c_arc = s_["path"][:21]                                    # arc, front to nearly the side
+            cen = _arc_centre(c_arc)
+            arc_in = [np.append(cen + (q - cen) * (p.corner_r - n_in) / p.corner_r, z) for q in c_arc]
+            out.append(arc_in)
+        return out[0][::-1] + fr + out[1]
+    lip = _tube3(edge_path(p.lip_r, z_wb - p.lip_r), p.lip_r)
+    bead = _tube3(edge_path(p.bead_r, z_top), p.bead_r)
+    front = M.batch_boolean([front, lip, bead], m3d.OpType.Add)
+    front = front - bow_warp(p, groove, 1.0).transform(F)
+
+    # --- windows: one rounded rectangle per pod; the posts are what's left between them. The
+    # posts sit on the gaps between the pods, a little back from the front edge ---
+    poses = pod_poses(p)
+    gaps = []
+    for (xa, ya, _), (xb, yb, _) in zip(poses, poses[1:]):
+        xg = (xa + xb) / 2
+        u0 = float(front_uv(p, xg, 0.0))
+        yf_ = float(_fpt(F, u0, float(bow(p, u0)))[1])
+        gaps.append(float(front_uv(p, xg, yf_ - p.post_setback - p.post_depth / 2)))
+    edges = []
+    for i in range(len(poses)):                          # the end windows run out into the corners
+        lo_ = gaps[i - 1] + p.post_w / 2 if i > 0 else ua - p.window_wrap
+        hi_ = gaps[i] - p.post_w / 2 if i < len(gaps) else ub + p.window_wrap
+        edges.append((lo_, hi_))
+    hgt = z_bu - z_wb - 0.1
+    zc = (z_bu + z_wb) / 2
+    wins = []
+    for (lo_, hi_) in edges:
+        cs = rrect(hi_ - lo_, hgt, p.window_r).translate([(lo_ + hi_) / 2, zc])
+        wins.append(M.extrude(cs, 70).transform([[1, 0, 0, 0], [0, 0, 1, -70 - p.post_setback], [0, 1, 0, 0]]))
+    lo_, hi_ = edges[0][0] + 0.37, edges[-1][1] - 0.37   # in front of the posts: one opening
+    cs = rrect(hi_ - lo_, hgt - 0.3, p.window_r).translate([(lo_ + hi_) / 2, zc])
+    wins.append(M.extrude(cs, 20 + p.post_setback + 0.3).transform([[1, 0, 0, 0], [0, 0, 1, -p.post_setback - 0.3], [0, 1, 0, 0]]))
+    windows = M.batch_boolean(wins, m3d.OpType.Add).transform(F)
+
+    front = lift_top(p, front)
+    windows = lift_top(p, windows)
+
+    # --- the corners and ears: one thin wall, the corner's height, running back to a thin ear
+    # that tapers to its tip past the last screw hole ---
+    walls2d = CS([outline]) - CS([outline]).offset(-t, m3d.JoinType.Miter)
+    walls = []
+    bosses, holes = [], []
+    for s_ in (hood, fen):
+        sx = s_["sx"]
+        u_end = np.linspace(s_["u_t"], s_["u_t"] + sx * 45, 10)
+        wall_top = z_top + float(np.max(top_rise(p, u_end)))
+        y_c, y_k, y_tip = s_["arc_end_y"], s_["y_k"], s_["y_tip"]
+        # the ear's top edge is a straight line, as high as it can be while staying under the
+        # door's side all the way along
+        yy = np.linspace(y_k, y_tip, 40)
+        dd = np.array([float(s_["door_top"](y)) - p.ear_top_gap for y in yy])
+        kk, cc = np.polyfit(yy, dd, 1)
+        cc -= max(0.0, float(np.max(kk * yy + cc - dd)))
+        rt = 6.0                                         # the ear's tip is rounded, seen from the side
+
+        # like the photo the ear tapers toward its tip: the top edge runs down from the door's
+        # edge at the corner to 14 mm above the last screw hole
+        z_last = min(h["at"][2] for h in s_["holes"])
+        z_start = kk * y_k + cc
+        kk = (z_start - (z_last + p.ear_tip_above)) / (y_k - y_tip)
+        cc = z_start - kk * y_k
+
+        def top_z(y):
+            y = np.asarray(y, float)
+            line = np.minimum(kk * y + cc, np.polyval([kk, cc], y))
+            w = np.clip((y_c - y) / (y_c - y_k), 0, 1)
+            zt = np.where(y >= y_c, wall_top, np.where(y >= y_k, (1 - w) * wall_top + w * line, line))
+            d = np.clip(y_tip + rt - y, 0, rt)
+            return zt - (rt - np.sqrt(rt * rt - d * d))
+
+        def bot_z(y):
+            y = np.asarray(y, float)
+            zb_ = np.where(y >= y_k, z_lb, z_lb + (s_["z_tip"] - z_lb) * (y - y_k) / (y_tip - y_k))
+            d = np.clip(y_tip + rt - y, 0, rt)
+            return zb_ + (rt - np.sqrt(rt * rt - d * d))
+        x_t = float(s_["p0"][0])                         # where the corner leaves the front
+        keep = CS.square([400, 800]).translate([x_t - 400 + 0.2 if sx < 0 else x_t - 0.2, y_tip + 0.05])
+        ring = M.extrude(walls2d ^ keep, 1.0).refine_to_length(3.0)
+
+        def fw(v):
+            out = v.copy()
+            zt, zb_ = top_z(v[:, 1]), bot_z(v[:, 1])
+            out[:, 2] = zb_ + v[:, 2] * (zt - zb_)
+            return out
+        walls.append(ring.warp_batch(fw))
+        # screw holes at every hole in the door's flange, with a boss filling any gap behind
+        for h in s_["holes"]:
+            at, nrm = np.asarray(h["at"], float), np.asarray(h["normal"], float)
+            x_out = s_["a"] + s_["b"] * at[1] + t
+            ln = (x_out - abs(at[0])) / abs(nrm[0])
+            if ln > 0.6:
+                bosses.append(_along(M.cylinder(ln - 0.3, 7, 7, 32), nrm, at + 0.3 * nrm))
+            holes.append(_along(M.cylinder(60, p.ear_hole_d / 2, p.ear_hole_d / 2, 24).translate([0, 0, -30]), nrm, at))
+    body = M.batch_boolean([front] + walls + bosses, m3d.OpType.Add)
+    body = body - M.batch_boolean([windows] + holes, m3d.OpType.Add)
+    if p.door_corner_cut:
+        x0, x1, y0, y1, z0, dz = p.door_corner_cut
+        body = body - M.hull_points([[x, y, z] for x in (x0, x1) for y in (y0, y1)
+                                     for z in (z0 - dz * (x - x0), z0 + 40)])
+    return body
+
+
+def _arc_centre(arc):
+    """Centre of a circular arc given as points."""
+    a, b, c = np.asarray(arc[0]), np.asarray(arc[len(arc) // 2]), np.asarray(arc[-1])
+    A = np.array([b - a, c - b]) * 2
+    rhs = np.array([b @ b - a @ a, c @ c - b @ b])
+    return np.linalg.solve(A, rhs)
+
+
+def door_clearance(p):
+    """Everything above the door's underside (less door_clear) over the front of the bezel, from
+    the owner's model of the door (cover_sides.json "underside"): cut away so the door closes
+    onto the bezel without touching it anywhere but its lip on the blade."""
+    import json
+    with open(os.path.join(os.path.dirname(os.path.abspath(__file__)), "cover_sides.json")) as fh:
+        d = json.load(fh).get("underside")
+    if not d:
+        return None
+    xs, ys = np.asarray(d["x"]), np.asarray(d["y"])
+    Z = np.array([[np.nan if q is None else q for q in row] for row in d["z"]], float)
+    Z = np.where(np.isnan(Z), 400.0, Z - p.door_clear)
+    blk = M.cube([xs[-1] - xs[0], ys[-1] - ys[0], 1]).translate([xs[0], ys[0], 0]).refine_to_length(1.0)
+
+    def f(v):                                            # bottom follows the door, interpolated smoothly
+        out = v.copy()
+        fx = np.clip((v[:, 0] - xs[0]) / 2, 0, len(xs) - 1.001)
+        fy = np.clip((v[:, 1] - ys[0]) / 2, 0, len(ys) - 1.001)
+        i, j = fx.astype(int), fy.astype(int)
+        a, b = fx - i, fy - j
+        zz = ((1 - a) * (1 - b) * Z[i, j] + a * (1 - b) * Z[i + 1, j] + (1 - a) * b * Z[i, j + 1] + a * b * Z[i + 1, j + 1])
+        zmin = np.minimum.reduce([Z[i, j], Z[i + 1, j], Z[i, j + 1], Z[i + 1, j + 1]])
+        zz = np.where(zz > 300, 399.0, np.where(zz - zmin > 3, zmin, zz))   # at the door's edge, take its lowest
+        out[:, 2] = np.where(v[:, 2] < 0.5, zz, 450.0)
+        return out
+    return blk.warp_batch(f)
+
+
+def shroud(p):
+    """The bezel as one piece (passenger side as modelled)."""
+    body = shell_parts(p)
+    cut = door_clearance(p)
+    return body if cut is None else body - cut
+
+
+def split_plane_u(p):
+    """Where the shell is split for printing: through the middle of the hood-side post."""
+    poses = pod_poses(p)
+    us = [float(front_uv(p, x, y)) for (x, y, _) in poses]
+    return (us[0] + us[1]) / 2
+
+
+def split_shell(p, man):
+    """The two print pieces: cut through the middle of the hood-side post, with two dowel holes
+    across the cut, one where the post meets the floor and one where it meets the blade."""
+    F = front_frame(p)
+    us = split_plane_u(p)
+    z_top, z_bu, z_wb, z_fb, z_lb = shell_levels(p)
+    n_c = float(bow(p, us)) - p.post_depth / 2 - p.post_setback
+    pins = []
+    for z in (z_wb - 0.2, z_bu + 0.2):
+        pin = M.cylinder(2 * p.dowel_depth, p.dowel_d / 2, p.dowel_d / 2, 24, True)
+        pins.append(pin.transform([[0, 0, 1, us], [1, 0, 0, n_c], [0, 1, 0, z]]))
+    pins = lift_top(p, M.batch_boolean(pins, m3d.OpType.Add).transform(F))
+    left = box(-2000, us, -2000, 2000, -500, 500).transform(F)
+    right = box(us, 2000, -2000, 2000, -500, 500).transform(F)
+    return (man ^ left) - pins, (man ^ right) - pins
 
 
 def fit_test(p):
@@ -1007,13 +1045,13 @@ def fit_test(p):
 
 
 def fit_test_blade(p):
-    """Quick print: just the bezel's top blade and clip tongue, 3.7 mm thick, following the door's lip. Slide it in under
+    """Quick print: just the bezel's top blade, bead and clip tongue, following the door's lip. Slide it in under
     the front of the headlight cover to check the tongue clicks onto the clip and the front edge
     lines up."""
     z_top = bezel_z(p)[0]
     F = front_frame(p)
     U = (p.opening_w / 2 - p.opening_side_clear) / F[0][0]
-    keep = lift_top(p, box(-U - 5, U + 5, -p.clip_back - 30, p.front_bow + 8, z_top - p.rail_t + 0.3, z_top + 1).transform(F))
+    keep = lift_top(p, box(-U - 60, U + 60, -p.clip_back - 30, p.front_bow + 8, z_top - p.rail_t + 0.3, z_top + 3).transform(F))
     return shroud(p) ^ keep
 
 
@@ -1151,17 +1189,18 @@ if __name__ == "__main__":
     sides = [("passenger", c, s, 1), ("driver", mirror_x(c), mirror_x(s), -1)]
     for side, cc, ss, _ in sides:
         save(print_orient_carrier(cc), os.path.join(out, f"carrier_{side}.stl"))
-    # the driver bezel is printed as the mirror image of the passenger one, tipped the other way
-    save(print_orient_shroud(s), os.path.join(out, "bezel_passenger.stl"))
-    save(mirror_x(print_orient_shroud(s)), os.path.join(out, "bezel_driver.stl"))
-    for name in ("hood", "fender"):
-        e = ear(P, name)
-        save(print_orient_ear(e), os.path.join(out, f"ear_{name}_passenger.stl"))
-        save(print_orient_ear(mirror_x(e)), os.path.join(out, f"ear_{name}_driver.stl"))
+    # the driver bezel is the mirror image of the passenger one. The one-piece model is saved for
+    # reference; it prints as two pieces split through the hood-side post, joined with dowels
+    save(print_orient_shroud(s), os.path.join(out, "bezel_passenger_one_piece.stl"))
+    save(mirror_x(print_orient_shroud(s)), os.path.join(out, "bezel_driver_one_piece.stl"))
+    for tag, piece in zip(("hood_piece", "fender_piece"), split_shell(P, s)):
+        save(print_orient_shroud(piece), os.path.join(out, f"bezel_passenger_{tag}.stl"))
+        save(mirror_x(print_orient_shroud(piece)), os.path.join(out, f"bezel_driver_{tag}.stl"))
     save(fit_test(P), os.path.join(out, "fit_test_window.stl"))
-    blade = fit_test_blade(P)
-    save(print_orient_shroud(blade), os.path.join(out, "fit_test_blade_passenger.stl"))
-    save(mirror_x(print_orient_shroud(blade)), os.path.join(out, "fit_test_blade_driver.stl"))
+    blade = fit_test_blade(P)                            # split like the bezel, to fit the bed
+    for tag, piece in zip(("hood_piece", "fender_piece"), split_shell(P, blade)):
+        save(print_orient_shroud(piece), os.path.join(out, f"fit_test_blade_passenger_{tag}.stl"))
+        save(mirror_x(print_orient_shroud(piece)), os.path.join(out, f"fit_test_blade_driver_{tag}.stl"))
     save(fit_test_mount(P), os.path.join(out, "fit_test_mount_passenger.stl"))
     save(mirror_x(fit_test_mount(P)), os.path.join(out, "fit_test_mount_driver.stl"))
     save(spacers(P), os.path.join(out, "spacer_washers.stl"))

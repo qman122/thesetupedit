@@ -26,7 +26,7 @@ def export(man, path):
 here = os.path.dirname(os.path.abspath(__file__))
 P = g.P
 c, p = g.carrier(P), g.pod_dummy(P)
-s = g.M.batch_boolean([g.shroud(P), g.ear(P, "hood"), g.ear(P, "fender")], g.m3d.OpType.Add)   # bezel and its ears
+s = g.shroud(P)                   # the one-piece bezel
 lens = g.pod_lenses(P)
 for side, f in [("passenger", lambda m: m), ("driver", g.mirror_x)]:
     export(f(c), os.path.join(here, f"carrier_{side}.json"))

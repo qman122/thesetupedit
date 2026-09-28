@@ -75,21 +75,20 @@ def main(path, view_path=None):
     uc = P.clip_u
     e_c = np.interp(uc, u, -edge)
     lip_c = np.interp(uc, u, lip)
-    n_c = 2.37 - P.cover_edge_n + P.front_bow * (1 - (uc / U) ** 2)
+    n_c = -P.cover_edge_n + P.front_bow * (1 - (uc / U) ** 2)       # the blade's front is at n = 0
     A = np.array([[1, 0, 0, -X_MID], [c1, -1, 0, n_c - (e_c + c1 * uc) - c1 * X_MID], [0, 0, 1, z_top + g.top_rise(P, uc) - lip_c]])
     local = door.transform(A)          # a mirror; manifold keeps the solid the right way out
     front = local ^ g.box(-U - 10, U + 10, -95, 20, -50, 200)
     bez_local = g.shroud(P).transform(np.linalg.inv(np.vstack([F, [0, 0, 0, 1]]))[:3])
-    ov = (front ^ bez_local).volume()
-    print(f"bezel and door overlap: {ov:.1f} mm^3 (0 = no clash)")
     door_m = local.transform(np.vstack([np.asarray(F, float), [0, 0, 0, 1]])[:3])
-    if os.path.exists(os.path.join(os.path.dirname(os.path.abspath(__file__)), "cover_sides.json")):
-        for name in ("hood", "fender"):
-            iv = door_m ^ g.ear(P, name)
-            print(f"{name} ear and door overlap: {iv.volume():.1f} mm^3")
-            for pc in iv.decompose():
-                if pc.volume() > 0.5:
-                    print("   at", np.round(pc.bounding_box(), 1))
+    if os.environ.get("SAVE_DOOR"):                      # for renders and quick checks
+        dm = door_m.to_mesh()
+        np.savez(os.environ["SAVE_DOOR"], v=np.asarray(dm.vert_properties)[:, :3], f=np.asarray(dm.tri_verts))
+    iv = door_m ^ g.shroud(P)
+    print(f"bezel and door overlap: {iv.volume():.1f} mm^3 (0 = no clash)")
+    for pc in iv.decompose():
+        if pc.volume() > 0.5:
+            print("   at", np.round(pc.bounding_box(), 1))
     if view_path:
         export_view(view_path, A, F)
     find_sides(local.transform(np.vstack([np.asarray(F, float), [0, 0, 0, 1]])[:3]))
@@ -187,6 +186,18 @@ def find_sides(door_m):
         np.fmax.at(X, (iy[ok], iz[ok]), s_[ok, 0] * sx)
         out[name] = {"holes": holes, "y": ys.tolist(), "z": zs.tolist(),
                      "x": [[None if np.isnan(q_) else round(float(q_), 1) for q_ in row] for row in X]}
+    # the door's underside over the front of the bezel: the lowest downward-facing door surface
+    # in each 2 mm cell, so the bezel's top can be trimmed to clear it
+    xs_, ys_ = np.arange(-180.0, 182.0, 2.0), np.arange(-70.0, 44.0, 2.0)
+    dn = (n[:, 2] < -0.3) & (c[:, 2] > 40)
+    sp = np.vstack([c[dn], v[f[dn]].reshape(-1, 3)])      # centres and corners of the facing-down triangles
+    Z = np.full((len(xs_), len(ys_)), np.nan)
+    ix = np.rint((sp[:, 0] - xs_[0]) / 2).astype(int)
+    iy = np.rint((sp[:, 1] - ys_[0]) / 2).astype(int)
+    ok = (ix >= 0) & (ix < len(xs_)) & (iy >= 0) & (iy < len(ys_))
+    np.fmin.at(Z, (ix[ok], iy[ok]), sp[ok, 2])
+    out["underside"] = {"x": xs_.tolist(), "y": ys_.tolist(),
+                        "z": [[None if np.isnan(q_) else round(float(q_), 2) for q_ in row] for row in Z]}
     path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "cover_sides.json")
     with open(path, "w") as fh:
         json.dump(out, fh, separators=(",", ":"))
