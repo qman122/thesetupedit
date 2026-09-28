@@ -112,7 +112,13 @@ class Params:
     wing_t: float = 3.0           # side wings (ears)
     wing_screw_y: float = -54.0   # M4 screw through each wing into a boss on the carrier
     wing_screw_z: float = 4.0
-    wing_lobe_r: float = 7.5      # plastic round the wing slot
+    # The wings are full side walls like the stock ears: they run back past the pods to
+    # just in front of the arm and the pad, and down over the carrier.
+    wing_back_y: float = -90.0    # rear edge of the wings (the arm and pad faces are at -95)
+    wing_back_z: float = -20.0    # bottom of the wings at their rear edge (under the carrier's tabs)
+    wing_r: float = 10.0          # rounded rear corners
+    access_hole_d: float = 28.0   # hood-end wing: hole to reach the aiming adjuster, like the stock ear
+    access_hole_yz: tuple = (-72.0, 38.0)
     # Window gap around the pod bezel, per side, at the back of each tunnel (the 1-notch test frame fit)
     window_clear_x: float = 2.0   # each side, left and right (the 1-notch test frame fit)
     window_clear_y: float = 1.6   # top and bottom
@@ -481,15 +487,18 @@ def shroud(p):
         parts.append(M.hull_points(ball_pts(u * 0.999, 0.37, f_bot - r - 3, r * 0.9) +
                                    ball_pts(u * 0.999, 0.37, z_top - rt - 0.13, rt)).transform(F))
 
-    # side wings (ears): back from each end, tapering to a lobe round the screw slot
-    wy, wz, lr = p.wing_screw_y, p.wing_screw_z, p.wing_lobe_r
+    # side wings (ears): full side walls like the stock ears, from the front back past the
+    # pods to just in front of the arm and the pad, and from the blade down over the carrier
+    wy, wz, wr_ = p.wing_screw_y, p.wing_screw_z, p.wing_r
     for side in (1, -1):
         xo, xi = side * (ow / 2 + 0.5), side * (ow / 2 - p.wing_t)      # outer face trimmed below
         yfr = min(yf(xo), yf(xi)) - 0.2
         zlow = zb(side * up) + r + cr               # where the bottom corner turns up
-        prof = CS.hull_points([[yfr, zlow], [yfr, z_top], [yfr - p.blade_depth, z_top]] +
-                              [[yy + lr * math.cos(a / 8 * math.pi), wz + lr * math.sin(a / 8 * math.pi)]
-                               for yy in (wy - p.bezel_travel, wy) for a in range(16)])
+        yb_, zbk = p.wing_back_y + wr_, p.wing_back_z + wr_
+        corners = [[yb_ + wr_ * math.cos(a / 8 * math.pi), zc_ + wr_ * math.sin(a / 8 * math.pi)]
+                   for zc_ in (z_top - wr_, zbk) for a in range(16)]
+        prof = CS.hull_points([[yfr, zlow], [yfr, z_top], [yfr - 20, z_top]] +
+                              [q for q in corners if q[1] <= z_top])
         x0 = min(xo, xi)
         parts.append(M.extrude(prof, p.wing_t + 0.5).transform([[0, 0, 1, x0], [1, 0, 0, 0], [0, 1, 0, 0]]))
 
@@ -530,6 +539,9 @@ def shroud(p):
     for (x, ys) in shroud_tabs(p):
         cuts.append(slot_z(p.shroud_tab_screw_d + 0.6, p.bezel_travel + p.shroud_tab_screw_d + 0.6,
                            -40, 0, x, ys - p.bezel_travel / 2))
+    # access hole in the hood-end wing (-X) for the aiming adjuster, like the stock ear
+    ay, az = p.access_hole_yz
+    cuts.append(cyl_x(p.access_hole_d, -ow / 2 - 5, -ow / 2 + p.wing_t + 5, ay, az))
     # wing slots: the screw sits at the front end, so the bezel can slide forward (never back)
     for side in (1, -1):
         sl = CS.square([p.bezel_travel, 0.01], center=True).offset((p.shroud_tab_screw_d + 0.6) / 2, m3d.JoinType.Round)

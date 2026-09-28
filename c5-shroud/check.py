@@ -103,8 +103,10 @@ check("bezel clears the pods when both slide forward together", worst_pod < 1e-6
 check("bezel wrap clears all four mounting nuts", worst_nut < 1e-6)
 check("pods can also sit up to 10 mm further back with the bezel in place",
       max(overlap(shroud, g.pod_dummy(P, -s_)) for s_ in (0, back)) < 1e-6)
-gap = (shroud.bounding_box()[1]) - (y_back + t + 8)
-check(f"bezel back edge sits {gap:.1f} mm in front of the nuts", gap > 2)
+# only the part of the bezel in line with the nuts counts; the wings run back beside them
+nut_x = max(abs(x) + (P.arm_slot_len / 2 if ax == "x" else 0) + P.nut_r for (x, z, ax) in pts.values())
+gap = (shroud ^ g.box(-nut_x, nut_x, -300, 300, -300, 300)).bounding_box()[1] - (y_back + t + 8)
+check(f"bezel sits {gap:.1f} mm in front of the nuts (the wings pass outside them)", gap > 2)
 
 # 7. shroud fits the 11 in opening
 sb = shroud.bounding_box()

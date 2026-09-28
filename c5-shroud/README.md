@@ -75,9 +75,13 @@ stock bezel is held three ways, and so is this one:
   KnightDriveTV install video shows it too: at 13:02, "Remove bezel by rotating downward and
   forward, while spreading the outer ears". This bezel has the same 30 mm flat top blade
   with a forked tab behind its middle (`blade_depth`, `fork_*` in `generate.py`).
-- **Ears (wings) at both ends.** The stock ears screw to the stock headlight. Here each
-  wing takes one M4 × 12 screw into a boss on the carrier, in a slot so the bezel can sit
-  further forward.
+- **Ears (wings) at both ends.** Like the stock and KnightDriveTV ears, they are full
+  side walls. Each runs from the front back past the pods to 5 mm in front of the arm and
+  the pad, and from the top blade down over the carrier, so the sides are covered too.
+  - The stock ears screw to the stock headlight; here each wing takes one M4 × 12 screw
+    into a boss on the carrier, in a slot so the bezel can sit further forward.
+  - The hood-end wing has a 28 mm hole for reaching the aiming adjuster, like the stock
+    ear's. Its position is an estimate (`access_hole_yz`).
 - **Two tabs under the front.** These are this design's own, not stock. Each takes an
   M4 × 16 screw up into a boss under the carrier floor.
 
@@ -117,6 +121,8 @@ and check the lip and wings don't touch anything as it goes down into the pocket
   slide-in before the big print.
 - **New sheet, `diagrams/measure_stock_bezel.png`:** seven numbers off the stock bezel and
   headlight that replace the estimates.
+- **The wings are full side walls,** running back past the pods to just in front of the
+  arm and the pad, like the stock and KnightDriveTV ears.
 - The unused split-plate code is gone from `generate.py`.
 
 ## What changed in v5
