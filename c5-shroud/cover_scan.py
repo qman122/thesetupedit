@@ -1,12 +1,13 @@
 """Measure the owner's model of the C5 headlight covers and check the bezel against it.
 
-    python3 cover_scan.py /path/to/Covers.stl
+    python3 cover_scan.py /path/to/Covers.stl [/path/to/lighter_copy.stl]
 
 Covers.stl (the pair of pop-up doors, about 190 MB, not kept in this repo) is laid out with the
 skin facing +z, the front edge toward -y, and the two doors mirrored about x = 0. This script
 uses the +x door. It prints the measurements behind the clip_* parameters in generate.py, puts
 the door on the passenger bezel (front edge along the blade, lip on the blade), and draws
-diagrams/cover_fit.png.
+diagrams/cover_fit.png. Given a lighter (decimated) copy of the same file as well, it also
+writes the placed door for the 3D mockup (mockup/cover_*.json).
 """
 
 import os
@@ -36,7 +37,7 @@ def load_door(path):
     return M(m3d.Mesh(u.astype(np.float32), f.astype(np.uint32)))
 
 
-def main(path):
+def main(path, view_path=None):
     door = load_door(path)
     V = np.asarray(door.to_mesh().vert_properties)[:, :3]
     xs = np.arange(40.0, 302.0, 2.0)
@@ -78,6 +79,8 @@ def main(path):
     bez_local = g.shroud(P).transform(np.linalg.inv(np.vstack([F, [0, 0, 0, 1]]))[:3])
     ov = (front ^ bez_local).volume()
     print(f"bezel and door overlap: {ov:.1f} mm^3 (0 = no clash)")
+    if view_path:
+        export_view(view_path, A, F)
 
     # blade top against the lip, along the front
     gaps = lip - lip_c - (g.top_rise(P, u) - g.top_rise(P, uc))
@@ -120,5 +123,27 @@ def main(path):
     print("diagram ->", out)
 
 
+def export_view(view_path, A, F):
+    """Put the +x door of a lighter copy of Covers.stl where main() put the full one, in the
+    model frame, and write it for the 3D mockup (both sides)."""
+    import json
+    tm = trimesh.load(view_path, process=False)
+    f = tm.faces[(tm.vertices[tm.faces][:, :, 0] > 0).all(1)]
+    v = tm.vertices
+    Fm = np.vstack([np.asarray(F, float), [0, 0, 0, 1]])
+    Am = np.vstack([A, [0, 0, 0, 1]])
+    vm = (np.hstack([v, np.ones((len(v), 1))]) @ (Fm @ Am).T)[:, :3]
+    T = np.array([[-1, 0, 0], [0, 0, 1], [0, 1, 0]], float)          # viewer frame, as export_parts.py
+    here = os.path.dirname(os.path.abspath(__file__))
+    for side, sx in (("passenger", 1), ("driver", -1)):
+        w = vm * [sx, 1, 1]
+        tri = f[:, ::-1] if sx == 1 else f                            # A mirrors; so does the driver flip
+        p = np.round(w @ T.T * 20) / 20
+        with open(os.path.join(here, "mockup", f"cover_{side}.json"), "w") as fh:
+            json.dump({"p": [float(x) for x in p.ravel()], "i": [int(x) for x in tri.ravel()]}, fh,
+                      separators=(",", ":"))
+    print("mockup door ->", os.path.join(here, "mockup", "cover_*.json"), len(f), "tris")
+
+
 if __name__ == "__main__":
-    main(sys.argv[1] if len(sys.argv) > 1 else "Covers.stl")
+    main(sys.argv[1] if len(sys.argv) > 1 else "Covers.stl", sys.argv[2] if len(sys.argv) > 2 else None)

@@ -14,7 +14,8 @@ Step size options (6, 9, 12 and 15 mm) side by side: `diagrams/step_options.png`
 What to measure on the stock bezel and headlight: `diagrams/measure_stock_bezel.png`.
 How the pods sit on the bracket (carrier), with the bezel hidden: `diagrams/pods_on_bracket.png`.
 How the bezel attaches (tongue onto the door's clip, 4 screws): `diagrams/bezel_attach.png`.
-The bezel against the owner's model of the headlight doors: `diagrams/cover_fit.png`.
+The bezel against the owner's model of the headlight doors: `diagrams/cover_fit.png`, and
+rendered with the door on: `diagrams/with_door.png`.
 
 ## Measurements used
 
