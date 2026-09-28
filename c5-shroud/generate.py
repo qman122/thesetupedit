@@ -343,7 +343,7 @@ def shroud(p):
 
 
 def fit_test(p):
-    """Quick print: four windows with different clearances around the pod bezel.
+    """Quick print: four separate window frames with different clearances around the pod bezel.
     The number of notches on each window's top edge is its position in window_ladder."""
     cells = []
     for n, c in enumerate(p.window_ladder):
@@ -352,7 +352,7 @@ def fit_test(p):
         cell = rrect(cw, ch, 6) - rrect(ww, wh, p.pod_face_r + c)
         for k in range(n + 1):
             cell = cell - CS.square([3, 4]).translate([-cw / 2 + 6 + k * 6, ch / 2 - 3])
-        cx, cy = (n % 2) * (cw - 1), (n // 2) * (ch - 1)   # overlap 1 mm so it prints as one piece
+        cx, cy = (n % 2) * (cw + 8), (n // 2) * (ch + 8)   # 8 mm apart: four separate pieces
         cells.append(cell.translate([cx, cy]))
     return M.extrude(CS.batch_boolean(cells, m3d.OpType.Add), 2.0)
 

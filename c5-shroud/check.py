@@ -118,7 +118,7 @@ for f in sorted(glob.glob(os.path.join(here, "stl", "**", "*.stl"), recursive=Tr
     flat = tm.bounds[0][2] == 0 and tm.area_faces[(tm.face_normals[:, 2] < -0.99)
                                                   & (tm.triangles_center[:, 2] < 0.01)].sum() > 50
     parts = len(M(m3d.Mesh(tm.vertices.astype("float32"), tm.faces.astype("uint32"))).decompose())
-    multi = "spacer" in name or "fit_test_mount" in name      # printed as separate pieces on purpose
+    multi = "spacer" in name or "fit_test_mount" in name or "fit_test_window" in name      # printed as separate pieces on purpose
     ok = tm.is_watertight and tm.volume > 0 and flat and (parts == 1 or multi)
     check(f"{name}: watertight, flat on the bed, {parts} piece(s)", ok)
 
