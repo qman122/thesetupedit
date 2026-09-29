@@ -100,7 +100,7 @@ def rounded_poly(corners, radii, n_arc=8):
     return np.asarray(out)
 
 
-def section(T, B, Dr, Df, rb, R_lip, N=96):
+def section(T, B, Dr, Df, rb, R_lip, N=72):
     """The cross-section in (n, z): n = 0 at the outside face, negative inward. A thin C:
     rail on top (depth Dr), 3 mm front wall, floor at the bottom (depth Df), the front bottom
     corner rolled round R_lip, and a bead of radius rb on the rail's front edge. Returned as
@@ -127,6 +127,53 @@ def section(T, B, Dr, Df, rb, R_lip, N=96):
     b2 = top2 & (np.abs(dn2) < rb)
     z_[b2] = np.maximum(z_[b2], T + np.sqrt(np.maximum(rb * rb - dn2[b2] ** 2, 0)))
     return np.c_[n_, z_]
+
+
+def sew_runs(wires, cuts_):
+    """Loft the sections in runs (OpenCascade won't do the whole U in one go), as surfaces only,
+    then sew the runs together along the section curves they share, cap the two ear tips and
+    close it into one solid."""
+    from OCP.BRepOffsetAPI import BRepOffsetAPI_ThruSections
+    from OCP.BRepBuilderAPI import BRepBuilderAPI_Sewing, BRepBuilderAPI_MakeFace, BRepBuilderAPI_MakeSolid
+    from OCP.TopExp import TopExp_Explorer
+    from OCP.TopAbs import TopAbs_SHELL, TopAbs_FACE
+    from OCP.TopoDS import TopoDS
+    from OCP.ShapeFix import ShapeFix_Solid
+    sew = BRepBuilderAPI_Sewing(1e-3)
+
+    def run(a, b):                                       # loft a..b, halving it until it goes
+        lb = BRepOffsetAPI_ThruSections(False, False, 1e-4)
+        for w in wires[a:b + 1]:
+            lb.AddWire(w.wrapped)
+        try:
+            lb.Build()
+            shp = lb.Shape()
+        except Exception:
+            if b - a < 2:
+                raise
+            m = (a + b) // 2
+            run(a, m)
+            run(m, b)
+            return
+        print("  run", a, b)
+        ex = TopExp_Explorer(shp, TopAbs_FACE)
+        while ex.More():
+            sew.Add(ex.Current())
+            ex.Next()
+    for a, b in zip(cuts_, cuts_[1:]):
+        run(a, b)
+    for w in (wires[0], wires[-1]):                     # flat caps on the ear tips
+        sew.Add(BRepBuilderAPI_MakeFace(w.wrapped, True).Face())
+    sew.Perform()
+    ex = TopExp_Explorer(sew.SewedShape(), TopAbs_SHELL)
+    shell = TopoDS.Shell(ex.Current()) if hasattr(TopoDS, "Shell") else TopoDS.Shell_s(ex.Current())
+    ms = BRepBuilderAPI_MakeSolid(shell)
+    fix = ShapeFix_Solid(ms.Solid())
+    fix.Perform()
+    sol = Solid(fix.Solid())
+    if sol.volume < 0:
+        sol = Solid(sol.wrapped.Reversed())
+    return sol
 
 
 def build():
@@ -207,11 +254,7 @@ def build():
     # OpenCascade won't loft all the sections in one go round the whole U; loft it in runs that
     # share their end sections and join them (the runs meet on the same section curve)
     cuts_ = [0, 40, 80, 130, len(wires) - 1]
-    runs = [Solid.make_loft(wires[a:b + 1], ruled=False) for a, b in zip(cuts_, cuts_[1:])]
-    body = runs[0]
-    for r_ in runs[1:]:
-        body = body.fuse(r_).clean()
-    body = body.solids()[0] if hasattr(body, "solids") and len(body.solids()) == 1 else body
+    body = sew_runs(wires, cuts_)
     return body, path, rows, sides, (yth, ytf)
 
 
