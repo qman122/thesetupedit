@@ -12,8 +12,8 @@ The layout is the same as bezel_cad.py:
 - Toward the corners the rail and floor narrow to nothing, so the ears are the ends of the same
   sweep, flattened into 3 mm flanges with rounded tips.
 - Three rounded-rectangle windows (12 mm corners) are cut through the front, centred on the pods,
-  each with a 3 mm tunnel from the front back to just in front of its pod's face, so every
-  light is closed in all round. The posts are what's left between them.
+  each opening into a 3 mm tunnel that curves in to hug its pod and runs back past the pod's
+  face, so every light sits inside its tunnel. The posts are what's left between them.
 - The clip tongue is a thin tapered plate blended into the rail.
 - Every edge is rounded, 1 mm or more.
 
@@ -39,8 +39,12 @@ R_WIN_EDGE = 1.5    # round on the windows' edges
 R_EDGE = 1.0        # smallest round anywhere else
 R_OUT = 1.2         # the rail's and floor's outside corners
 BOSS_R = 7.5        # screw bosses on the ears
-TUNNEL_BACK = -0.5  # the tunnels round the lights end this far in front of each pod's face (its
-                    # corners are tighter than the windows', so the tunnel can't wrap round it)
+TUNNEL_BACK = 18.0  # the tunnels round the lights reach this far back past each pod's face (the
+                    # pod's bracket starts 24 mm back)
+TUNNEL_CLEAR = 1.0  # round the pod's body inside the tunnel
+FLARE_SIDE = 0.5    # the opening at the front: this much wider each side than the window,
+FLARE_TOP = 6.0     # and up to this much taller at the top (less where the rail comes lower)
+FLOOR_B = g.shell_levels(P)[2] - 0.15 - T_WALL   # the underside of the floor across the front
 RL_MAX = 4.0        # the rolled bottom lip's radius across the front
 BEAD_N = P.cover_edge_n + 2.5   # the bead's centre behind the front: under the middle of the door's lip
 TARGET_FACES = 600_000   # after simplifying (the refine step adds back what the 0.05 mm needs)
@@ -255,6 +259,18 @@ def feature_geometry(sw):
     z_bot = floor_top - T_WALL + RL_MAX + 0.1      # the sill sits just on top of the rolled lip
     z_topw = zc + wh / 2
     wins = [(px, py, (z_bot + z_topw) / 2, ww / 2, (z_topw - z_bot) / 2) for (px, py, _) in g.pod_poses(P)]
+    # the tunnels: behind each pod's face they hug the pod's body (TUNNEL_CLEAR all round, small
+    # corners); forward of it they curve out to the opening at the front, which is a little wider
+    # than the window and taller where the rail leaves room above it
+    tunnels = []
+    for (px, py, _) in g.pod_poses(P):
+        zb0, zb1 = P.pod_lift - TUNNEL_CLEAR, g.pod_top(P) + TUNNEL_CLEAR
+        back = (P.pod_body_w / 2 + TUNNEL_CLEAR, (zb1 - zb0) / 2, (zb0 + zb1) / 2, 3.0)
+        on = np.abs(sw.path[:, 0] - px) < ww / 2 + 4
+        rail_under = float(np.min(sw.T[on & (sw.path[:, 1] > -60)])) - T_WALL
+        top = max(z_topw, min(z_topw + FLARE_TOP, rail_under - T_WALL - 2.0))
+        front = (ww / 2 + FLARE_SIDE, (top - z_bot) / 2, (top + z_bot) / 2, WIN_R)
+        tunnels.append((px, py, back, front))
 
     F = g.front_frame(P)
     z_top = g.shell_levels(P)[0]
@@ -283,7 +299,7 @@ def feature_geometry(sw):
     for name in ("hood", "fender"):
         for h in sw.sides[name]["holes"]:
             holes.append((np.asarray(h["at"], float), np.asarray(h["normal"], float) / np.linalg.norm(h["normal"])))
-    return dict(wins=wins, tongue=tongue, slot=slot, groove=groove, tooth=tooth, lip_c=lip_c,
+    return dict(wins=wins, tunnels=tunnels, tongue=tongue, slot=slot, groove=groove, tooth=tooth, lip_c=lip_c,
                 holes=holes, door=door_lookup())
 
 
@@ -365,18 +381,32 @@ def apply_features(F, x, y, z, fg, pointwise=False, outside=None, door=None):
     above = -(Z - (z0 + w * slope)) / np.hypot(1, slope)   # negative above the plane
     tongue = diff_round(tongue, np.maximum(above, w - 7.0), R_EDGE)
     F = union_round(F, tongue, 1.2)
-    # a tunnel round each light: a 3 mm sleeve on the window's outline from the front wall back
-    # to just in front of the pod's face, so each light is closed in all round. Solid blocks are blended in first
-    # (neighbouring ones merge into the posts), then each opening is cut once, front to back.
+    # a tunnel round each light, from the opening at the front back past the pod's face so the
+    # light sits inside it. Its section curves in from the opening to hug the pod (a parabola in
+    # the depth, flat at the pod and turning out toward the front). Solid blocks are blended in
+    # first (neighbouring ones merge into the posts), then each opening is cut once, front to back.
+    def section_at(py, back, front):
+        t = Y - py + 0 * Z
+        s_ = np.where(t > 0, t / np.maximum(t - outside, 1e-3), 0.0)
+        e_ = np.clip(s_, 0, 1) ** 2
+        return [b_ + (f_ - b_) * e_ for b_, f_ in zip(back, front)]
     blocks = None
-    for (px, py, zc, hw, hh) in fg["wins"]:
-        blk = round_rect_xz(X - px, Z - zc, hw + T_WALL, hh + T_WALL, WIN_R + T_WALL)
+    for (px, py, back, front) in fg["tunnels"]:
+        hw, hh, zc_, r_ = section_at(py, back, front)
+        # flat along the bottom (a 3 mm wall), so the posts between the tunnels stand on the floor
+        z_lo = zc_ - hh - T_WALL
+        r_lo = 1.5 + 0 * r_
+        blk = round_box2(X - px, Z, -hw - T_WALL, hw + T_WALL, z_lo, zc_ + hh + T_WALL,
+                         r_ + T_WALL, r_lo, r_ + T_WALL, r_lo)
         blk = inter_round(blk, (py - TUNNEL_BACK) - Y + 0 * Z, R_EDGE)        # rounded back rim
         blk = inter_round(blk, outside + 1.5 + 0 * Z, R_EDGE)                 # ends inside the front wall
         blocks = blk if blocks is None else smin(blocks, blk, 2.0)
-    F = union_round(F, blocks, 2.0)
-    for (px, py, zc, hw, hh) in fg["wins"]:
-        w = inter_round(round_rect_xz(X - px, Z - zc, hw, hh, WIN_R), (py - TUNNEL_BACK - 2.0) - Y + 0 * Z, R_EDGE)
+    # the blend is 2 mm, shrinking to 0.5 mm near the floor's underside, which the tunnels' bottoms
+    # run just above (a bigger blend there would bulge it)
+    F = union_round(F, blocks, 0.5 + 1.5 * np.clip((Z - FLOOR_B - 1.5) / 1.5, 0, 1))
+    for (px, py, back, front) in fg["tunnels"]:
+        hw, hh, zc_, r_ = section_at(py, back, front)
+        w = inter_round(round_rect_xz(X - px, Z - zc_, hw, hh, r_), (py - TUNNEL_BACK - 2.0) - Y + 0 * Z, R_EDGE)
         F = diff_round(F, w, R_WIN_EDGE)
     # a round boss on each of the door's flange holes, from the flange out to the ear, blended in
     axes = []

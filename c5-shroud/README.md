@@ -95,15 +95,19 @@ car's frame, and `generate.py` builds every bezel print file from that.
 - **Ears.** Toward the corners the rail and floor narrow to nothing, so the ears are the ends
   of the same sweep, flattened to the 3 mm wall with rounded tips. The bead carries on round
   the corners as a rounded ridge on the wall's top.
-- **Windows and tunnels.** Three rounded rectangles with 12 mm corners, centred on the
-  pods' lenses. Each is the pod face plus 2 mm each side and 1.6 mm at the top. Its sill sits
-  on top of the rolled lip, 0.65 mm below the pod's face.
-  - Each window runs back as a 3 mm-walled tunnel to 0.5 mm in front of its pod's face, so
-    every light is closed in all round.
-  - The tunnel stops short of the face because the face's corners are tighter than the
-    tunnel's 12 mm ones.
-  - Neighbouring tunnels merge into solid posts, and the tunnels blend into the floor and
-    front wall with 2 mm fillets.
+- **Windows and tunnels.** Each light sits inside its own tunnel.
+  - **The opening at the front:** rounded, with 12 mm corners. It's 0.5 mm wider each side
+    than the pod face plus 2 mm, and up to 6 mm taller at the top where the rail leaves room.
+    That's about 6 mm on the hood-side window, 3 mm in the middle and none on the fender side.
+    Its sill sits on top of the rolled lip.
+  - **The taper:** from the opening, the tunnel curves in (a parabola in depth) to hug the
+    pod: 1 mm clear of the pod's body, with 3 mm corners.
+  - **Behind the face:** it runs 18 mm back past the pod's face (`TUNNEL_BACK`), stopping
+    6 mm short of the pod's bracket. The pods can still slide 10 mm back.
+  - **Walls:** 3 mm. Neighbouring tunnels merge into posts that thicken going back, and the
+    tunnels' flat bottoms sit on the floor.
+  - **Blend into the shell:** 2 mm, shrinking to 0.5 mm near the floor's underside so it
+    stays flat.
 - **Clip tongue.** A thin plate, tapered from 40 mm and slotted along its middle, blended into
   the back of the rail. The clip's cross bar drops into a groove across it, and a chamfered
   tooth catches the bar.
