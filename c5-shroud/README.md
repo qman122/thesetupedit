@@ -75,34 +75,27 @@ reference photo. It's modelled in one piece and split in two for printing (see b
 - **From above it's a U.**
   - The front follows the nose's curve, which matches the door's front edge to within
     1.4 mm.
-  - At each end it turns back round a 30 mm radius (`corner_r`) into a long, thin, flat ear.
-- **Ears fill the imprint the stock ear leaves on the door.**
-  - Each door side flange has a raised band along its top. Below it, the flange is recessed
-    3–5 mm round the screw holes, and that recess is where the stock ear sits
-    (`diagrams/ear_imprint.png`).
-- **The top edge follows the door's edge all the way round.** From the start of each corner,
-  back along the ear to its tip, the top runs 0.5 mm under the door's edge (`rim_gap`),
-  so nothing stands above the door and there's no gap under it.
+  - At each end it turns back round a 30 mm radius (`corner_r`) into a flat side.
+- **Each side is one flat wall, from the corner back to the tip.** No separate ear and no
+  seam.
+  - It lies against the door's side: a flat vertical plane fitted to the door's side flange,
+    set just far enough out to clear everything on it (up to 3.3 mm on the hood side, where
+    the screw tabs stand out, and 2.3 mm on the fender side), plus 0.8 mm (`ear_gap`).
+  - `cover_scan.py` fits that plane to the owner's model of the doors and saves it in
+    `cover_sides.json`, with the door's edge.
+- **The top edge follows the door's edge all the way round.** From the start of each corner
+  back to the tip, the top runs 0.5 mm under the door's edge (`rim_gap`), so nothing stands
+  above the door and there's no gap under it.
   - The door's edge is the lowest line of its outer skin, measured round the corner and
-    along each side. The screw pockets sit further in, so they don't pull it down.
+    along each side.
   - Only the front half of each corner (`rim_fade`) is allowed higher, where the blade and
     bead come round from the front.
+  - At the hood end it follows the door's edge down to a point at the tip.
 - **The bottom edge is one sweep:** level round the corner, then a straight line back to the
-  ear's tip, rounded into the level.
-- **Ears fill the imprint the stock ear leaves on the door.**
-  - Each door side flange has a raised band along its top. Below it, the flange is recessed
-    3–5 mm round the screw holes, and that recess is where the stock ear sits
-    (`diagrams/ear_imprint.png`).
-  - Its inside follows a smooth fit of the recessed surface, curved rather than flat,
-    clearing every point of the door it covers, including the raised rims round the screw
-    pockets. It turns in from the straight side over 30 mm (`ear_blend`), so there's no kink.
-  - It runs back to the imprint's end and down to its lowest point. On the fender side it
-    sweeps down and back to the flange's bottom lobe; on the hood side it covers both sets
-    of screw tabs.
-  - `cover_scan.py` measures the door's edge, the band and the recess from the owner's
-    model of the doors and saves them in `cover_sides.json`.
+  tip, rounded into the level.
+- **Screw holes:**
   - There's a 6.5 mm hole at every hole in the flange, with a boss behind it reaching the
-    flange. The stock ear screws go through the ear and the flange into the headlight, as
+    flange. The stock ear screws go through the side and the flange into the headlight, as
     in the owner's photo of a stock headlight.
   - Hood end: the front and rear round holes and the slot between them. Fender end: the
     slot and the round hole.

@@ -268,7 +268,17 @@ def find_sides(door_m):
                 rim.append([round(float(q[1]), 2), round(float(v[m, 2][al_m > al_m.max() - 1.5].min()), 2)])
         rim.sort(key=lambda r_: -r_[0])
         print(f"{name} door edge: {len(rim)} points, y {rim[0][0]:.0f}..{rim[-1][0]:.0f}")
-        out[name] = {"holes": holes, "imprint": imprint, "rim": rim, "y": ys.tolist(), "z": zs.tolist(),
+        # the flat side: a vertical plane |x| = a + b y fitted to the outward faces of the flange
+        # under the door's edge, and how far anything under the edge stands out past it
+        ra = np.asarray(rim)[::-1]
+        under = (c[:, 0] * sx > 95) & (c[:, 1] < 0) & (c[:, 1] > y_end - 5) & (c[:, 2] < np.interp(c[:, 1], ra[:, 0], ra[:, 1]) - 0.3)
+        of = under & (n[:, 0] * sx > 0.5)
+        kp = np.linalg.lstsq(np.c_[np.ones(of.sum()), c[of, 1]], c[of, 0] * sx, rcond=None)[0]
+        stand = float(np.max(c[under, 0] * sx - (kp[0] + kp[1] * c[under, 1])))
+        print(f"{name} side plane: |x| = {kp[0]:.1f} {kp[1]:+.4f} y, flange stands out up to {stand:.1f} mm past it")
+        out[name] = {"holes": holes, "imprint": imprint, "rim": rim,
+                     "plane": [round(float(kp[0]), 3), round(float(kp[1]), 5)], "plane_clear": round(stand, 2),
+                     "y": ys.tolist(), "z": zs.tolist(),
                      "x": [[None if np.isnan(q_) else round(float(q_), 1) for q_ in row] for row in X]}
     # the door's underside over the front of the bezel: the lowest downward-facing door surface
     # in each 2 mm cell, so the bezel's top can be trimmed to clear it
