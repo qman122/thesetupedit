@@ -223,6 +223,15 @@ arm_x = pts["arm hole 4"][0]
 open_drv = overlap(drv, g.cyl_y(P.mount_hole_d - 1, y_back - 1, y_back + t + 1, -arm_x, pts["arm hole 4"][1]))
 check("driver carrier has the arm slots on the other side", open_drv < 1e-6)
 
+# 8a. the driver side is the mirror image, and everything still fits there
+d_car, d_bez = g.mirror_x(carrier), g.mirror_x(shroud)
+d_pods = g.mirror_x(g.pod_dummy(P))
+check("driver side: bezel, carrier and pods are the passenger ones mirrored, same size",
+      abs(d_bez.volume() - shroud.volume()) < 1 and abs(d_car.volume() - carrier.volume()) < 1
+      and abs(d_bez.bounding_box()[0] + shroud.bounding_box()[3]) < 1e-3)
+check("driver side: the bezel clears the carrier and the pods",
+      overlap(d_bez, d_car) < 1e-3 and overlap(d_bez, d_pods) < 1e-3)
+
 # 9. every exported STL is one watertight solid lying flat on the bed
 here = os.path.dirname(os.path.abspath(__file__))
 for f in sorted(glob.glob(os.path.join(here, "stl", "**", "*.stl"), recursive=True)):
@@ -231,8 +240,9 @@ for f in sorted(glob.glob(os.path.join(here, "stl", "**", "*.stl"), recursive=Tr
     flat = tm.bounds[0][2] == 0 and tm.area_faces[(tm.face_normals[:, 2] < -0.99)
                                                   & (tm.triangles_center[:, 2] < 0.01)].sum() > 50
     parts = len(M(m3d.Mesh(tm.vertices.astype("float32"), tm.faces.astype("uint32"))).decompose())
-    multi = "spacer" in name or "fit_test_mount" in name or "fit_test_window" in name      # printed as separate pieces on purpose
-    curved = "bezel_" in name or "fit_test_blade" in name   # the top follows the door and carries the bead: supports under it
+    multi = ("spacer" in name or "fit_test_mount" in name or "fit_test_window" in name      # printed as separate pieces on purpose
+             or "assembled" in name)                                                            # (and the fit-check assemblies)
+    curved = "bezel_" in name or "fit_test_blade" in name or "assembled" in name   # the top follows the door: supports under it
     ok = tm.is_watertight and tm.volume > 0 and tm.bounds[0][2] == 0 and (flat or curved) and (parts == 1 or multi)
     check(f"{name}: watertight, {'on' if curved else 'flat on'} the bed, {parts} piece(s)", ok)
 

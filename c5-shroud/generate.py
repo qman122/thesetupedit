@@ -1047,30 +1047,17 @@ def shell_parts(p):
     front = M.batch_boolean([front, lip, bead], m3d.OpType.Add)
     front = front - bow_warp(p, groove, 1.0).transform(F)
 
-    # --- windows: one rounded rectangle per pod; the posts are what's left between them. The
-    # posts sit on the gaps between the pods, a little back from the front edge ---
-    poses = pod_poses(p)
-    gaps = []
-    for (xa, ya, _), (xb, yb, _) in zip(poses, poses[1:]):
-        xg = (xa + xb) / 2
-        u0 = float(front_uv(p, xg, 0.0))
-        yf_ = float(_fpt(F, u0, float(bow(p, u0)))[1])
-        gaps.append(float(front_uv(p, xg, yf_ - p.post_setback - p.post_depth / 2)))
-    edges = []
-    for i in range(len(poses)):                          # the end windows run out into the corners
-        lo_ = gaps[i - 1] + p.post_w / 2 if i > 0 else ua - p.window_wrap
-        hi_ = gaps[i] - p.post_w / 2 if i < len(gaps) else ub + p.window_wrap
-        edges.append((lo_, hi_))
-    hgt = z_bu - z_wb - 0.1
-    zc = (z_bu + z_wb) / 2
+    # --- windows: one per pod, the pod's face plus window_clear_x each side and window_clear_y
+    # top and bottom (the 1-notch test frame), corners rounded to match. Cut straight ahead
+    # from each pod, the way it faces; the posts are what's left between them ---
+    ww, wh = p.pod_face_w + 2 * p.window_clear_x, p.pod_face_h + 2 * p.window_clear_y
+    wr = p.pod_face_r + min(p.window_clear_x, p.window_clear_y)
     wins = []
-    for (lo_, hi_) in edges:
-        cs = rrect(hi_ - lo_, hgt, p.window_r).translate([(lo_ + hi_) / 2, zc])
-        wins.append(M.extrude(cs, 70).transform([[1, 0, 0, 0], [0, 0, 1, -70 - p.post_setback], [0, 1, 0, 0]]))
-    lo_, hi_ = edges[0][0] + 0.37, edges[-1][1] - 0.37   # in front of the posts: one opening
-    cs = rrect(hi_ - lo_, hgt - 0.3, p.window_r).translate([(lo_ + hi_) / 2, zc])
-    wins.append(M.extrude(cs, 20 + p.post_setback + 0.3).transform([[1, 0, 0, 0], [0, 0, 1, -p.post_setback - 0.3], [0, 1, 0, 0]]))
-    windows = M.batch_boolean(wins, m3d.OpType.Add).transform(F)
+    for (px, py, yaw) in pod_poses(p):
+        cs = rrect(ww, wh, wr).translate([px, pod_zc(p)])
+        # from just in front of the pod's face to well past the front (x, z plane pushed along +y)
+        wins.append(M.extrude(cs, 120.0).transform([[1, 0, 0, 0], [0, 0, 1, py + 0.5], [0, 1, 0, 0]]))
+    windows = M.batch_boolean(wins, m3d.OpType.Add)
 
     front = lift_top(p, front)
     windows = lift_top(p, windows)
@@ -1559,5 +1546,12 @@ if __name__ == "__main__":
     save(fit_test_mount(P), os.path.join(out, "fit_test_mount_passenger.stl"))
     save(mirror_x(fit_test_mount(P)), os.path.join(out, "fit_test_mount_driver.stl"))
     save(spacers(P), os.path.join(out, "spacer_washers.stl"))
+    # everything together where it goes on the car, one per side, to check the fit (not for
+    # printing): carrier, bezel, and stand-ins for the three pods and their lenses
+    os.makedirs(os.path.join(out, "assembled"), exist_ok=True)
+    pods_, lens_ = pod_dummy(P), pod_lenses(P)
+    for side, f_ in (("passenger", lambda m_: m_), ("driver", mirror_x)):
+        asm = M.compose([f_(c), f_(s), f_(pods_), f_(lens_)])
+        save(asm, os.path.join(out, "assembled", f"assembly_{side}.stl"))
 
     preview(P, os.path.join(here, "preview", "assembly.png"))
