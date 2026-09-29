@@ -196,7 +196,7 @@ def sew_runs(wires, cuts_):
     return sol
 
 
-def build():
+def build(skip_loft=False):
     path, sides, (yth, ytf) = plan_path()
     n = len(path)
     tang = np.gradient(path, axis=0)
@@ -276,6 +276,8 @@ def build():
     # one loft through every section. OpenCascade's compatibility pass re-aligns the sections'
     # start points and twists the surface round the corners, so it's off: the sections already
     # correspond point for point
+    if skip_loft:
+        return None, path, rows, sides, (yth, ytf)
     from OCP.BRepOffsetAPI import BRepOffsetAPI_ThruSections
     lb = BRepOffsetAPI_ThruSections(True, False, 1e-4)
     lb.CheckCompatibility(False)
@@ -330,6 +332,7 @@ def features(body, sides, tips):
     groove = extrude(make_face(Polyline(*[(float(a), float(b), lip_c - P.groove_depth) for a, b in gr], close=True)), P.groove_depth + 2)
     tongue = tongue - slot - groove
     body = body.fuse(tongue).clean()
+    print("  tongue", round(body.volume), flush=True)
 
     # screw holes on every hole in the door's flange, and pockets clear of the flange
     cutters = list(wins)
@@ -370,9 +373,9 @@ def features(body, sides, tips):
                 cutters.append(rounded_bar(inner, reach, ya, yb, za, zb, 1.0, "x"))
             else:
                 cutters.append(rounded_bar(-reach, -inner, ya, yb, za, zb, 1.0, "x"))
-    for c_ in cutters:
-        body = body - c_
-    body = body.clean()
+    print("  cutting", len(cutters), flush=True)
+    body = body.cut(*cutters).clean()
+    print("  cut", round(body.volume), flush=True)
     # fillets: the window openings' edges, then whatever else will take it
     for (px, py, _) in g.pod_poses(P):
         box_ = (px - ww / 2 - 2, px + ww / 2 + 2, zc - wh / 2 - 2, zc + wh / 2 + 2)
@@ -393,11 +396,17 @@ WIN_R = 12.0
 
 if __name__ == "__main__":
     import time
+    from build123d import export_brep, import_brep
     t0 = time.time()
-    body, path, rows, sides, tips = build()
-    print("loft", round(time.time() - t0, 1), "s, valid", body.is_valid, "volume", round(body.volume, 1))
+    cache = os.path.join("/tmp/claude-0", "bezel_loft.brep")
+    body, path, rows, sides, tips = build(skip_loft=os.path.exists(cache))
+    if os.path.exists(cache):
+        body = import_brep(cache)
+    else:
+        export_brep(body, cache)
+    print("loft", round(time.time() - t0, 1), "s, volume", round(body.volume, 1), flush=True)
     body = features(body, sides, tips)
-    print("features", round(time.time() - t0, 1), "s, valid", body.is_valid, "volume", round(body.volume, 1))
+    print("features", round(time.time() - t0, 1), "s, valid", body.is_valid, "volume", round(body.volume, 1), flush=True)
     os.makedirs(os.path.join(HERE, "stl", "cad"), exist_ok=True)
     export_stl(body, os.path.join(HERE, "stl", "cad", "bezel_cad_passenger.stl"), tolerance=0.05, angular_tolerance=0.1)
-    print("exported", round(time.time() - t0, 1), "s")
+    print("exported", round(time.time() - t0, 1), "s", flush=True)
