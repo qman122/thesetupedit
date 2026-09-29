@@ -100,33 +100,53 @@ def rounded_poly(corners, radii, n_arc=8):
     return np.asarray(out)
 
 
-def section(T, B, Dr, Df, rb, R_lip, N=72):
+def _corner_arc(p0, p1, p2, r, n_arc):
+    """Points of the round of radius r at corner p1 (between p0 and p2), and its two ends."""
+    p0, p1, p2 = map(np.asarray, (p0, p1, p2))
+    a, b = p0 - p1, p2 - p1
+    la, lb = np.linalg.norm(a), np.linalg.norm(b)
+    a, b = a / la, b / lb
+    ang = math.acos(np.clip(a @ b, -1, 1))
+    t = min(r / math.tan(ang / 2), 0.45 * la, 0.45 * lb)
+    r = t * math.tan(ang / 2)
+    s0, s1 = p1 + a * t, p1 + b * t
+    bis = (a + b) / np.linalg.norm(a + b)
+    c = p1 + bis * (r / math.sin(ang / 2))
+    a0 = math.atan2(*(s0 - c)[::-1])
+    a1 = math.atan2(*(s1 - c)[::-1])
+    da = (a1 - a0 + math.pi) % (2 * math.pi) - math.pi
+    return [c + r * np.array([math.cos(a0 + da * k / n_arc), math.sin(a0 + da * k / n_arc)]) for k in range(n_arc + 1)]
+
+
+def section(T, B, Dr, Df, rb, R_lip, n_arc=6, n_edge=4, n_bead=10):
     """The cross-section in (n, z): n = 0 at the outside face, negative inward. A thin C:
     rail on top (depth Dr), 3 mm front wall, floor at the bottom (depth Df), the front bottom
-    corner rolled round R_lip, and a bead of radius rb on the rail's front edge. Returned as
-    N points evenly spaced round it, starting at the back of the rail's underside."""
+    corner rolled round R_lip, and a bead of radius rb along the rail's front edge. Every
+    corner and edge always gets the same number of points, so from one section to the next each
+    point stays on the same feature and the loft can't twist."""
     t = T_WALL
-    corners = [(-Dr, T - t), (-t, T - t), (-t, B + t), (-Df, B + t), (-Df, B), (0.0, B), (0.0, T), (-Dr, T)]
-    radii = [0.9, 1.5, 1.5, 0.9, 0.9, R_lip, 1.2, 0.9]
-    pl = rounded_poly(corners, radii)
-    # bead on top, just behind the front edge
-    nc = -(rb + 0.3)
-    top = np.abs(pl[:, 1] - T) < 1e-6
-    dn = pl[:, 0] - nc
-    bump = top & (np.abs(dn) < rb)
-    pl[bump, 1] = T + np.sqrt(np.maximum(rb * rb - dn[bump] ** 2, 0))
-    # insert extra points over the bead so it's sampled properly
-    d = np.r_[0, np.cumsum(np.linalg.norm(np.diff(np.vstack([pl, pl[:1]]), axis=0), axis=1))]
-    s = np.linspace(0, d[-1], N, endpoint=False)
-    closed = np.vstack([pl, pl[:1]])
-    n_ = np.interp(s, d, closed[:, 0])
-    z_ = np.interp(s, d, closed[:, 1])
-    # re-apply the bead exactly on the resampled points
-    top2 = np.abs(z_ - T) < 0.3
-    dn2 = n_ - nc
-    b2 = top2 & (np.abs(dn2) < rb)
-    z_[b2] = np.maximum(z_[b2], T + np.sqrt(np.maximum(rb * rb - dn2[b2] ** 2, 0)))
-    return np.c_[n_, z_]
+    C = [(-Dr, T - t), (-t, T - t), (-t, B + t), (-Df, B + t), (-Df, B), (0.0, B), (0.0, T), (-Dr, T)]
+    R = [0.9, 1.5, 1.5, 0.9, 0.9, R_lip, 1.2, 0.9]
+    m = len(C)
+    arcs = [_corner_arc(C[i - 1], C[i], C[(i + 1) % m], R[i], n_arc) for i in range(m)]
+    pts = []
+    for i in range(m):
+        pts += arcs[i]
+        e0, e1 = np.asarray(arcs[i][-1]), np.asarray(arcs[(i + 1) % m][0])
+        if i == 6:                                       # the rail's top, G -> H: the bead sits on it
+            nc = e0[0] - rb - 0.3
+            b0, b1 = np.array([nc + rb, T]), np.array([nc - rb, T])
+            for k in range(1, 3):
+                pts.append(e0 + (b0 - e0) * k / 3)
+            for k in range(n_bead + 1):
+                th = math.pi * k / n_bead
+                pts.append(np.array([nc + rb * math.cos(th), T + rb * math.sin(th)]))
+            for k in range(1, n_edge):
+                pts.append(b1 + (e1 - b1) * k / n_edge)
+        else:
+            for k in range(1, n_edge):
+                pts.append(e0 + (e1 - e0) * k / n_edge)
+    return np.asarray(pts)
 
 
 def sew_runs(wires, cuts_):
@@ -253,8 +273,18 @@ def build():
         wires.append(Wire([Spline(pts3 + [pts3[0]], periodic=False)]) if False else Wire([Edge.make_spline(pts3, periodic=True)]))
     # OpenCascade won't loft all the sections in one go round the whole U; loft it in runs that
     # share their end sections and join them (the runs meet on the same section curve)
-    cuts_ = [0, 40, 80, 130, len(wires) - 1]
-    body = sew_runs(wires, cuts_)
+    # one loft through every section. OpenCascade's compatibility pass re-aligns the sections'
+    # start points and twists the surface round the corners, so it's off: the sections already
+    # correspond point for point
+    from OCP.BRepOffsetAPI import BRepOffsetAPI_ThruSections
+    lb = BRepOffsetAPI_ThruSections(True, False, 1e-4)
+    lb.CheckCompatibility(False)
+    for w in wires:
+        lb.AddWire(w.wrapped)
+    lb.Build()
+    body = Solid(lb.Shape())
+    if body.volume < 0:
+        body = Solid(body.wrapped.Reversed())
     return body, path, rows, sides, (yth, ytf)
 
 
