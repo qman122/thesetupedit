@@ -45,6 +45,10 @@ class Params:
     # KnightDriveTV bracket). pod_arc_deg can also turn the outer pods; 0 keeps them parallel.
     pod_step: float = 12.0        # each pod sits this far behind the one on its hood side
     pod_arc_deg: float = 0.0
+    sleeve_t: float = 2.0         # the sleeve round each window, from the front back to its pod
+    sleeve_flare: float = 3.0     # each window opens out this much at the front (top and outer ends), with a round curve
+    sleeve_flare_bottom: float = 2.5
+    sleeve_flare_between: float = 0.5   # ...and only this much between pods, so the posts stay
     pod_face_back: float = 3.0    # each pod comes forward until its face is this far behind the bezel's front (None: leave them on the layout)
     pod_bolt_d: float = 8.6       # slot width for the bracket stud (about 8 mm / 5/16 in)
     pod_stud_d: float = 8.0       # stud diameter, from the drawing
@@ -1083,13 +1087,45 @@ def shell_parts(p):
     # from each pod, the way it faces; the posts are what's left between them ---
     ww, wh = p.pod_face_w + 2 * p.window_clear_x, p.pod_face_h + 2 * p.window_clear_y
     wr = p.pod_face_r + min(p.window_clear_x, p.window_clear_y)
-    wins = []
-    for (px, py, yaw) in pod_poses(p):
-        cs = rrect(ww, wh, wr).translate([px, pod_zc(p)])
-        # from just behind the pod's face to well past the front
-        wins.append(M.extrude(cs, 120.0).transform([[1, 0, 0, 0], [0, 0, 1, py - 0.5], [0, 1, 0, 0]]))
+    fx_ = np.arange(-170.0, 171.0, 2.0)
+    fy_ = np.array([bezel_front_y(p, x_) for x_ in fx_])
+    front_at = lambda x_: np.interp(x_, fx_, fy_)
+    zc_ = pod_zc(p)
+    poses_ = pod_poses(p)
+
+    def flare(d, E):                                     # quarter-round: E at the front, 0 by E back
+        q = 1 - np.clip(d / E, 0, 1)
+        return E * (1 - np.sqrt(np.clip(1 - q * q, 0, 1)))
+
+    def flared(i, px, w, h, r, y_of):
+        """A rounded rectangle round pod i, carried from its face to the front, opening out
+        with a round curve at the front: sleeve_flare at the top and outer ends, less at the
+        bottom, and just a little between neighbouring pods so the posts stay."""
+        e_l = p.sleeve_flare if i == 0 else p.sleeve_flare_between
+        e_r = p.sleeve_flare if i == len(poses_) - 1 else p.sleeve_flare_between
+        pr = M.extrude(rrect(w, h, r).translate([px, zc_]), 1.0).refine_to_length(1.5)
+
+        def fw(v):
+            out = np.empty_like(v)
+            x, z = v[:, 0], v[:, 1]
+            y = y_of(x, 1.0 - v[:, 2])                  # (reversed, or the solid comes out inside out)
+            d = front_at(x) - y
+            ex = np.where(x > px, flare(d, e_r), flare(d, e_l))
+            ez = np.where(z > zc_, flare(d, p.sleeve_flare), flare(d, p.sleeve_flare_bottom))
+            out[:, 0] = px + (x - px) * (w / 2 + ex) / (w / 2)
+            out[:, 2] = zc_ + (z - zc_) * (h / 2 + ez) / (h / 2)
+            out[:, 1] = y
+            return out
+        return pr.warp_batch(fw).transform([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 1, 0]])
+    wins, sleeves = [], []
+    for i, (px, py, yaw) in enumerate(poses_):
+        # the window: from just behind the pod's face out past the front
+        wins.append(flared(i, px, ww, wh, wr, lambda x, t, py=py: py - 0.5 + t * 60.0 + 0 * x))
+        # a sleeve round it from the front back to the pod's face, so it meets the pod
+        sleeves.append(flared(i, px, ww + 2 * p.sleeve_t, wh + 2 * p.sleeve_t, wr + p.sleeve_t,
+                              lambda x, t, py=py: py + 0.3 + t * (front_at(x) - 0.05 - py - 0.3)))
         # behind the face the pod's body passes through: its own shape, the same gaps round it
-        body = rrect(p.pod_body_w + 2 * p.window_clear_x, p.pod_body_h + 2 * p.window_clear_y, 1.0).translate([px, pod_zc(p)])
+        body = rrect(p.pod_body_w + 2 * p.window_clear_x, p.pod_body_h + 2 * p.window_clear_y, 1.0).translate([px, zc_])
         wins.append(M.extrude(body, 80.0).transform([[1, 0, 0, 0], [0, 0, 1, py - 80.0 - 0.2], [0, 1, 0, 0]]))
     windows = M.batch_boolean(wins, m3d.OpType.Add)
 
@@ -1271,7 +1307,7 @@ def shell_parts(p):
             if ln > 0.6:
                 bosses.append(_along(M.cylinder(ln - 0.3, 7, 7, 32), nrm, at + 0.3 * nrm))
             holes.append(_along(M.cylinder(60, p.ear_hole_d / 2, p.ear_hole_d / 2, 24).translate([0, 0, -30]), nrm, at))
-    body = M.batch_boolean([front] + walls, m3d.OpType.Add)
+    body = M.batch_boolean([front] + walls + sleeves, m3d.OpType.Add)
     body = body - M.batch_boolean(pockets, m3d.OpType.Add)
     body = M.batch_boolean([body] + bosses, m3d.OpType.Add)
     body = body - M.batch_boolean(trims, m3d.OpType.Add)
