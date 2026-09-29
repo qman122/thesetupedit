@@ -78,75 +78,68 @@ At 18 mm it hits the arm's nuts.
 
 ## The bezel
 
-One continuous shell, 3 mm thick everywhere and open at the back, modelled on the owner's
-reference photo. It's modelled in one piece and split in two for printing (see below).
+One continuous shell with a 3 mm wall, open at the back, shaped like the owner's reference
+photo (`preview/bezel_vs_reference.png` shows the two side by side). It's modelled in one
+piece and split in two for printing (see below).
 
-- **From above it's a U.**
-  - The front follows the nose's curve, which matches the door's front edge to within
-    1.4 mm.
-  - At each end it turns back round a 30 mm radius (`corner_r`) into a flat side.
-- **Nothing shows past the door from above.** The whole bezel is clipped to the door's outline
-  seen from above, 0.2 mm inside it (`outline_gap`), front included.
-- **Each side is one wall, from the corner back to the tip.** No separate ear and no seam.
-  - Its outside follows the door's outline from above, just inside it.
-  - Where the door's side flange and screw tabs come out toward it, the inside of the wall
-    is pocketed 0.8 mm clear of them (`ear_gap`), leaving at least 1 mm (`min_wall`).
-  - `cover_scan.py` measures the outline, the flange (on a 1 mm grid) and the door's edge
-    from the owner's model of the doors and saves them in `cover_sides.json`.
-- **The top edge follows the door's edge all the way round.** From the start of each corner
-  back to the tip, the top runs 0.05 mm under the door's edge (`rim_gap`), so nothing stands
-  above the door and there's no gap under it.
-  - Round the corners the door's lip sits up to 15 mm inside the wall. A 2.4 mm shelf
-    (`shelf_t`) runs along the inside of the wall's top, just under the lip, to 2 mm past it
-    (`shelf_under`), so you can't see in under the door's edge. It narrows wherever the
-    door's flange hangs down beside the wall.
-  - The door's edge is the lowest line of its outer skin, measured round the corner and
-    along each side.
-  - It blends in from the front over the first 25 mm of each corner, so there's no step
-    where the corner starts.
-- **The tip is where the door's edge comes lowest** at the back of each side. The bottom edge
-  runs level round the corner, then in a straight line back to the tip, following the line
-  of the door's bottom edge.
-- **Screw holes:**
-  - There's a 6.5 mm hole at every hole in the flange, with a boss behind it reaching the
-    flange. The stock ear screws go through the side and the flange into the headlight, as
-    in the owner's photo of a stock headlight.
-  - Hood end: the front and rear round holes and the slot between them. Fender end: the
-    slot and the round hole.
-- **Three windows,** one rounded rectangle per pod with 15 mm corners (`window_r`).
-  - The outer two run round into the corners.
-  - The posts are what's left between the windows: 6 mm wide on the gaps between the
-    pods, flaring into the floor and the blade.
-  - They stand 4 mm back from the front edge (`post_setback`) so every lens still sees
-    10° either side of straight ahead.
-- **Below the windows:** just a rounded 7 mm lip (`lip_r`) rolling back into a shallow
-  22 mm floor. No apron.
-- **Top:** a flat 3 mm blade, 38 mm (1.5 in) deep, matching the stock bezel as measured (S4).
-  - A raised bead runs along its front edge (`bead_r`). The door's lip closes down behind
-    it.
-  - The blade follows the lip's height (up to about 9 mm higher at the hood end).
-  - It's trimmed wherever the door's underside comes lower (`door_clearance`, measured
-    from the door model), so the door touches only the blade.
-- **Clip tongue:** a flat tongue, tapered from 40 mm and slotted along its middle, runs
-  back from the middle of the blade.
-  - The clip's cross bar drops into a groove across it.
-  - A chamfered tooth behind the groove catches the bar, and the clip's legs sit either
-    side of it.
+**How it's built (`bezel_sdf.py`).** The bezel is a signed-distance model, not stacked
+slices or unions of blocks, and it's meshed with marching cubes. Run
+`python3 bezel_sdf.py` (about 3 minutes); it writes `stl/cad/bezel_cad_passenger.stl` in the
+car's frame, and `generate.py` builds every bezel print file from that.
+- **One path, one section.** One smooth spline runs across the front, round the 30 mm
+  corners (`corner_r`) and back along each ear. One cross-section is swept along it:
+  - a rolled bottom lip (4 mm radius across the front),
+  - a shallow 22 mm floor,
+  - the 3 mm front wall,
+  - a thin 38 mm top rail (S4) with a bead along its front edge.
+- **Ears.** Toward the corners the rail and floor narrow to nothing, so the ears are the ends
+  of the same sweep, flattened to the 3 mm wall with rounded tips. The bead carries on round
+  the corners as a rounded ridge on the wall's top.
+- **Windows.** Three rounded rectangles with 12 mm corners are cut through the front wall
+  only, centred on the pods' lenses. Each is the pod face plus 2 mm each side and 1.6 mm at
+  the top. Its sill sits on top of the rolled lip, 0.65 mm below the pod's face. The posts
+  are what's left between the windows.
+- **Clip tongue.** A thin plate, tapered from 40 mm and slotted along its middle, blended into
+  the back of the rail. The clip's cross bar drops into a groove across it, and a chamfered
+  tooth catches the bar.
+- **Every edge is rounded, 1 mm or more.** Each round is part of the shape itself: the
+  section's corners, the windows' edges (1.5 mm), the holes, the tongue and the ear tips.
+- **Mesh accuracy.** Each vertex is snapped onto the exact surface. Anywhere a triangle
+  strays more than 0.025 mm from it, the triangle is split until it doesn't. Every triangle
+  is within 0.05 mm of the true surface (the worst measured is 0.036 mm). The mesh is one
+  closed body with no self-intersections.
+
+**Fit to the headlight door (measured from the owner's model, `cover_scan.py`):**
+- **From above it's a U.** The front follows the nose's curve, which matches the door's
+  front edge to within 1.4 mm.
+- **Nothing shows past the door from above.** The path is the door's outline from above,
+  0.2 mm inside it (`outline_gap`).
+- **The top follows the door.** Across the front, the bead's top sits 0.1 mm under the
+  door's lip, so the lip rests on the bead. From each corner back to the tip, the top runs
+  just under the door's edge.
+- **The ears' inside follows the door.** Wherever the door comes within the wall, the
+  inside is cut 0.3 mm clear of it (`DOOR_GAP`). The cut uses the door's distance field,
+  sampled once from the door model into `door_sdf.npz`. To resample it:
+  `DOOR_MODEL=<cover_scan.py SAVE_DOOR output> python3 bezel_sdf.py`.
+- **Screw holes.** There's a 6.5 mm hole at every hole in the door's flange. Each has a
+  round boss behind it that reaches the flange. The stock ear screws go through the side and
+  the flange into the headlight.
+- **The bottom** runs level along the front, then in a straight line back to each ear's
+  tip, following the door's bottom edge.
 - **No screws into the carrier.** The shell hangs from the door alone: the tongue on the
   clip, and the ears screwed through the door's flanges, like the stock bezel.
 - **Printing:**
-  - It's split through the middle of the hood-side post into a hood piece (about
-    123 × 226 mm) and a fender piece (about 218 × 197 mm). Both fit the A1's 256 mm bed.
-  - Two 3 mm dowels, 12 mm long, cross the cut: one where the post meets the floor, one
-    where it meets the blade. Glue the joint as well.
-  - Each piece prints upside down on its blade, tipped to lie as flat as it goes. The bead
-    and the lip-following top mean it needs supports under the blade.
+  - It's split through the middle of the hood-side post into a hood piece and a fender
+    piece. Both fit the A1's 256 mm bed.
+  - Two 3 mm dowels, 12 mm long, cross the cut. Glue the joint as well.
+  - Each piece prints upside down on its rail, tipped to lie as flat as it goes, with
+    supports under the rail.
 
 **Before printing the bezel,** print the two halves of `stl/fit_test_blade_driver_*.stl`
 (the blade, bead and tongue only) and tape them together. Slide it in under the front of
 the headlight door and check:
 - the tongue clicks onto the clip,
-- the door's lip sits down on the blade at both ends, just behind the bead.
+- the door's lip sits down on the rail's bead at both ends.
 
 ## What changed in v9: one thin shell, like the owner's reference photo
 

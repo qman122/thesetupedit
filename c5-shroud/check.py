@@ -147,15 +147,19 @@ def bow(u):
 
 
 lip_min = min(np.interp(u, g.COVER_LIP_U, g.COVER_LIP_Z) for u in np.linspace(-U_ - 3, U_ + 3, 200))
-lip_gap, lip_touch = [], []
+lip_gap, lip_pen = [], []
 for u in np.arange(-U_ + 12, U_ - 11, 10.0):
     zl = z_top + float(np.interp(u, g.COVER_LIP_U, g.COVER_LIP_Z)) - lip_min
     strip = g.box(u - 4, u + 4, nose + bow(u) - 5, nose + bow(u), zl, zl + 5).transform(F_)
-    lip_gap.append(overlap(shroud, strip))
-    lip_touch.append(overlap(shroud, strip.translate([0, 0, -0.4])))
-pen = max(lip_gap) / 40                                             # the strips are 8 x 5 mm
-check("the door's lip sits on the top blade all the way across (no clash, no gap)",
-      pen < 0.15 and min(lip_touch) > 1, f"{len(lip_gap)} places along the front, at most {pen:.2f} mm deep")
+    lip_pen.append(overlap(shroud, strip) / 40)                     # the strips are 8 x 5 mm
+    # the highest point of the bezel under the lip there (the bead): how far below the lip
+    under = shroud ^ g.box(u - 4, u + 4, nose + bow(u) - 5, nose + bow(u), zl - 5, zl + 5).transform(F_)
+    lip_gap.append(zl - under.bounding_box()[5] if not under.is_empty() else 5.0)
+worst = int(np.argmax(lip_gap))
+check("the door's lip sits on the top rail all the way across (no clash, no gap)",
+      max(lip_pen) < 0.15 and max(lip_gap) <= 0.2,
+      f"{len(lip_gap)} places along the front: at most {max(lip_pen):.2f} mm into it, "
+      f"at most {max(lip_gap):.2f} mm below it (u = {np.arange(-U_ + 12, U_ - 11, 10.0)[worst]:.0f})")
 
 
 def bar(dn=0.0, dz=0.0):
@@ -235,6 +239,8 @@ check("driver side: the bezel clears the carrier and the pods",
 # 9. every exported STL is one watertight solid lying flat on the bed
 here = os.path.dirname(os.path.abspath(__file__))
 for f in sorted(glob.glob(os.path.join(here, "stl", "**", "*.stl"), recursive=True)):
+    if os.sep + "cad" + os.sep in f:            # the bezel model itself (car frame), not a print file
+        continue
     tm = trimesh.load(f)
     name = os.path.relpath(f, here)
     flat = tm.bounds[0][2] == 0 and tm.area_faces[(tm.face_normals[:, 2] < -0.99)

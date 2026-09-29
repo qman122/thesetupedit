@@ -13,7 +13,8 @@ The fit is the same as before: the rail's bead meets the door's lip, the ears' t
 runs along the door's edge and their outside stays just inside the door's outline, with
 pockets clear of the door's flange and a screw hole on every flange hole.
 
-Writes stl/cad/bezel_cad_passenger.stl (model frame); generate.shroud() picks it up.
+bezel_sdf.py builds the bezel that's used, from this file's path and section parameters: the
+loft here folds over itself round the corners and OpenCascade's fillets on it never finish.
 """
 import math
 import os
