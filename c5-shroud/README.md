@@ -57,9 +57,18 @@ little further back than the one beside it:
 | Middle | 12 mm |
 | Fender side | 24 mm |
 
-The step is `pod_step` in `generate.py`. It's estimated from photos, so change it if the
-pods don't line up with the curve on the car. Steps from 6 to 12 mm pass every check.
-At 15 mm the fender-side pod has only 3 mm of wiring room if you slide it all the way back.
+The pods come forward into the bezel's windows: each face sits 3 mm (`pod_face_back`) behind
+the bezel's front across its window, so the steps follow the front — about 12 mm from the
+hood-side pod to the middle one and 27 mm to the fender-side one, where the front curves back
+into the corner. The bracket's pod beam comes forward with them and its knees reach back to
+the same mounting tabs, so the bolts still go in the stock holes.
+
+Each window is the pod's face plus the 1-notch test gap (2.0 mm each side, 1.6 mm top and
+bottom), cut straight ahead from the pod; behind the face it opens to the pod's body.
+
+`stl/assembled/assembly_passenger.stl` and `assembly_driver.stl` have the carrier, bezel and
+stand-ins for the pods in place, to check the fit (not for printing). The driver side is the
+passenger side mirrored.
 At 18 mm it hits the arm's nuts.
 
 - **Carrier:** a stepped beam under the pods with a pocket for each pod's bracket foot. Each

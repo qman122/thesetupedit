@@ -45,6 +45,7 @@ class Params:
     # KnightDriveTV bracket). pod_arc_deg can also turn the outer pods; 0 keeps them parallel.
     pod_step: float = 12.0        # each pod sits this far behind the one on its hood side
     pod_arc_deg: float = 0.0
+    pod_face_back: float = 3.0    # each pod comes forward until its face is this far behind the bezel's front (None: leave them on the layout)
     pod_bolt_d: float = 8.6       # slot width for the bracket stud (about 8 mm / 5/16 in)
     pod_stud_d: float = 8.0       # stud diameter, from the drawing
     nut_channel: float = 13.4     # rails under each slot, this far apart: an M8 (13 mm) or 5/16 in (1/2 in) nut slides but can't turn
@@ -57,7 +58,7 @@ class Params:
     # --- carrier ---
     floor_t: float = 5.0          # floor thickness
     cup_wall: float = 3.0         # walls of the pocket each pod's bracket foot sits in
-    cup_h: float = 3.5            # pocket depth (stays under the bezel's window cells)
+    cup_h: float = 2.6            # pocket depth (stays under the bezel's floor, which the pods now sit over)
     wall_t: float = 4.0           # end cheeks and dividers
     divider_h: float = 14.0       # height of the locating ribs between pods
     lip_h: float = 8.0            # stiffening lip under the front and rear floor edges
@@ -262,8 +263,38 @@ def pod_top(p):
 
 
 def pod_poses(p):
-    """(x, y, yaw in degrees) of each pod's face centre, left to right. Adjacent pod centres
-    are one pitch apart along an arc, so the outer pods sit back and turn outward."""
+    """(x, y, yaw in degrees) of each pod's face centre, left to right, where they sit: each
+    brought forward until its face is pod_face_back behind the bezel's front across its window, so
+    the steps between them follow the front (pod_layout gives the layout the bezel is drawn from)."""
+    base = pod_layout(p)
+    if p.pod_face_back is None:
+        return base
+    half = p.pod_face_w / 2 + p.window_clear_x
+    return [(x, min(bezel_front_y(p, x + dx) for dx in np.linspace(-half, half, 9)) - p.pod_face_back, yaw)
+            for (x, _, yaw) in base]
+
+
+def bezel_front_y(p, x):
+    """How far forward (y) the bezel's front comes at x: its curved front line, or the door's
+    outline from above where that's further back (the bezel is trimmed to it)."""
+    F = front_frame(p)
+    u = float(front_uv(p, x, 0.0))
+    for _ in range(20):                                  # the point on the front curve at this x
+        q = _fpt(F, u, float(bow(p, u)))
+        u += (x - q[0]) / F[0][0]
+    y = float(_fpt(F, u, float(bow(p, u)))[1])
+    ol = door_outline(p)
+    if ol is not None:
+        cut = (ol ^ CS.square([0.2, 800]).translate([x - 0.1, -400])).bounds()
+        if cut[3] > cut[1]:
+            y = min(y, float(cut[3]) - p.outline_gap)
+    return y
+
+
+def pod_layout(p):
+    """(x, y, yaw in degrees) of each pod's face centre in the layout the bezel's front is drawn
+    from. Adjacent pod centres are one pitch apart along an arc, so the outer pods sit back and
+    turn outward."""
     a = math.radians(p.pod_arc_deg)
     if a == 0:
         base = [(k * pitch(p), 0.0, 0.0) for k in (-1, 0, 1)]
@@ -486,7 +517,7 @@ def shroud_tabs(p):
 def front_line(p):
     """The bezel front seen from above, y = c0 + s * x. It follows the pods' step and sits
     pod_recess further forward than the closest it could be to the pod faces."""
-    poses = pod_poses(p)
+    poses = pod_layout(p)
     s = (poses[-1][1] - poses[0][1]) / (poses[-1][0] - poses[0][0])
     half = p.pod_face_w / 2 + p.window_clear_x
     c0 = max(y + p.shroud_gap + p.shroud_t - s * (x + dx) for (x, y, _) in poses for dx in (-half, half))
@@ -1055,8 +1086,11 @@ def shell_parts(p):
     wins = []
     for (px, py, yaw) in pod_poses(p):
         cs = rrect(ww, wh, wr).translate([px, pod_zc(p)])
-        # from just in front of the pod's face to well past the front (x, z plane pushed along +y)
-        wins.append(M.extrude(cs, 120.0).transform([[1, 0, 0, 0], [0, 0, 1, py + 0.5], [0, 1, 0, 0]]))
+        # from just behind the pod's face to well past the front
+        wins.append(M.extrude(cs, 120.0).transform([[1, 0, 0, 0], [0, 0, 1, py - 0.5], [0, 1, 0, 0]]))
+        # behind the face the pod's body passes through: its own shape, the same gaps round it
+        body = rrect(p.pod_body_w + 2 * p.window_clear_x, p.pod_body_h + 2 * p.window_clear_y, 1.0).translate([px, pod_zc(p)])
+        wins.append(M.extrude(body, 80.0).transform([[1, 0, 0, 0], [0, 0, 1, py - 80.0 - 0.2], [0, 1, 0, 0]]))
     windows = M.batch_boolean(wins, m3d.OpType.Add)
 
     front = lift_top(p, front)
