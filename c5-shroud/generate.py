@@ -188,8 +188,21 @@ class Params:
     tongue_slot_w: float = 5.0    # ...and the slot along it
     dowel_d: float = 3.1          # dowel holes across the print split (3 mm pins)
     dowel_depth: float = 6.0      # each side of the split
+    # moulded look: every edge of the bezel rounded (smooth_solid)
+    smooth_sigma: float = 0.9     # outside edges round off over about this much (0 = sharp, as modelled)
+    fillet_r: float = 2.0         # inside corners filleted to this radius
+    smooth_voxel: float = 0.35    # grid the rounding is worked out on
+    thin_wall: float = 1.6        # walls thinner than this keep their modelled shape (the blur would eat them)...
+    thin_sigma: float = 0.45      # ...only smoothed this much
+    smooth_reduce: float = 0.85   # the remeshed surface keeps this share fewer triangles (fast_simplification)
+    smooth_tol: float = 0.02      # ...or, without it, stays this close to the rounded shape
+    smooth_margin: float = 0.15   # the door's underside and outline are cut this much deeper first; the rounding stays inside that
+    keep_gap: float = 0.08        # rounding keeps this far off the windows, screw holes, groove and flange pockets
+    keep_round: float = 1.2       # ...and rounds the edges round them over about this much
+    keep_sigma: float = 0.7       # ...their faces smoothed over this much first (the exact cut afterwards takes off what's left)
     min_wall: float = 1.05        # thinnest the side wall gets where it's pocketed round the door's flange
     outline_gap: float = 0.2      # the bezel stays this far inside the door's outline seen from above
+    outline_smooth: float = 4.0   # the scanned outline is smoothed over about this much (mm) so the walls don't come out faceted
     rim_gap: float = 0.05         # the corner and ear tops sit this far under the door's edge
     window_under: float = 3.0     # round the corners the windows stop this far under the door's edge
     shelf_t: float = 2.37         # shelf under the door's lip round each corner and side
@@ -206,6 +219,7 @@ class Params:
     # drop per mm toward the fender)
     door_corner_cut: tuple = None  # replaced by door_clearance(), from the door's measured underside
     door_clear: float = 0.25      # the bezel's top is trimmed this far under the door's underside
+    underside_smooth: float = 4.0 # the scanned underside is smoothed over about this much (mm) so the blade's top comes out smooth
     # Window gap around the pod bezel, per side, at the back of each tunnel (the 1-notch test frame fit)
     window_clear_x: float = 2.0   # each side, left and right (the 1-notch test frame fit)
     window_clear_y: float = 1.6   # top and bottom
@@ -915,7 +929,31 @@ def door_outline(p):
     q = np.asarray(d["outline"], float)
     if np.sum(q[:, 0] * np.roll(q[:, 1], -1) - np.roll(q[:, 0], -1) * q[:, 1]) < 0:
         q = q[::-1]
-    return CS([q])
+    if p.outline_smooth <= 0:
+        return CS([q])
+    # the scan's outline is straight runs about 5 mm long, which would leave the walls faceted:
+    # a smooth curve through it instead, drawn in until it's nowhere outside the scanned one
+    raw = CS([q])
+    L = np.r_[0, np.cumsum(np.linalg.norm(np.diff(np.vstack([q, q[:1]]), axis=0), axis=1))]
+    t = np.arange(0, L[-1], 0.5)
+    dense = np.c_[np.interp(t, L, np.r_[q[:, 0], q[0, 0]]), np.interp(t, L, np.r_[q[:, 1], q[0, 1]])]
+    from scipy.ndimage import gaussian_filter1d
+    sm = gaussian_filter1d(dense, p.outline_smooth / 0.5, axis=0, mode="wrap")
+    out = CS([sm])
+    for _ in range(8):
+        over = (out - raw).area()
+        if over < 1e-4:
+            break
+        # how far outside it reaches, at most: offset in until the overlap is gone
+        lo_, hi_ = 0.0, 2.0
+        for _ in range(14):
+            mid = (lo_ + hi_) / 2
+            if (out.offset(-mid, m3d.JoinType.Round) - raw).area() < 1e-4:
+                hi_ = mid
+            else:
+                lo_ = mid
+        out = out.offset(-hi_, m3d.JoinType.Round)
+    return out
 
 
 def door_plane(p, name):
@@ -957,8 +995,22 @@ def shell_plan(p):
             # just inside the door's outline from above, so none of the side shows past it
             o_ = np.argsort(sil[:, 0])
             S_y, raw = sil[o_, 0], sil[o_, 1] - p.outline_gap
-            pad = np.pad(raw, 2, mode="edge")
-            S_x = np.minimum(np.array([pad[i:i + 5].mean() for i in range(len(raw))]), raw)
+            if p.outline_smooth > 0:
+                # a smooth curve through the scan's 2 mm steps (they'd show as facets on the wall),
+                # moved in until it's nowhere outside it
+                from scipy.ndimage import gaussian_filter1d
+                fy = np.arange(S_y[0], S_y[-1] + 1e-9, 0.25)
+                fx = np.interp(fy, S_y, raw)
+                from scipy.ndimage import maximum_filter1d
+                k = p.outline_smooth / 0.25
+                sm = gaussian_filter1d(fx, k, mode="nearest")
+                for _ in range(6):                       # pull it in locally wherever it's outside
+                    over = maximum_filter1d(np.clip(sm - fx, 0, None), int(4 * k) | 1)
+                    sm = sm - gaussian_filter1d(over, k, mode="nearest") * 1.5
+                S_y, S_x = fy, np.minimum(sm, fx)
+            else:
+                pad = np.pad(raw, 2, mode="edge")
+                S_x = np.minimum(np.array([pad[i:i + 5].mean() for i in range(len(raw))]), raw)
             m_ = (S_y < -20.0) & (S_y > y_end + 8.0)
             B = float(np.polyfit(S_y[m_], S_x[m_], 1)[0])
             A = float(np.min(S_x[m_] - B * S_y[m_]))
@@ -1058,7 +1110,7 @@ def _tube3(pts, r, segs=16):
     return M.batch_boolean(parts, m3d.OpType.Add)
 
 
-def shell_parts(p):
+def shell_parts(p, with_cuts=False):
     """The one-piece bezel (passenger side as modelled), before it's split for printing."""
     F = front_frame(p)
     Fm = np.vstack([np.asarray(F, float), [0, 0, 0, 1]])
@@ -1329,6 +1381,11 @@ def shell_parts(p):
         x0, x1, y0, y1, z0, dz = p.door_corner_cut
         body = body - M.hull_points([[x, y, z] for x in (x0, x1) for y in (y0, y1)
                                      for z in (z0 - dz * (x - x0), z0 + 40)])
+    if with_cuts:
+        # the cuts that set the fit, to take out again exactly once the shell has been smoothed
+        groove_cut = lift_top(p, bow_warp(p, groove, 1.0).transform(F))
+        pocket_cut = M.batch_boolean(pockets, m3d.OpType.Add) - M.batch_boolean(bosses, m3d.OpType.Add)
+        return body, M.batch_boolean([windows, groove_cut, pocket_cut] + holes, m3d.OpType.Add)
     return body
 
 
@@ -1365,6 +1422,25 @@ def door_underside(p):
             edge[tuple(idx)] = True
         Zs = np.where(spike & ~edge, np.minimum(lo, hi), Zs)
     Z = Zs
+    if p.underside_smooth > 0:
+        # the scan's small bumps and its 2 mm grid would show on the blade's top: smoothed where
+        # the underside is gentle (the steps at the door's edges stay as scanned), and pulled
+        # down locally wherever that puts it above the scan
+        from scipy import ndimage
+        s_ = p.underside_smooth / 2
+
+        def blur(A, m):
+            return ndimage.gaussian_filter(np.where(m, A, 0.0), s_) / np.maximum(ndimage.gaussian_filter(m * 1.0, s_), 1e-6)
+        ok = Z < 300
+        gentle = ok & (np.abs(blur(Z, ok) - Z) < 0.4)
+        gentle = ndimage.binary_erosion(gentle, iterations=1)
+        Zm = blur(Z, gentle)
+        for _ in range(6):
+            over = ndimage.maximum_filter(np.where(gentle, np.clip(Zm - Z, 0, None), 0.0), 5)
+            Zm = Zm - 1.5 * blur(over, gentle)
+        d = np.clip(Z - Zm, 0, None)
+        w = gentle * np.clip((0.5 - d) / 0.25, 0, 1)
+        Z = np.where(gentle, Z - w * d, Z)
 
     def under(x, y):                                     # interpolated smoothly
         fx = np.clip((np.asarray(x, float) - xs[0]) / 2, 0, len(xs) - 1.001)
@@ -1404,15 +1480,186 @@ def door_clearance(p):
     return blk.warp_batch(f)
 
 
+def _voxelize(man, lo, n, h):
+    """Which voxel centres (lo + index * h) lie inside the solid: every column of centres along z
+    is crossed by the surface, and each crossing flips inside and outside above it. The test is
+    watertight: an edge two triangles share is worked out the same way for both, so a column
+    through it counts once, however steep the wall."""
+    mesh = man.to_mesh()
+    V = np.asarray(mesh.vert_properties, float)[:, :3]
+    TV = np.asarray(mesh.tri_verts, np.int64)
+    flip = np.zeros((n[0], n[1], n[2] + 1), np.int8)
+    off = np.array([1.13e-5, 0.71e-5])                   # keep column centres off vertices
+    V2 = (V[:, :2] - lo[:2] - off) / h                   # in grid units, column centres on integers
+    g = V2[TV]
+    i0 = np.maximum(np.ceil(g[:, :, 0].min(1)).astype(int), 0)
+    i1 = np.minimum(np.floor(g[:, :, 0].max(1)).astype(int), n[0] - 1)
+    j0 = np.maximum(np.ceil(g[:, :, 1].min(1)).astype(int), 0)
+    j1 = np.minimum(np.floor(g[:, :, 1].max(1)).astype(int), n[1] - 1)
+    W, H_ = i1 - i0 + 1, j1 - j0 + 1
+
+    def edge(pa, pb, x, y):                              # the same numbers whichever triangle asks
+        swap = (pa > pb)[:, None]
+        p_, q_ = np.where(swap, pb[:, None], pa[:, None]), np.where(swap, pa[:, None], pb[:, None])
+        px, py, qx, qy = V2[p_, 0], V2[p_, 1], V2[q_, 0], V2[q_, 1]
+        e = (qx - px) * (y - py) - (qy - py) * (x - px)
+        return np.where(swap, -e, e)
+    for w, hgt in {(int(a_), int(b_)) for a_, b_ in zip(W, H_) if a_ > 0 and b_ > 0}:   # grouped by the columns they span
+        grp = np.flatnonzero((W == w) & (H_ == hgt))
+        for sel in np.array_split(grp, max(1, len(grp) * w * hgt // 2000000)):
+            di, dj = np.meshgrid(np.arange(w), np.arange(hgt), indexing="ij")
+            I = i0[sel, None] + di.ravel()[None]
+            J = j0[sel, None] + dj.ravel()[None]
+            x, y = I.astype(float), J.astype(float)
+            ia, ib, ic = TV[sel, 0], TV[sel, 1], TV[sel, 2]
+            ea, eb, ec = edge(ib, ic, x, y), edge(ic, ia, x, y), edge(ia, ib, x, y)
+            tot = ea + eb + ec
+            hit = (((ea > 0) & (eb > 0) & (ec > 0)) | ((ea < 0) & (eb < 0) & (ec < 0))) & (tot != 0)
+            tot = np.where(tot == 0, 1.0, tot)
+            z = (ea * V[ia, 2][:, None] + eb * V[ib, 2][:, None] + ec * V[ic, 2][:, None]) / tot
+            k = np.clip(np.ceil((z - lo[2]) / h).astype(int), 0, n[2])
+            np.add.at(flip, (I[hit], J[hit], k[hit]), 1)
+    return (np.cumsum(flip, axis=2, dtype=np.int16)[:, :, :-1] & 1).astype(bool)
+
+
+def _edt_slab(args):
+    solid, h = args
+    from scipy import ndimage
+    f = ndimage.distance_transform_edt(solid).astype(np.float32)
+    f -= ndimage.distance_transform_edt(~solid).astype(np.float32)
+    f *= h
+    return f
+
+
+def _sdf(solid, h, band):
+    """Signed distance (+ inside, mm) on the grid, good to band: worked out in slabs along x on
+    every core, each with band of overlap."""
+    from concurrent.futures import ProcessPoolExecutor
+    m = int(math.ceil(band / h)) + 2
+    cuts = np.linspace(0, solid.shape[0], 2 * min(os.cpu_count() or 1, 4) + 1).astype(int)
+    parts = [(max(a - m, 0), a, b, min(b + m, solid.shape[0])) for a, b in zip(cuts, cuts[1:])]
+    with ProcessPoolExecutor(min(os.cpu_count() or 1, 4)) as ex:
+        res = list(ex.map(_edt_slab, [(solid[a0:b1], h) for a0, _, _, b1 in parts]))
+    return np.concatenate([r[a - a0:b - a0] for (a0, a, b, _), r in zip(parts, res)], axis=0)
+
+
+def _sdf_of(man, lo, n, h, band, near=4):
+    """Signed distance to a solid's surface on the grid (+ inside, mm). From the voxels alone it
+    would follow their steps, which show as bands on walls running nearly along the grid, so
+    within near voxels of the surface it's measured to the triangles themselves (libigl)."""
+    f = _sdf(_voxelize(man, lo, n, h), h, band)
+    try:
+        import igl
+    except ImportError:
+        return f
+    mesh = man.to_mesh()
+    V = np.asarray(mesh.vert_properties, float)[:, :3]
+    F = np.asarray(mesh.tri_verts, np.int64)
+    idx = np.flatnonzero(np.abs(f.ravel()) <= near * h)
+    for part in np.array_split(idx, max(1, len(idx) // 2000000)):
+        q = np.c_[np.unravel_index(part, f.shape)] * h + lo
+        d2 = igl.point_mesh_squared_distance(q, V, F)[0]
+        f.ravel()[part] = np.sqrt(d2) * np.sign(f.ravel()[part])
+    return f
+
+
+def smooth_solid(man, p, keep_out=None, keep_under=None):
+    """The same solid with every edge rounded, like a moulded part: turned into a signed distance
+    field on a smooth_voxel grid, closed by fillet_r (inside corners get a fillet that size),
+    blurred by smooth_sigma (outside edges round off and the ridges the scanned door leaves on the
+    walls smooth out), and meshed again. Flat walls stay where they were to within a few
+    hundredths of a millimetre. Walls thinner than thin_wall would be eaten by the blur, so they
+    keep their modelled shape. Nothing comes within keep_gap of keep_out (the windows, screw holes
+    and so on), and the edges round those are rounded over keep_round. keep_under (the door) is
+    kept clear the same way, but smoothed first, as its scanned surface is rough."""
+    from scipy import ndimage
+    from skimage import measure
+    h = p.smooth_voxel
+    band = p.fillet_r + 4 * p.smooth_sigma + 2
+    lo = np.asarray(man.bounding_box()[:3]) - band
+    hi = np.asarray(man.bounding_box()[3:]) + band
+    n = np.ceil((hi - lo) / h).astype(int) + 1
+    f0 = _sdf_of(man, lo, n, h, band)
+    # thin walls (nowhere deeper than thin_wall / 2 from their surface) keep the modelled shape
+    k = int(math.ceil(p.thin_wall / h)) | 1
+    thin = (f0 > 0) & (ndimage.maximum_filter(f0, size=k) < p.thin_wall / 2)
+    thin = ndimage.binary_dilation(thin, iterations=int(math.ceil(2 * p.smooth_sigma / h)))
+    thin = ndimage.gaussian_filter(thin.astype(np.float32), 2 * p.smooth_sigma / h)   # blended in, no seam
+    f = f0
+    if p.fillet_r > 0:
+        f = _sdf(f0 > -p.fillet_r, h, band)              # closing: grow by fillet_r, then shrink back
+        f -= p.fillet_r
+        # ...taken only where it fills a corner, so the walls keep their exact distances
+        f = np.where(f > f0 + 1.5 * h, f, f0)
+    f = ndimage.gaussian_filter(f, p.smooth_sigma / h)
+    f0 = ndimage.gaussian_filter(f0, p.thin_sigma / h)   # just enough to take the grid's steps off
+    f += np.clip(f0 - f, 0, None) * np.clip(2 * thin, 0, 1)
+    del f0, thin
+    def keep_clear(f, ko):                               # smooth minimum: a rounded edge where they meet
+        a, b, k = f, -ko - p.keep_gap, p.keep_round
+        w = np.clip(k - np.abs(a - b), 0, None) / k
+        return np.minimum(a, b) - w * w * k / 4
+    if keep_under is not None:
+        ku = _sdf_of(keep_under, lo, n, h, band)
+        f = keep_clear(f, ndimage.gaussian_filter(ku, p.smooth_sigma / h))
+        del ku
+    if keep_out is not None:
+        # blurred a little too: the windows are built from 1.5 mm facets, which would show
+        f = keep_clear(f, ndimage.gaussian_filter(_sdf_of(keep_out, lo, n, h, band), p.keep_sigma / h))
+    v, faces, _, _ = measure.marching_cubes(f, 0.0, spacing=(h, h, h))
+    v = v + lo
+
+    def solid(v, faces):
+        v = np.ascontiguousarray(v, np.float32)
+        out = M(m3d.Mesh(v, np.ascontiguousarray(faces[:, ::-1], np.uint32)))
+        if out.status() == m3d.Error.NoError and out.volume() < 0:
+            out = M(m3d.Mesh(v, np.ascontiguousarray(faces, np.uint32)))
+        return out
+    try:
+        # fewer, evenly shaped triangles (long slivers would show as streaks in a viewer)
+        import fast_simplification
+        v2, f2 = fast_simplification.simplify(v, faces, target_reduction=p.smooth_reduce)
+        out = solid(v2, f2)
+        if out.status() == m3d.Error.NoError:
+            keep = [pc for pc in out.decompose() if pc.volume() > 5]     # drop specks the meshing leaves
+            return keep[0] if len(keep) == 1 else M.batch_boolean(keep, m3d.OpType.Add)
+    except ImportError:
+        pass
+    return solid(v, faces).simplify(p.smooth_tol)
+
+
+_SHROUD = {}
+
+
 def shroud(p):
     """The bezel as one piece (passenger side as modelled)."""
-    body = shell_parts(p)
+    key = repr(p)
+    if key not in _SHROUD:
+        _SHROUD[key] = _shroud(p)
+    return _SHROUD[key]
+
+
+def _shroud(p):
+    body, cuts = shell_parts(p, with_cuts=True)
     cut = door_clearance(p)
     man = body if cut is None else body - cut
     # nothing past the door's outline seen from above
     ol = door_outline(p)
+    clip = None
     if ol is not None:
-        man = man ^ M.extrude(ol.offset(-p.outline_gap, m3d.JoinType.Round), 400.0).translate([0, 0, -150.0])
+        clip = M.extrude(ol.offset(-p.outline_gap, m3d.JoinType.Round), 400.0).translate([0, 0, -150.0])
+        man = man ^ clip
+    if p.smooth_sigma > 0:
+        # round it all off, keeping clear of the fit-setting cuts (the windows round the pods, the
+        # screw holes, the clip groove, the pockets round the door's flange), then take those out
+        # again exactly, which only shaves off specks. The door's underside and its outline from
+        # above were cut smooth_margin deeper first, which the rounding stays inside
+        man = body if cut is None else body - cut.translate([0, 0, -p.smooth_margin])
+        if ol is not None:
+            man = man ^ M.extrude(ol.offset(-p.outline_gap - p.smooth_margin, m3d.JoinType.Round), 400.0).translate([0, 0, -150.0])
+        man = smooth_solid(man, p, keep_out=cuts, keep_under=cut) - cuts
+        if cut is not None:
+            man = man - cut
     # the door cut can leave a crumb of blade corner (under 1 mm3) floating clear of the shell: drop it
     keep = [pc for pc in man.decompose() if pc.volume() > 5]
     return keep[0] if len(keep) == 1 else M.batch_boolean(keep, m3d.OpType.Add)

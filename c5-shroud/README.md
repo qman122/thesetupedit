@@ -1,4 +1,4 @@
-# C5 sleepy-eye pod carrier and bezel (v9)
+# C5 sleepy-eye pod carrier and bezel (v10)
 
 For a 2000 C5 Corvette with the headlight door stops already fitted, holding three
 3.0 × 1.8 in dual-lens LED pods per side. Like the KnightDriveTV kit, each side is one
@@ -147,6 +147,38 @@ reference photo. It's modelled in one piece and split in two for printing (see b
 the headlight door and check:
 - the tongue clicks onto the clip,
 - the door's lip sits down on the blade at both ends, just behind the bead.
+
+## What changed in v10: a moulded look, like the reference part
+
+![before and after](diagrams/smooth_before_after.png)
+
+The bezel now comes out smooth and rounded, like a moulded part, instead of hard CSG edges
+with facets from the door scan. Nothing that sets the fit has moved, and all 56 checks pass.
+
+- **Every edge is rounded, every inside corner filleted.** `smooth_solid()` turns the
+  finished bezel into a signed distance field (0.35 mm grid), closes it by `fillet_r` (2 mm
+  fillets in inside corners), blurs it by `smooth_sigma` (0.9 mm: outside edges roll off),
+  and meshes it again. Flat walls stay put to within a few hundredths of a millimetre.
+  - Walls thinner than `thin_wall` (the 1 mm webs round the door's flange) keep their
+    modelled shape, blended in so there's no seam.
+  - Distances within 1.4 mm of the surface are measured to the triangles (libigl), not the
+    voxels, so walls running nearly along the grid don't come out banded.
+- **The fit-setting cuts are kept exact.** The windows round the pods, the screw holes, the
+  clip groove and the flange pockets are kept clear during the rounding, with their rims
+  rounded over `keep_round`, then cut again exactly. The door's underside and outline are cut
+  0.15 mm deeper first (`smooth_margin`), and the rounding stays inside them.
+- **The scanned door is smoothed before the bezel follows it.** Its outline from above was
+  straight runs about 5 mm long and its underside a 2 mm grid, which showed as vertical bands
+  on the side walls and ripples on the blade. Both are now smooth curves (`outline_smooth`,
+  `underside_smooth`, 4 mm), pulled in locally so they're nowhere outside the scan.
+  - The outline moves in 0.07 mm on average; the blade's top drops 0.05 mm on average and
+    at most 0.25 mm, where the scan had bumps. The steps at the door's edges stay as scanned.
+- **Printing is the same:** same split, dowels, orientation and bed fit. The STLs are
+  bigger (about 280k triangles for the one-piece bezel), as the curves need them.
+- Set `smooth_sigma = 0` to get the sharp v9 bezel back.
+- **Needs** `scipy`, `scikit-image`, `libigl` and `fast_simplification` besides the usual
+  `manifold3d`, `trimesh` and `numpy`. The bezel takes about 4 minutes to build (it's cached,
+  so once per run).
 
 ## What changed in v9: one thin shell, like the owner's reference photo
 
