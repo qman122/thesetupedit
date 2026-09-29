@@ -179,8 +179,11 @@ class Params:
     tongue_slot_w: float = 5.0    # ...and the slot along it
     dowel_d: float = 3.1          # dowel holes across the print split (3 mm pins)
     dowel_depth: float = 6.0      # each side of the split
+    rim_gap: float = 0.5          # the corner and ear tops sit this far under the door's edge
+    rim_fade: float = 0.5         # ...except the start of each corner, where the blade and bead come round, over this much of it
+    ear_blend: float = 30.0       # the ear turns in from the straight side to the imprint over this length
     ear_gap: float = 0.8          # between the ear and the door
-    ear_step_gap: float = 1.5     # the ear's top edge sits this far under the step at the top of the imprint
+    ear_step_gap: float = 1.5     # under the imprint's step: sets the height the straight side's position is taken at (the top edge itself follows rim_gap)
     ear_top_gap: float = 8.0      # ear's top edge this far under the top of the door's side: up to its painted edge, no gap
     ear_hole_d: float = 6.5       # clearance for the stock ear screws, at every hole in the flange
     ear_access_d: float = 40.0    # hood-end ear: hole for the aiming adjuster's access plug (from the photo)
@@ -742,6 +745,25 @@ def door_imprint(p, name):
     return ear_top, inside, float(im["end_y"]), float(im["recess_zmin"])
 
 
+def door_rim(p, name):
+    """The door's edge along the bezel's corner and side ("hood" or "fender"), from
+    cover_sides.json "rim": the lowest point of its outer skin at each fore-aft position y.
+    Returns rim(y); lightly smoothed, never above the measured edge."""
+    import json
+    with open(os.path.join(os.path.dirname(os.path.abspath(__file__)), "cover_sides.json")) as fh:
+        side = json.load(fh)[name]
+    r = np.asarray(side.get("rim") or side["imprint"]["step"], float)   # the step until cover_scan has run
+    r = r[np.argsort(r[:, 0])]
+    ry = np.arange(r[0, 0], r[-1, 0], 1.0)
+    rz = np.interp(ry, r[:, 0], r[:, 1])
+    pad = np.pad(rz, 2, mode="edge")
+    rz = np.minimum(np.array([pad[i:i + 5].mean() for i in range(len(rz))]), rz)
+
+    def rim(y):
+        return np.interp(y, ry, rz)
+    return rim
+
+
 def bow(p, u):
     """How far the front sits forward of the flat front line at u (the nose's curve)."""
     U = (p.opening_w / 2 - p.opening_side_clear) / front_frame(p)[0][0]
@@ -934,36 +956,52 @@ def shell_parts(p):
     # that tapers to its tip past the last screw hole ---
     walls2d = CS([outline]) - CS([outline]).offset(-t, m3d.JoinType.Miter)
     walls = []
-    bosses, holes = [], []
+    bosses, holes, trims = [], [], []
     for s_ in (hood, fen):
         sx = s_["sx"]
         u_end = np.linspace(s_["u_t"], s_["u_t"] + sx * 45, 10)
         wall_top = z_top + float(np.max(top_rise(p, u_end)))
         y_c, y_k, y_end = s_["arc_end_y"], s_["y_k"], s_["y_end"]
-        ear_top, inside, X_in = s_["ear_top"], s_["inside"], s_["X_out"] - t
-        z_k = float(ear_top(y_k))
+        inside, X_in = s_["inside"], s_["X_out"] - t
+        rim = door_rim(p, "hood" if sx < 0 else "fender")
+        z_be = s_["z_low"] - 1.0
+        # the top edge follows the door's edge all the way round the corner and along the ear
+        # (rim_gap under it). Only the first part of the corner, where the blade and bead come
+        # round from the front, is allowed higher, fading out by rim_fade of the way round
+        y0 = float(s_["p0"][1])
+        y_f = y0 - p.rim_fade * (y0 - y_c)
+        lift_a = max(0.0, wall_top + p.bead_r + 0.5 - (float(rim(y0)) - p.rim_gap))
 
-        def top_z(y):                                    # corner at the blade's height, easing down to the ear
+        def trim_z(y):
             y = np.asarray(y, float)
-            w = np.clip((y_c - y) / (y_c - y_k), 0, 1)
-            return np.where(y >= y_c, wall_top, (1 - w) * wall_top + w * z_k)
+            w = np.clip((y - y_f) / (y0 - y_f), 0, 1)
+            return rim(y) - p.rim_gap + w * w * (3 - 2 * w) * lift_a
+
+        def top_z(y):                                    # built a little proud, trimmed to trim_z below
+            return np.minimum(wall_top, trim_z(y) + 0.3)
+
+        # the bottom edge: level round the corner, then one straight sweep to the ear's tip,
+        # rounded into the level over the first 12 mm
+        s0, L_ = 12.0, y_c - y_end
+
+        def bot_z(y):
+            d = np.clip(y_c - np.asarray(y, float), 0, None)
+            return z_lb + (z_be - z_lb) * np.where(d < s0, d * d / (2 * s0), d - s0 / 2) / (L_ - s0 / 2)
         x_t = float(s_["p0"][0])                         # where the corner leaves the front
         keep = CS.square([400, 800]).translate([x_t - 400 + 0.2 if sx < 0 else x_t - 0.2, y_k - 0.5])
         ring = M.extrude(walls2d ^ keep, 1.0).refine_to_length(3.0)
 
         def fw(v):
             out = v.copy()
-            out[:, 2] = z_lb + v[:, 2] * (top_z(v[:, 1]) - z_lb)
+            zb = bot_z(v[:, 1])
+            out[:, 2] = zb + v[:, 2] * (top_z(v[:, 1]) - zb)
             return out
         walls.append(ring.warp_batch(fw))
 
-        # the ear: fills the imprint on the door's flange. Its top edge runs just under the step
-        # along the top of the imprint, its inside follows the recessed surface, and it runs back
-        # to the imprint's end, its bottom edge dropping to the imprint's lowest point
-        z_be = s_["z_low"] - 1.0
-        tops = [[y, float(ear_top(y))] for y in np.linspace(y_k + 8, y_end, 50)]
-        bots = [[y, z_lb + 0.31 if y >= y_k else z_lb + 0.31 + (z_be - z_lb - 0.31) * (y_k - y) / (y_k - y_end)]
-                for y in np.linspace(y_end, y_k + 8, 30)]
+        # the ear: fills the imprint on the door's flange. Its top edge runs along the door's edge,
+        # its inside follows the recessed surface, and it runs back to the imprint's end
+        tops = [[y, float(trim_z(y)) + 0.3] for y in np.linspace(y_k + 8, y_end, 90)]
+        bots = [[y, float(bot_z(y)) + 0.31] for y in np.linspace(y_end, y_k + 8, 40)]
         o = np.asarray(tops + bots)
         if np.sum(o[:, 0] * np.roll(o[:, 1], -1) - np.roll(o[:, 0], -1) * o[:, 1]) < 0:
             o = o[::-1]
@@ -971,8 +1009,10 @@ def shell_parts(p):
         plate = M.extrude(plate, 1.0).refine_to_length(3.0)
 
         def ear_x(y, z):                                 # inside of the ear, easing out of the straight side
-            wb = np.clip((y_k - np.asarray(y, float)) / 12.0, 0, 1)
-            return (1 - wb) * X_in + wb * inside(y, z), wb
+            wb = np.clip((y_k - np.asarray(y, float)) / p.ear_blend, 0, 1)
+            wb = wb * wb * (3 - 2 * wb)
+            ins = inside(y, z)
+            return np.maximum((1 - wb) * X_in + wb * ins, np.where(wb > 0, ins, -1e9)), wb   # never into the door
 
         def fe(v):
             out = np.empty_like(v)
@@ -983,6 +1023,13 @@ def shell_parts(p):
             return out
         ear_m = plate.warp_batch(fe)
         walls.append(ear_m.mirror([1, 0, 0]) if sx < 0 else ear_m)
+        # everything beyond the corner's start above trim_z comes off (walls, blade ends, bead)
+        ys_ = np.arange(y0 + 40.0, y_end - 40.0, -1.0)
+        prof = np.array([[y, float(trim_z(y))] for y in ys_] + [[ys_[-1], 400.0], [ys_[0], 400.0]])
+        if np.sum(prof[:, 0] * np.roll(prof[:, 1], -1) - np.roll(prof[:, 0], -1) * prof[:, 1]) < 0:
+            prof = prof[::-1]
+        x_a = x_t if sx > 0 else x_t - 250.0
+        trims.append(M.extrude(CS([prof]), 250.0).transform([[0, 0, 1, x_a], [1, 0, 0, 0], [0, 1, 0, 0]]))
         # screw holes at every hole in the door's flange, with a boss filling any gap behind
         for h in s_["holes"]:
             at, nrm = np.asarray(h["at"], float), np.asarray(h["normal"], float)
@@ -992,7 +1039,7 @@ def shell_parts(p):
                 bosses.append(_along(M.cylinder(ln - 0.3, 7, 7, 32), nrm, at + 0.3 * nrm))
             holes.append(_along(M.cylinder(60, p.ear_hole_d / 2, p.ear_hole_d / 2, 24).translate([0, 0, -30]), nrm, at))
     body = M.batch_boolean([front] + walls + bosses, m3d.OpType.Add)
-    body = body - M.batch_boolean([windows] + holes, m3d.OpType.Add)
+    body = body - M.batch_boolean([windows] + holes + trims, m3d.OpType.Add)
     if p.door_corner_cut:
         x0, x1, y0, y1, z0, dz = p.door_corner_cut
         body = body - M.hull_points([[x, y, z] for x in (x0, x1) for y in (y0, y1)
@@ -1033,7 +1080,11 @@ def door_clearance(p):
             edge[tuple(idx)] = True
         Zs = np.where(spike & ~edge, np.minimum(lo, hi), Zs)
     Z = Zs
-    blk = M.cube([xs[-1] - xs[0], ys[-1] - ys[0], 1]).translate([xs[0], ys[0], 0]).refine_to_length(1.0)
+    # across the front only, between where the corners leave it: round the corners and along
+    # the sides the top is already trimmed to the door's edge (shell_parts)
+    _, sides = shell_plan(p)
+    xa, xb = float(sides["hood"]["p0"][0]), float(sides["fender"]["p0"][0])
+    blk = M.cube([xb - xa + 4.74, ys[-1] - ys[0], 1]).translate([xa - 2.37, ys[0], 0]).refine_to_length(1.0)   # overlapping the corner trims a little
 
     def f(v):                                            # bottom follows the door, interpolated smoothly
         out = v.copy()
@@ -1044,7 +1095,9 @@ def door_clearance(p):
         zz = ((1 - a) * (1 - b) * Z[i, j] + a * (1 - b) * Z[i + 1, j] + (1 - a) * b * Z[i, j + 1] + a * b * Z[i + 1, j + 1])
         zmin = np.minimum.reduce([Z[i, j], Z[i + 1, j], Z[i, j + 1], Z[i + 1, j + 1]])
         zz = np.where(zz > 300, 399.0, np.where(zz - zmin > 3, zmin, zz))   # at the door's edge, take its lowest
-        out[:, 2] = np.where(v[:, 2] < 0.5, zz, 450.0)
+        # over its last 2 mm at each end it lifts clear, so its end faces never sit on the part
+        ramp = np.clip(np.maximum(xa - 0.37 - v[:, 0], v[:, 0] - xb - 0.37) / 2.0, 0, 1)
+        out[:, 2] = np.where(v[:, 2] < 0.5, zz + 20.0 * ramp, 450.0)
         return out
     return blk.warp_batch(f)
 

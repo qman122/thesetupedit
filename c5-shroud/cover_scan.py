@@ -245,7 +245,30 @@ def find_sides(door_m):
         iz = np.rint((s_[:, 2] - zs[0]) / 4).astype(int)
         ok = (iy >= 0) & (iy < len(ys)) & (iz >= 0) & (iz < len(zs))
         np.fmax.at(X, (iy[ok], iz[ok]), s_[ok, 0] * sx)
-        out[name] = {"holes": holes, "imprint": imprint, "y": ys.tolist(), "z": zs.tolist(),
+        # the door's edge as seen from outside: walking round the bezel's corner and back along
+        # its side, the lowest point of the door's outermost skin across each spot (the line the
+        # bezel's top meets). Screw pockets and the recess sit further in, so they don't count
+        outline, _ = g.shell_plan(P)
+        ol = outline[np.abs(outline[:, 1]) < 500]
+        rim = []
+        for qa, qb in zip(ol[:-1], ol[1:]):
+            L = float(np.linalg.norm(qb - qa))
+            tng = (qb - qa) / L
+            o = np.array([tng[1], -tng[0]])                     # outward (the outline runs anticlockwise)
+            for k in range(max(1, int(L / 1.5))):
+                q = qa + (qb - qa) * k / max(1, int(L / 1.5))
+                if q[0] * sx < 90 or q[1] > 60:
+                    continue
+                rel = v[:, :2] - q
+                al, lat = rel @ o, np.abs(rel @ np.array([-o[1], o[0]]))
+                m = (lat < 1.5) & (al > -40) & (v[:, 2] > -30)
+                if m.sum() < 5:
+                    continue
+                al_m = al[m]
+                rim.append([round(float(q[1]), 2), round(float(v[m, 2][al_m > al_m.max() - 1.5].min()), 2)])
+        rim.sort(key=lambda r_: -r_[0])
+        print(f"{name} door edge: {len(rim)} points, y {rim[0][0]:.0f}..{rim[-1][0]:.0f}")
+        out[name] = {"holes": holes, "imprint": imprint, "rim": rim, "y": ys.tolist(), "z": zs.tolist(),
                      "x": [[None if np.isnan(q_) else round(float(q_), 1) for q_ in row] for row in X]}
     # the door's underside over the front of the bezel: the lowest downward-facing door surface
     # in each 2 mm cell, so the bezel's top can be trimmed to clear it

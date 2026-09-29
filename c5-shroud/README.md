@@ -80,16 +80,27 @@ reference photo. It's modelled in one piece and split in two for printing (see b
   - Each door side flange has a raised band along its top. Below it, the flange is recessed
     3–5 mm round the screw holes, and that recess is where the stock ear sits
     (`diagrams/ear_imprint.png`).
-  - Each ear's top edge runs 1.5 mm under the band's lower edge (`ear_step_gap`), smoothed
-    and never above it.
+- **The top edge follows the door's edge all the way round.** From the start of each corner,
+  back along the ear to its tip, the top runs 0.5 mm under the door's edge (`rim_gap`),
+  so nothing stands above the door and there's no gap under it.
+  - The door's edge is the lowest line of its outer skin, measured round the corner and
+    along each side. The screw pockets sit further in, so they don't pull it down.
+  - Only the front half of each corner (`rim_fade`) is allowed higher, where the blade and
+    bead come round from the front.
+- **The bottom edge is one sweep:** level round the corner, then a straight line back to the
+  ear's tip, rounded into the level.
+- **Ears fill the imprint the stock ear leaves on the door.**
+  - Each door side flange has a raised band along its top. Below it, the flange is recessed
+    3–5 mm round the screw holes, and that recess is where the stock ear sits
+    (`diagrams/ear_imprint.png`).
   - Its inside follows a smooth fit of the recessed surface, curved rather than flat,
     clearing every point of the door it covers, including the raised rims round the screw
-    pockets.
+    pockets. It turns in from the straight side over 30 mm (`ear_blend`), so there's no kink.
   - It runs back to the imprint's end and down to its lowest point. On the fender side it
     sweeps down and back to the flange's bottom lobe; on the hood side it covers both sets
     of screw tabs.
-  - `cover_scan.py` measures the band edge and the recess from the owner's model of the
-    doors and saves them in `cover_sides.json`.
+  - `cover_scan.py` measures the door's edge, the band and the recess from the owner's
+    model of the doors and saves them in `cover_sides.json`.
   - There's a 6.5 mm hole at every hole in the flange, with a boss behind it reaching the
     flange. The stock ear screws go through the ear and the flange into the headlight, as
     in the owner's photo of a stock headlight.
