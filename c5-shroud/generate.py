@@ -46,8 +46,10 @@ class Params:
     pod_step: float = 12.0        # each pod sits this far behind the one on its hood side
     pod_arc_deg: float = 0.0
     sleeve_t: float = 2.0         # the sleeve round each window, from the front back to its pod
-    sleeve_flare: float = 3.0     # each window opens out this much at the front (top and outer ends), with a round curve
-    sleeve_flare_bottom: float = 2.5
+    sleeve_back: float = 12.0     # the sleeve carries on this far back past each pod's face, wrapping it
+    sleeve_flare: float = 4.0     # each window opens out this much at the front (top), with a round curve
+    sleeve_flare_end: float = 5.0 # ...at the outer ends of the row
+    sleeve_flare_bottom: float = 4.0
     sleeve_flare_between: float = 0.5   # ...and only this much between pods, so the posts stay
     pod_face_back: float = 3.0    # each pod comes forward until its face is this far behind the bezel's front (None: leave them on the layout)
     pod_bolt_d: float = 8.6       # slot width for the bracket stud (about 8 mm / 5/16 in)
@@ -1101,8 +1103,8 @@ def shell_parts(p):
         """A rounded rectangle round pod i, carried from its face to the front, opening out
         with a round curve at the front: sleeve_flare at the top and outer ends, less at the
         bottom, and just a little between neighbouring pods so the posts stay."""
-        e_l = p.sleeve_flare if i == 0 else p.sleeve_flare_between
-        e_r = p.sleeve_flare if i == len(poses_) - 1 else p.sleeve_flare_between
+        e_l = p.sleeve_flare_end if i == 0 else p.sleeve_flare_between
+        e_r = p.sleeve_flare_end if i == len(poses_) - 1 else p.sleeve_flare_between
         pr = M.extrude(rrect(w, h, r).translate([px, zc_]), 1.0).refine_to_length(1.5)
 
         def fw(v):
@@ -1121,9 +1123,9 @@ def shell_parts(p):
     for i, (px, py, yaw) in enumerate(poses_):
         # the window: from just behind the pod's face out past the front
         wins.append(flared(i, px, ww, wh, wr, lambda x, t, py=py: py - 0.5 + t * 60.0 + 0 * x))
-        # a sleeve round it from the front back to the pod's face, so it meets the pod
+        # a sleeve round it from the front back past the pod's face, so it wraps the pod
         sleeves.append(flared(i, px, ww + 2 * p.sleeve_t, wh + 2 * p.sleeve_t, wr + p.sleeve_t,
-                              lambda x, t, py=py: py + 0.3 + t * (front_at(x) - 0.05 - py - 0.3)))
+                              lambda x, t, py=py: py - p.sleeve_back + t * (front_at(x) - 0.05 - py + p.sleeve_back)))
         # behind the face the pod's body passes through: its own shape, the same gaps round it
         body = rrect(p.pod_body_w + 2 * p.window_clear_x, p.pod_body_h + 2 * p.window_clear_y, 1.0).translate([px, zc_])
         wins.append(M.extrude(body, 80.0).transform([[1, 0, 0, 0], [0, 0, 1, py - 80.0 - 0.2], [0, 1, 0, 0]]))
