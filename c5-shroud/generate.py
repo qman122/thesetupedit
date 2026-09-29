@@ -1483,7 +1483,9 @@ def fit_test_blade(p):
     z_top = bezel_z(p)[0]
     F = front_frame(p)
     U = (p.opening_w / 2 - p.opening_side_clear) / F[0][0]
-    keep = lift_top(p, box(-U - 60, U + 60, -p.clip_back - 30, p.front_bow + 8, z_top - p.rail_t + 0.3, z_top + 3).transform(F))
+    # the rail's top sits 1.3 mm under the lip (the bead comes up to it), so the slice starts
+    # 1.3 mm lower to keep the rail's full thickness (less 0.3 mm, clear of the wall below it)
+    keep = lift_top(p, box(-U - 60, U + 60, -p.clip_back - 30, p.front_bow + 8, z_top - 1.3 - p.rail_t + 0.3, z_top + 3).transform(F))
     strip = shroud(p) ^ keep
     return M.batch_boolean([pc for pc in strip.decompose() if pc.volume() > 5], m3d.OpType.Add)   # no slivers
 
