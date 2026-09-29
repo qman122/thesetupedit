@@ -154,7 +154,7 @@ class Params:
     lip_follow: float = 1.0       # 1 = follow the door's lip as measured, 0 = level top
     lip_roll: float = 0.0         # extra tilt of the top toward the fender, degrees (+ = fender end lower)
     rim_r: float = 3.0            # the rolled rim round the slot is a tube this radius (6 mm lip)
-    corner_r: float = 45.0        # the front turns back into the ears round this radius, seen from above
+    corner_r: float = 30.0        # the front turns back into the ears round this radius, seen from above
     end_wall_x: float = 123.0     # end walls of the frame start this far out (just past the outer pods)
     wing_t: float = 3.0           # side wings (ears)
     wing_screw_y: float = -54.0   # M4 screw through each wing into a boss on the carrier
@@ -1405,7 +1405,18 @@ def door_clearance(p):
 
 
 def shroud(p):
-    """The bezel as one piece (passenger side as modelled)."""
+    """The bezel as one piece (passenger side as modelled): the CAD build (bezel_cad.py) when
+    it's there, otherwise the older mesh build below."""
+    cad = os.path.join(os.path.dirname(os.path.abspath(__file__)), "stl", "cad", "bezel_cad_passenger.stl")
+    if os.path.exists(cad) and not os.environ.get("OLD_BEZEL"):
+        import trimesh
+        tm = trimesh.load(cad)                          # merges the STL's repeated vertices
+        return M(m3d.Mesh(np.asarray(tm.vertices, np.float32), np.asarray(tm.faces, np.uint32)))
+    return shroud_mesh(p)
+
+
+def shroud_mesh(p):
+    """The older bezel, built from stacked meshes."""
     body = shell_parts(p)
     cut = door_clearance(p)
     man = body if cut is None else body - cut
