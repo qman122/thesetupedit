@@ -11,8 +11,9 @@ The layout is the same as bezel_cad.py:
   bottom lip, a shallow floor, the front wall and a thin top rail with a bead on its front edge.
 - Toward the corners the rail and floor narrow to nothing, so the ears are the ends of the same
   sweep, flattened into 3 mm flanges with rounded tips.
-- Three rounded-rectangle windows (12 mm corners) are cut through the front, centred on the pods.
-  The posts are what's left between them.
+- Three rounded-rectangle windows (12 mm corners) are cut through the front, centred on the pods,
+  each with a 3 mm tunnel from the front back to just in front of its pod's face, so every
+  light is closed in all round. The posts are what's left between them.
 - The clip tongue is a thin tapered plate blended into the rail.
 - Every edge is rounded, 1 mm or more.
 
@@ -38,6 +39,8 @@ R_WIN_EDGE = 1.5    # round on the windows' edges
 R_EDGE = 1.0        # smallest round anywhere else
 R_OUT = 1.2         # the rail's and floor's outside corners
 BOSS_R = 7.5        # screw bosses on the ears
+TUNNEL_BACK = -0.5  # the tunnels round the lights end this far in front of each pod's face (its
+                    # corners are tighter than the windows', so the tunnel can't wrap round it)
 RL_MAX = 4.0        # the rolled bottom lip's radius across the front
 BEAD_N = P.cover_edge_n + 2.5   # the bead's centre behind the front: under the middle of the door's lip
 TARGET_FACES = 600_000   # after simplifying (the refine step adds back what the 0.05 mm needs)
@@ -362,10 +365,18 @@ def apply_features(F, x, y, z, fg, pointwise=False, outside=None, door=None):
     above = -(Z - (z0 + w * slope)) / np.hypot(1, slope)   # negative above the plane
     tongue = diff_round(tongue, np.maximum(above, w - 7.0), R_EDGE)
     F = union_round(F, tongue, 1.2)
-    # windows through the front, straight ahead of each pod, their edges rounded
+    # a tunnel round each light: a 3 mm sleeve on the window's outline from the front wall back
+    # to just in front of the pod's face, so each light is closed in all round. Solid blocks are blended in first
+    # (neighbouring ones merge into the posts), then each opening is cut once, front to back.
+    blocks = None
     for (px, py, zc, hw, hh) in fg["wins"]:
-        # through the front wall only: it stops 0.5 mm past the wall's inside, clear of the floor
-        w = inter_round(round_rect_xz(X - px, Z - zc, hw, hh, WIN_R), (-T_WALL - 0.5) - outside + 0 * Z, R_EDGE)
+        blk = round_rect_xz(X - px, Z - zc, hw + T_WALL, hh + T_WALL, WIN_R + T_WALL)
+        blk = inter_round(blk, (py - TUNNEL_BACK) - Y + 0 * Z, R_EDGE)        # rounded back rim
+        blk = inter_round(blk, outside + 1.5 + 0 * Z, R_EDGE)                 # ends inside the front wall
+        blocks = blk if blocks is None else smin(blocks, blk, 2.0)
+    F = union_round(F, blocks, 2.0)
+    for (px, py, zc, hw, hh) in fg["wins"]:
+        w = inter_round(round_rect_xz(X - px, Z - zc, hw, hh, WIN_R), (py - TUNNEL_BACK - 2.0) - Y + 0 * Z, R_EDGE)
         F = diff_round(F, w, R_WIN_EDGE)
     # a round boss on each of the door's flange holes, from the flange out to the ear, blended in
     axes = []
@@ -492,6 +503,34 @@ def decimate(verts, faces, target):
     return np.asarray(m.vertex_matrix(), float), np.asarray(m.face_matrix(), np.int64)
 
 
+def self_hits(verts, faces):
+    """Triangles that cut through another one (checked in float32, as the STL is written)."""
+    import pymeshlab
+    ms = pymeshlab.MeshSet()
+    ms.add_mesh(pymeshlab.Mesh(verts.astype(np.float32).astype(np.float64), faces.astype(np.int32)))
+    ms.compute_selection_by_self_intersections_per_face()
+    return np.flatnonzero(ms.current_mesh().face_selection_array())
+
+
+def untangle(verts, faces, sw, fg, rounds=8):
+    """Where the simplified mesh folded a few triangles over each other, move those vertices (and
+    their neighbours) to the middle of their neighbours and back onto the surface, until none cross."""
+    import trimesh
+    nb = trimesh.Trimesh(verts, faces, process=False).vertex_neighbors
+    for _ in range(rounds):
+        bad = self_hits(verts, faces)
+        print(f"  untangle: {len(bad)} crossing triangles", flush=True)
+        if not len(bad):
+            break
+        vs = set(faces[bad].ravel())
+        for v in list(vs):
+            vs.update(nb[v])
+        vs = np.array(sorted(vs))
+        verts[vs] = np.array([verts[nb[v]].mean(0) for v in vs])
+        verts[vs] = snap(verts[vs], sw, fg)
+    return verts
+
+
 def build(h=H):
     t0 = time.time()
     sw = Sweep()
@@ -515,6 +554,8 @@ def build(h=H):
         dm = np.interp(sc, np.arange(sw.n), Dm)
         act = ((nn > -dm - 8) & (nn < 4) & (e < 4)) | \
               ((x > tbox[0]) & (x < tbox[1]) & (y > tbox[2]) & (y < tbox[3]))
+        for (px, py, _, hw, _) in fg["wins"]:                  # the tunnels round the lights
+            act |= (np.abs(x - px) < hw + T_WALL + 5) & (y > py - TUNNEL_BACK - 6) & (nn < 4)
         if not act.any():
             continue
         F = sw.body(x[act], y[act], zs)
@@ -535,6 +576,12 @@ def build(h=H):
     verts = snap(verts, sw, fg)
     print(f"snapped, {time.time() - t0:.0f} s", flush=True)
     verts, faces = refine(verts, faces, sw, fg, rounds=6)
+    for _ in range(4):                          # untangling can leave a triangle off; refine again
+        verts = untangle(verts, faces, sw, fg)
+        n_before = len(faces)
+        verts, faces = refine(verts, faces, sw, fg, rounds=3)
+        if len(faces) == n_before:
+            break
     print(f"refined, {time.time() - t0:.0f} s", flush=True)
     return verts, faces, sw, fg
 

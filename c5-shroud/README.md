@@ -95,10 +95,15 @@ car's frame, and `generate.py` builds every bezel print file from that.
 - **Ears.** Toward the corners the rail and floor narrow to nothing, so the ears are the ends
   of the same sweep, flattened to the 3 mm wall with rounded tips. The bead carries on round
   the corners as a rounded ridge on the wall's top.
-- **Windows.** Three rounded rectangles with 12 mm corners are cut through the front wall
-  only, centred on the pods' lenses. Each is the pod face plus 2 mm each side and 1.6 mm at
-  the top. Its sill sits on top of the rolled lip, 0.65 mm below the pod's face. The posts
-  are what's left between the windows.
+- **Windows and tunnels.** Three rounded rectangles with 12 mm corners, centred on the
+  pods' lenses. Each is the pod face plus 2 mm each side and 1.6 mm at the top. Its sill sits
+  on top of the rolled lip, 0.65 mm below the pod's face.
+  - Each window runs back as a 3 mm-walled tunnel to 0.5 mm in front of its pod's face, so
+    every light is closed in all round.
+  - The tunnel stops short of the face because the face's corners are tighter than the
+    tunnel's 12 mm ones.
+  - Neighbouring tunnels merge into solid posts, and the tunnels blend into the floor and
+    front wall with 2 mm fillets.
 - **Clip tongue.** A thin plate, tapered from 40 mm and slotted along its middle, blended into
   the back of the rail. The clip's cross bar drops into a groove across it, and a chamfered
   tooth catches the bar.
@@ -106,8 +111,9 @@ car's frame, and `generate.py` builds every bezel print file from that.
   section's corners, the windows' edges (1.5 mm), the holes, the tongue and the ear tips.
 - **Mesh accuracy.** Each vertex is snapped onto the exact surface. Anywhere a triangle
   strays more than 0.025 mm from it, the triangle is split until it doesn't. Every triangle
-  is within 0.05 mm of the true surface (the worst measured is 0.036 mm). The mesh is one
-  closed body with no self-intersections.
+  is within 0.05 mm of the true surface (the worst measured is 0.04 mm). The mesh is one
+  closed body with no self-intersections; any triangles the simplifier folds are relaxed
+  and snapped back until none cross.
 
 **Fit to the headlight door (measured from the owner's model, `cover_scan.py`):**
 - **From above it's a U.** The front follows the nose's curve, which matches the door's
