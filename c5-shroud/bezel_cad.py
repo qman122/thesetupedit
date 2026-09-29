@@ -118,7 +118,7 @@ def _corner_arc(p0, p1, p2, r, n_arc):
     return [c + r * np.array([math.cos(a0 + da * k / n_arc), math.sin(a0 + da * k / n_arc)]) for k in range(n_arc + 1)]
 
 
-def section(T, B, Dr, Df, rb, R_lip, n_arc=6, n_edge=4, n_bead=10):
+def section(T, B, Dr, Df, rb, R_lip, n_arc=4, n_edge=3, n_bead=8):
     """The cross-section in (n, z): n = 0 at the outside face, negative inward. A thin C:
     rail on top (depth Dr), 3 mm front wall, floor at the bottom (depth Df), the front bottom
     corner rolled round R_lip, and a bead of radius rb along the rail's front edge. Every
@@ -134,13 +134,18 @@ def section(T, B, Dr, Df, rb, R_lip, n_arc=6, n_edge=4, n_bead=10):
         pts += arcs[i]
         e0, e1 = np.asarray(arcs[i][-1]), np.asarray(arcs[(i + 1) % m][0])
         if i == 6:                                       # the rail's top, G -> H: the bead sits on it
-            nc = e0[0] - rb - 0.3
-            b0, b1 = np.array([nc + rb, T]), np.array([nc - rb, T])
+            # the bead's points always span most of the flat, so they stay spread out; where the
+            # bead fades away toward the ears only its height drops
+            room = e0[0] - e1[0]
+            wb = min(2 * rb, 0.6 * room) if rb > 0.3 else 0.6 * room
+            hb = min(rb, wb / 2)
+            nc = e0[0] - 0.2 * room - wb / 2
+            b0, b1 = np.array([nc + wb / 2, T]), np.array([nc - wb / 2, T])
             for k in range(1, 3):
                 pts.append(e0 + (b0 - e0) * k / 3)
             for k in range(n_bead + 1):
                 th = math.pi * k / n_bead
-                pts.append(np.array([nc + rb * math.cos(th), T + rb * math.sin(th)]))
+                pts.append(np.array([nc + wb / 2 * math.cos(th), T + hb * math.sin(th)]))
             for k in range(1, n_edge):
                 pts.append(b1 + (e1 - b1) * k / n_edge)
         else:
@@ -251,7 +256,7 @@ def build(skip_loft=False):
         f_ = f_ * (1 - ws)
         Dr = 3.6 + (P.blade_depth - 3.6) * f_
         Df = 3.6 + (P.floor_depth - 3.6) * f_
-        rb = 0.25 + 0.95 * (1 - ws)
+        rb = 1.2 * (1 - ws)                              # the bead fades out round the corners
         R_lip = 1.0 + 3.5 * (1 - ws)
         if T - B < 8.0:                                     # at the very tip keep a little height
             B = T - 8.0
@@ -261,7 +266,7 @@ def build(skip_loft=False):
     idx = [0]
     for i in range(1, n - 1):
         dw = abs(side_w(path[i]) - side_w(path[idx[-1]]))
-        if i - idx[-1] >= 4 or (dw > 0.08 and i - idx[-1] >= 2):
+        if i - idx[-1] >= 7 or (dw > 0.12 and i - idx[-1] >= 3):
             idx.append(i)
     idx.append(n - 1)
 
@@ -273,20 +278,54 @@ def build(skip_loft=False):
         wires.append(Wire([Spline(pts3 + [pts3[0]], periodic=False)]) if False else Wire([Edge.make_spline(pts3, periodic=True)]))
     # OpenCascade won't loft all the sections in one go round the whole U; loft it in runs that
     # share their end sections and join them (the runs meet on the same section curve)
-    # one loft through every section. OpenCascade's compatibility pass re-aligns the sections'
-    # start points and twists the surface round the corners, so it's off: the sections already
-    # correspond point for point
+    # loft it in short runs, each a light smooth surface, and glue them into one solid along the
+    # sections they share. OpenCascade's compatibility pass is off: it re-aligns the sections'
+    # start points and twists the corners, and the sections already correspond point for point
     if skip_loft:
         return None, path, rows, sides, (yth, ytf)
     from OCP.BRepOffsetAPI import BRepOffsetAPI_ThruSections
-    lb = BRepOffsetAPI_ThruSections(True, False, 1e-4)
-    lb.CheckCompatibility(False)
-    for w in wires:
-        lb.AddWire(w.wrapped)
-    lb.Build()
-    body = Solid(lb.Shape())
+
+    def loft_run(ws):
+        lb = BRepOffsetAPI_ThruSections(True, False, 1e-4)
+        lb.CheckCompatibility(False)
+        for w in ws:
+            lb.AddWire(w.wrapped)
+        lb.Build()
+        s_ = Solid(lb.Shape())
+        return s_ if s_.volume > 0 else Solid(s_.wrapped.Reversed())
+    step = RUN_LEN
+    ends = list(range(0, len(wires) - 1, step)) + [len(wires) - 1]
+    runs = [loft_run(wires[a:b + 1]) for a, b in zip(ends, ends[1:])]
+    print("  runs", len(runs), [round(r.volume) for r in runs], flush=True)
+    # sew the runs' curved faces together (their end caps inside the U are dropped) with a cap
+    # on each ear tip, and close it into one solid
+    from OCP.BRepBuilderAPI import BRepBuilderAPI_Sewing, BRepBuilderAPI_MakeSolid
+    from OCP.TopExp import TopExp_Explorer
+    from OCP.TopAbs import TopAbs_SHELL
+    from OCP.TopoDS import TopoDS
+    from OCP.ShapeFix import ShapeFix_Shell, ShapeFix_Solid
+    sew = BRepBuilderAPI_Sewing(1e-3)
+    c0 = np.asarray(tuple(wires[0].center()))
+    c1 = np.asarray(tuple(wires[-1].center()))
+    for k, r_ in enumerate(runs):
+        for f in r_.faces():
+            if f.geom_type.name == "PLANE":
+                fc = np.asarray(tuple(f.center()))
+                keep = (k == 0 and np.linalg.norm(fc - c0) < 5) or (k == len(runs) - 1 and np.linalg.norm(fc - c1) < 5)
+                if not keep:
+                    continue
+            sew.Add(f.wrapped)
+    sew.Perform()
+    ex = TopExp_Explorer(sew.SewedShape(), TopAbs_SHELL)
+    sh = TopoDS.Shell(ex.Current()) if hasattr(TopoDS, "Shell") else TopoDS.Shell_s(ex.Current())
+    fs = ShapeFix_Shell(sh)
+    fs.Perform()
+    so = ShapeFix_Solid(BRepBuilderAPI_MakeSolid(fs.Shell()).Solid())
+    so.Perform()
+    body = Solid(so.Solid())
     if body.volume < 0:
         body = Solid(body.wrapped.Reversed())
+    print("  sewn: free edges", sew.NbFreeEdges(), "volume", round(body.volume), flush=True)
     return body, path, rows, sides, (yth, ytf)
 
 
@@ -392,6 +431,7 @@ def features(body, sides, tips):
 
 
 WIN_R = 12.0
+RUN_LEN = 8
 
 
 if __name__ == "__main__":
