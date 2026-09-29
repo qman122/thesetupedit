@@ -57,10 +57,10 @@ little further back than the one beside it:
 | Middle | 12 mm |
 | Fender side | 24 mm |
 
-The pods come forward into the bezel's windows: each face sits 3 mm (`pod_face_back`) behind
-the bezel's front across its window, so the steps follow the front — about 12 mm from the
-hood-side pod to the middle one and 27 mm to the fender-side one, where the front curves back
-into the corner. The bracket's pod beam comes forward with them and its knees reach back to
+The pods come forward into the bezel's tunnels. The outer two sit with their faces 3 mm
+(`pod_face_back`) behind the bezel's front across their windows. The middle one sits halfway
+between them (`even_steps`), so the pods step back in two equal 19.2 mm steps from the hood
+side to the fender side. Their tunnels and the posts between them step back with them. The bracket's pod beam comes forward with them and its knees reach back to
 the same mounting tabs, so the bolts still go in the stock holes.
 
 Each window is the pod's face plus the 1-notch test gap (2.0 mm each side, 1.6 mm top and

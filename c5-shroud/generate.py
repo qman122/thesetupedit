@@ -53,6 +53,7 @@ class Params:
     sleeve_flare_len: float = 12.0  # ...curving out over this much depth, like the reference
     window_corner_r: float = 10.0 # window corners (still 0.9 mm clear of the pod face's corners)
     sleeve_flare_between: float = 0.5   # ...and only this much between pods, so the posts stay
+    even_steps: bool = True       # the middle pod halfway back between the outer two (equal steps)
     pod_face_back: float = 3.0    # each pod comes forward until its face is this far behind the bezel's front (None: leave them on the layout)
     pod_bolt_d: float = 8.6       # slot width for the bracket stud (about 8 mm / 5/16 in)
     pod_stud_d: float = 8.0       # stud diameter, from the drawing
@@ -278,8 +279,14 @@ def pod_poses(p):
     if p.pod_face_back is None:
         return base
     half = p.pod_face_w / 2 + p.window_clear_x
-    return [(x, min(bezel_front_y(p, x + dx) for dx in np.linspace(-half, half, 9)) - p.pod_face_back, yaw)
-            for (x, _, yaw) in base]
+    poses = [(x, min(bezel_front_y(p, x + dx) for dx in np.linspace(-half, half, 9)) - p.pod_face_back, yaw)
+             for (x, _, yaw) in base]
+    if p.even_steps and len(poses) == 3:
+        # the middle pod goes back to halfway between the outer two, so the two steps are equal
+        # (the outer ones stay pod_face_back behind the front; the middle one sits further back)
+        (x0, y0, _), (x1, _, w1), (x2, y2, _) = poses
+        poses[1] = (x1, (y0 + y2) / 2, w1)
+    return poses
 
 
 def bezel_front_y(p, x):
