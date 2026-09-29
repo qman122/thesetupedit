@@ -47,9 +47,11 @@ class Params:
     pod_arc_deg: float = 0.0
     sleeve_t: float = 2.0         # the sleeve round each window, from the front back to its pod
     sleeve_back: float = 12.0     # the sleeve carries on this far back past each pod's face, wrapping it
-    sleeve_flare: float = 4.0     # each window opens out this much at the front (top), with a round curve
-    sleeve_flare_end: float = 5.0 # ...at the outer ends of the row
-    sleeve_flare_bottom: float = 4.0
+    sleeve_flare: float = 3.5     # each window opens out this much at the front (top: under the blade the door sits on)
+    sleeve_flare_end: float = 8.0 # ...at the outer ends of the row
+    sleeve_flare_bottom: float = 5.0
+    sleeve_flare_len: float = 12.0  # ...curving out over this much depth, like the reference
+    window_corner_r: float = 10.0 # window corners (still 0.9 mm clear of the pod face's corners)
     sleeve_flare_between: float = 0.5   # ...and only this much between pods, so the posts stay
     pod_face_back: float = 3.0    # each pod comes forward until its face is this far behind the bezel's front (None: leave them on the layout)
     pod_bolt_d: float = 8.6       # slot width for the bracket stud (about 8 mm / 5/16 in)
@@ -1088,15 +1090,15 @@ def shell_parts(p):
     # top and bottom (the 1-notch test frame), corners rounded to match. Cut straight ahead
     # from each pod, the way it faces; the posts are what's left between them ---
     ww, wh = p.pod_face_w + 2 * p.window_clear_x, p.pod_face_h + 2 * p.window_clear_y
-    wr = p.pod_face_r + min(p.window_clear_x, p.window_clear_y)
+    wr = p.window_corner_r
     fx_ = np.arange(-170.0, 171.0, 2.0)
     fy_ = np.array([bezel_front_y(p, x_) for x_ in fx_])
     front_at = lambda x_: np.interp(x_, fx_, fy_)
     zc_ = pod_zc(p)
     poses_ = pod_poses(p)
 
-    def flare(d, E):                                     # quarter-round: E at the front, 0 by E back
-        q = 1 - np.clip(d / E, 0, 1)
+    def flare(d, E):                                     # a long quarter-ellipse: E at the front, 0 by sleeve_flare_len back
+        q = 1 - np.clip(d / p.sleeve_flare_len, 0, 1)
         return E * (1 - np.sqrt(np.clip(1 - q * q, 0, 1)))
 
     def flared(i, px, w, h, r, y_of):
