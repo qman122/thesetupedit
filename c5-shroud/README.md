@@ -84,15 +84,19 @@ reference photo. It's modelled in one piece and split in two for printing (see b
   - `cover_scan.py` fits that plane to the owner's model of the doors and saves it in
     `cover_sides.json`, with the door's edge.
 - **The top edge follows the door's edge all the way round.** From the start of each corner
-  back to the tip, the top runs 0.5 mm under the door's edge (`rim_gap`), so nothing stands
+  back to the tip, the top runs 0.05 mm under the door's edge (`rim_gap`), so nothing stands
   above the door and there's no gap under it.
+  - Round the corners the door's lip sits up to 15 mm inside the wall. A 2.4 mm shelf
+    (`shelf_t`) runs along the inside of the wall's top, just under the lip, to 2 mm past it
+    (`shelf_under`), so you can't see in under the door's edge. It narrows wherever the
+    door's flange hangs down beside the wall.
   - The door's edge is the lowest line of its outer skin, measured round the corner and
     along each side.
   - Only the front half of each corner (`rim_fade`) is allowed higher, where the blade and
     bead come round from the front.
-  - At the hood end it follows the door's edge down to a point at the tip.
-- **The bottom edge is one sweep:** level round the corner, then a straight line back to the
-  tip, rounded into the level.
+- **The tip is where the door's edge comes lowest** at the back of each side. The bottom edge
+  runs level round the corner, then in a straight line back to the tip, following the line
+  of the door's bottom edge.
 - **Screw holes:**
   - There's a 6.5 mm hole at every hole in the flange, with a boss behind it reaching the
     flange. The stock ear screws go through the side and the flange into the headlight, as

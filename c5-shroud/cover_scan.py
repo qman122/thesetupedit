@@ -265,7 +265,8 @@ def find_sides(door_m):
                 if m.sum() < 5:
                     continue
                 al_m = al[m]
-                rim.append([round(float(q[1]), 2), round(float(v[m, 2][al_m > al_m.max() - 1.5].min()), 2)])
+                rim.append([round(float(q[1]), 2), round(float(v[m, 2][al_m > al_m.max() - 1.5].min()), 2),
+                            round(float(-al_m.max()), 2)])            # and how far in from the bezel's outside it is
         rim.sort(key=lambda r_: -r_[0])
         print(f"{name} door edge: {len(rim)} points, y {rim[0][0]:.0f}..{rim[-1][0]:.0f}")
         # the flat side: a vertical plane |x| = a + b y fitted to the outward faces of the flange
