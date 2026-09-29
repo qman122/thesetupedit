@@ -154,7 +154,7 @@ class Params:
     lip_follow: float = 1.0       # 1 = follow the door's lip as measured, 0 = level top
     lip_roll: float = 0.0         # extra tilt of the top toward the fender, degrees (+ = fender end lower)
     rim_r: float = 3.0            # the rolled rim round the slot is a tube this radius (6 mm lip)
-    corner_r: float = 30.0        # the front turns back into the ears round this radius, seen from above
+    corner_r: float = 45.0        # the front turns back into the ears round this radius, seen from above
     end_wall_x: float = 123.0     # end walls of the frame start this far out (just past the outer pods)
     wing_t: float = 3.0           # side wings (ears)
     wing_screw_y: float = -54.0   # M4 screw through each wing into a boss on the carrier
@@ -179,7 +179,7 @@ class Params:
     window_r: float = 15.0        # window corner radius: the posts flare into the floor and blade
     window_wrap: float = 12.7     # the end windows run this far round into the corners
     floor_depth: float = 22.0     # shallow floor under the pods, back from the front
-    lip_r: float = 3.5            # rounded lip along the bottom front edge (7 mm tall)
+    lip_r: float = 6.0            # rounded lip along the bottom front edge (12 mm tall, like the reference)
     bead_r: float = 1.5           # raised bead along the blade's front edge, where the door seals
     ear_start_y: tuple = (-35.0, -45.0)   # hood, fender: where the door's side flange starts
     ear_tip_past: float = 15.0    # ears end this far past the last screw hole
@@ -188,7 +188,7 @@ class Params:
     tongue_slot_w: float = 5.0    # ...and the slot along it
     dowel_d: float = 3.1          # dowel holes across the print split (3 mm pins)
     dowel_depth: float = 6.0      # each side of the split
-    min_wall: float = 1.0         # thinnest the side wall gets where it's pocketed round the door's flange
+    min_wall: float = 1.05        # thinnest the side wall gets where it's pocketed round the door's flange
     outline_gap: float = 0.2      # the bezel stays this far inside the door's outline seen from above
     rim_gap: float = 0.05         # the corner and ear tops sit this far under the door's edge
     window_under: float = 3.0     # round the corners the windows stop this far under the door's edge
@@ -499,6 +499,13 @@ def carrier(p):
         xw = xb if xb > 0 else xa
         x0, x1 = (xw - 7, xw + 1) if xb > 0 else (xw - 1, xw + 7)
         cuts.append(cyl_x(p.shroud_tab_screw_d - 0.4, x0, x1, p.wing_screw_y, p.wing_screw_z))
+    # keep clear of the bezel's rounded front lip, which sits over the front of the floor
+    xs_ = np.linspace(-row_w(p) / 2 - 40, row_w(p) / 2 + 40, 61)
+    back_ = [bezel_front_y(p, x_) - 2 * p.lip_r - 1.5 for x_ in xs_]
+    lipk = np.array([[x_, y_] for x_, y_ in zip(xs_, back_)] + [[xs_[-1], 400.0], [xs_[0], 400.0]])
+    if np.sum(lipk[:, 0] * np.roll(lipk[:, 1], -1) - np.roll(lipk[:, 0], -1) * lipk[:, 1]) < 0:
+        lipk = lipk[::-1]
+    cuts.append(M.extrude(CS([lipk]), 40.0).translate([0, 0, -33.0]))
     return M.batch_boolean([body] + cuts, m3d.OpType.Subtract)
 
 
@@ -1226,7 +1233,7 @@ def shell_parts(p):
             L_arc = R_ * abs(ga1 - ga0)
             tan_ = np.array([nv_[1], -nv_[0]])
             tan_ = tan_ if tan_[1] < 0 else -tan_                     # along the side, heading back
-            y_stop = y_t + 30.0
+            y_stop = max(y_t + 30.0, T_[1] - 45.0)                   # round the corner and a little way back: the lip sits at the wall further back
             L_side = T_[1] - y_stop                                 # along the side, by fore-aft distance
             sxf = s_["side_x"]
 
@@ -1288,7 +1295,7 @@ def shell_parts(p):
                 if len(sg) < 2:
                     continue
                 sg = [(sg[0][0] + 1.0, sg[0][1])] + sg + [(sg[-1][0] - 1.0, sg[-1][1])]
-                q = np.array([[y, zl] for y, zl in sg] + [[y, float(rim(y)) + 1.0] for y, _ in sg[::-1]])
+                q = np.array([[y, zl] for y, zl in sg] + [[y, float(rim(y)) + 1.37] for y, _ in sg[::-1]])
                 if np.sum(q[:, 0] * np.roll(q[:, 1], -1) - np.roll(q[:, 0], -1) * q[:, 1]) < 0:
                     q = q[::-1]
                 pk = M.extrude(_clean_cs(CS([q])), 1.0).refine_to_length(1.0)
