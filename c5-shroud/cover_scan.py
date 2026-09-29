@@ -277,7 +277,23 @@ def find_sides(door_m):
         kp = np.linalg.lstsq(np.c_[np.ones(of.sum()), c[of, 1]], c[of, 0] * sx, rcond=None)[0]
         stand = float(np.max(c[under, 0] * sx - (kp[0] + kp[1] * c[under, 1])))
         print(f"{name} side plane: |x| = {kp[0]:.1f} {kp[1]:+.4f} y, flange stands out up to {stand:.1f} mm past it")
-        out[name] = {"holes": holes, "imprint": imprint, "rim": rim,
+        # the door's outline from above along this side: its widest point at each y
+        sil = []
+        for y0 in np.arange(40.0, -240.0, -2.0):
+            m = (np.abs(v[:, 1] - y0) < 1.0) & (v[:, 0] * sx > 60)
+            if m.sum() > 3:
+                sil.append([float(y0), round(float((v[m, 0] * sx).max()), 2)])
+        # the flange: how far out (|x|) the door comes below its edge, on a 1 mm grid of (y, z)
+        ra_ = np.asarray(rim)[::-1]
+        fy0, fz0 = -240.0, -30.0
+        FX = np.full((281, 121), np.nan)
+        sel_ = (pts[:, 0] * sx > 100) & (pts[:, 2] < np.interp(pts[:, 1], ra_[:, 0], ra_[:, 1]) - 0.3)
+        q_ = pts[sel_]
+        iy_, iz_ = np.rint(q_[:, 1] - fy0).astype(int), np.rint(q_[:, 2] - fz0).astype(int)
+        ok_ = (iy_ >= 0) & (iy_ < FX.shape[0]) & (iz_ >= 0) & (iz_ < FX.shape[1])
+        np.fmax.at(FX, (iy_[ok_], iz_[ok_]), q_[ok_, 0] * sx)
+        flange = {"y0": fy0, "z0": fz0, "x": [[None if np.isnan(a_) else round(float(a_), 1) for a_ in row] for row in FX]}
+        out[name] = {"holes": holes, "imprint": imprint, "rim": rim, "sil": sil, "flange": flange,
                      "plane": [round(float(kp[0]), 3), round(float(kp[1]), 5)], "plane_clear": round(stand, 2),
                      "y": ys.tolist(), "z": zs.tolist(),
                      "x": [[None if np.isnan(q_) else round(float(q_), 1) for q_ in row] for row in X]}
@@ -293,6 +309,9 @@ def find_sides(door_m):
     np.fmin.at(Z, (ix[ok], iy[ok]), sp[ok, 2])
     out["underside"] = {"x": xs_.tolist(), "y": ys_.tolist(),
                         "z": [[None if np.isnan(q_) else round(float(q_), 2) for q_ in row] for row in Z]}
+    # the door's whole outline from above, so nothing of the bezel shows past it
+    outl = max(door_m.project().simplify(0.05).to_polygons(), key=lambda q_: abs(g.CS([q_]).area()) if len(q_) > 2 else 0)
+    out["outline"] = [[round(float(a_), 2), round(float(b_), 2)] for a_, b_ in outl]
     path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "cover_sides.json")
     with open(path, "w") as fh:
         json.dump(out, fh, separators=(",", ":"))

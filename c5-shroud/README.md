@@ -76,13 +76,14 @@ reference photo. It's modelled in one piece and split in two for printing (see b
   - The front follows the nose's curve, which matches the door's front edge to within
     1.4 mm.
   - At each end it turns back round a 30 mm radius (`corner_r`) into a flat side.
-- **Each side is one flat wall, from the corner back to the tip.** No separate ear and no
-  seam.
-  - It lies against the door's side: a flat vertical plane fitted to the door's side flange,
-    set just far enough out to clear everything on it (up to 3.3 mm on the hood side, where
-    the screw tabs stand out, and 2.3 mm on the fender side), plus 0.8 mm (`ear_gap`).
-  - `cover_scan.py` fits that plane to the owner's model of the doors and saves it in
-    `cover_sides.json`, with the door's edge.
+- **Nothing shows past the door from above.** The whole bezel is clipped to the door's outline
+  seen from above, 0.2 mm inside it (`outline_gap`), front included.
+- **Each side is one wall, from the corner back to the tip.** No separate ear and no seam.
+  - Its outside follows the door's outline from above, just inside it.
+  - Where the door's side flange and screw tabs come out toward it, the inside of the wall
+    is pocketed 0.8 mm clear of them (`ear_gap`), leaving at least 1 mm (`min_wall`).
+  - `cover_scan.py` measures the outline, the flange (on a 1 mm grid) and the door's edge
+    from the owner's model of the doors and saves them in `cover_sides.json`.
 - **The top edge follows the door's edge all the way round.** From the start of each corner
   back to the tip, the top runs 0.05 mm under the door's edge (`rim_gap`), so nothing stands
   above the door and there's no gap under it.
@@ -92,8 +93,8 @@ reference photo. It's modelled in one piece and split in two for printing (see b
     door's flange hangs down beside the wall.
   - The door's edge is the lowest line of its outer skin, measured round the corner and
     along each side.
-  - Only the front half of each corner (`rim_fade`) is allowed higher, where the blade and
-    bead come round from the front.
+  - It blends in from the front over the first 25 mm of each corner, so there's no step
+    where the corner starts.
 - **The tip is where the door's edge comes lowest** at the back of each side. The bottom edge
   runs level round the corner, then in a straight line back to the tip, following the line
   of the door's bottom edge.
@@ -152,8 +153,8 @@ The owner's reference photo is now the target.
 Details are in "The bezel" above.
 
 **What moved:**
-- **The door sits 5 mm further back relative to the bezel** (`cover_edge_n` 1 → 5), so its
-  lip closes down behind the new bead.
+- **The door's front edge sits 2.5 mm behind the bezel's front** (`cover_edge_n`), and the
+  bezel is clipped flush under the door's outline, so none of the front shows from above.
   - The clip groove and the flange holes moved with it; `cover_scan.py` re-measured them.
 - **The bezel no longer screws to the carrier.**
   - The wing screws and the tabs under the front are gone. The carrier's bosses for them

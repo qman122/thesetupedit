@@ -182,8 +182,10 @@ for name in ("hood", "fender"):
     for h in holes:
         at, nrm = np.asarray(h["at"]), np.asarray(h["normal"])                     # passenger frame
         bore = g._along(M.cylinder(16, 2.2, 2.2, 16), nrm, at + 0.5 * nrm)          # screw path, clear
-        ring = g._along(M.cylinder(2, 6.5, 6.5, 32) - M.cylinder(2, 4.5, 4.5, 32), nrm, at + 3 * nrm)
-        ok_holes &= overlap(shroud, bore) < 1e-6 and overlap(shroud, ring) > 20       # material round it
+        # material round it, in the first mm out from the flange (the side now sits just inside
+        # the door's outline, so there's as little as 2 mm between the flange and its outside)
+        ring = g._along(M.cylinder(1, 6.5, 6.5, 32) - M.cylinder(1, 4.5, 4.5, 32), nrm, at + 0.6 * nrm)
+        ok_holes &= overlap(shroud, bore) < 1e-6 and overlap(shroud, ring) > 20
     check(f"{name} ear: a screw hole on each of the door's {len(holes)} flange holes", ok_holes)
 
 # 7a. split for printing through the hood-side post: two pieces that each fit the A1's 256 mm bed,
