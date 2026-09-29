@@ -42,6 +42,9 @@ BOSS_R = 7.5        # screw bosses on the ears
 TUNNEL_BACK = 18.0  # the tunnels round the lights reach this far back past each pod's face (the
                     # pod's bracket starts 24 mm back)
 TUNNEL_CLEAR = 1.0  # round the pod's body inside the tunnel
+TUNNEL_T = 3.5      # the tunnels' side and top walls (a little over 3 so the taper doesn't thin them)
+OUTER_FILL = 14.0   # the outer tunnels' outboard walls reach this much further out, to the corner walls
+TONGUE_T = 5.0      # the clip tongue's thickness: 3 mm left under the 2 mm groove
 FLARE_SIDE = 0.5    # the opening at the front: this much wider each side than the window,
 FLARE_TOP = 6.0     # and up to this much taller at the top (less where the rail comes lower)
 FLOOR_B = g.shell_levels(P)[2] - 0.15 - T_WALL   # the underside of the floor across the front
@@ -256,7 +259,8 @@ def feature_geometry(sw):
     zc = g.pod_zc(P)
     ww, wh = P.pod_face_w + 2 * P.window_clear_x, P.pod_face_h + 2 * P.window_clear_y
     floor_top = g.shell_levels(P)[2] - 0.15
-    z_bot = floor_top - T_WALL + RL_MAX + 0.1      # the sill sits just on top of the rolled lip
+    z_bot = floor_top - T_WALL + RL_MAX + 1.0      # the sill sits 1 mm above the rolled lip's top, so the
+                                                   # lip under it is solid (not a thin upturned edge)
     z_topw = zc + wh / 2
     wins = [(px, py, (z_bot + z_topw) / 2, ww / 2, (z_topw - z_bot) / 2) for (px, py, _) in g.pod_poses(P)]
     # the tunnels: behind each pod's face they hug the pod's body (TUNNEL_CLEAR all round, small
@@ -363,7 +367,7 @@ def apply_features(F, x, y, z, fg, pointwise=False, outside=None, door=None):
     # the tongue: a thin tapered plate, top at the door's lip, blended into the rail
     lip_c = fg["lip_c"]
     plan = round_poly_sdf(x, y, fg["tongue"], 2.0)[:, None]
-    slab = np.abs(Z - (lip_c - T_WALL / 2)) - T_WALL / 2
+    slab = np.abs(Z - (lip_c - TONGUE_T / 2)) - TONGUE_T / 2
     tongue = inter_round(plan, slab + 0 * plan, R_EDGE)
     slot = round_poly_sdf(x, y, fg["slot"], 1.5)[:, None] + 0 * Z
     tongue = diff_round(tongue, slot, R_EDGE)
@@ -387,17 +391,28 @@ def apply_features(F, x, y, z, fg, pointwise=False, outside=None, door=None):
     # first (neighbouring ones merge into the posts), then each opening is cut once, front to back.
     def section_at(py, back, front):
         t = Y - py + 0 * Z
-        s_ = np.where(t > 0, t / np.maximum(t - outside, 1e-3), 0.0)
-        e_ = np.clip(s_, 0, 1) ** 2
-        return [b_ + (f_ - b_) * e_ for b_, f_ in zip(back, front)]
+        s_ = np.clip(np.where(t > 0, t / np.maximum(t - outside, 1e-3), 0.0), 0, 1)
+        e_ = s_ ** 2
+        # the floor comes up to the sill over the first half of the depth (smoothly), so it
+        # meets the rolled lip at the front solidly instead of leaving the lip's top as a thin fin
+        u_ = np.clip(2 * s_, 0, 1)
+        eb = u_ * u_ * (3 - 2 * u_)
+        (hw_b, hh_b, zc_b, r_b), (hw_f, hh_f, zc_f, r_f) = back, front
+        top = (zc_b + hh_b) + ((zc_f + hh_f) - (zc_b + hh_b)) * e_
+        bot = (zc_b - hh_b) + ((zc_f - hh_f) - (zc_b - hh_b)) * eb
+        return [hw_b + (hw_f - hw_b) * e_, (top - bot) / 2, (top + bot) / 2, r_b + (r_f - r_b) * e_]
     blocks = None
-    for (px, py, back, front) in fg["tunnels"]:
+    n_t = len(fg["tunnels"])
+    for k, (px, py, back, front) in enumerate(fg["tunnels"]):
         hw, hh, zc_, r_ = section_at(py, back, front)
-        # flat along the bottom (a 3 mm wall), so the posts between the tunnels stand on the floor
+        # flat along the bottom (a 3 mm wall), so the posts between the tunnels stand on the floor;
+        # the outer tunnels reach out to the corner walls, so there's no thin slit between them
         z_lo = zc_ - hh - T_WALL
         r_lo = 1.5 + 0 * r_
-        blk = round_box2(X - px, Z, -hw - T_WALL, hw + T_WALL, z_lo, zc_ + hh + T_WALL,
-                         r_ + T_WALL, r_lo, r_ + T_WALL, r_lo)
+        x0 = -hw - TUNNEL_T - (OUTER_FILL if k == 0 else 0.0)
+        x1 = hw + TUNNEL_T + (OUTER_FILL if k == n_t - 1 else 0.0)
+        blk = round_box2(X - px, Z, x0, x1, z_lo, zc_ + hh + TUNNEL_T,
+                         r_ + TUNNEL_T, r_lo, r_ + TUNNEL_T, r_lo)
         blk = inter_round(blk, (py - TUNNEL_BACK) - Y + 0 * Z, R_EDGE)        # rounded back rim
         blk = inter_round(blk, outside + 1.5 + 0 * Z, R_EDGE)                 # ends inside the front wall
         blocks = blk if blocks is None else smin(blocks, blk, 2.0)
@@ -585,7 +600,7 @@ def build(h=H):
         act = ((nn > -dm - 8) & (nn < 4) & (e < 4)) | \
               ((x > tbox[0]) & (x < tbox[1]) & (y > tbox[2]) & (y < tbox[3]))
         for (px, py, _, hw, _) in fg["wins"]:                  # the tunnels round the lights
-            act |= (np.abs(x - px) < hw + T_WALL + 5) & (y > py - TUNNEL_BACK - 6) & (nn < 4)
+            act |= (np.abs(x - px) < hw + TUNNEL_T + OUTER_FILL + 8) & (y > py - TUNNEL_BACK - 6) & (nn < 4)
         if not act.any():
             continue
         F = sw.body(x[act], y[act], zs)

@@ -251,7 +251,7 @@ def cyl_z(d, z0, z1, x, y):
 
 def slot_z(w, length, z0, z1, x, y):
     """Fore-aft slot through a horizontal plate."""
-    s = CS.square([w, length - w], center=True).offset(w / 2, m3d.JoinType.Round)
+    s = CS.square([1e-3, length - w], center=True).offset(w / 2, m3d.JoinType.Round)   # w wide, length long
     return M.extrude(s, z1 - z0).translate([x, y, z0])
 
 
@@ -389,10 +389,10 @@ def ear_section(x0, x1, z0, z1, r=5.0):
 def slot_y(w, length, axis, y0, y1, x, z):
     """Slot through a plate in the XZ plane, long along X or Z."""
     if axis == "x":
-        s = CS.square([length - w, w], center=True)
+        s = CS.square([length - w, 1e-3], center=True)
     else:
-        s = CS.square([w, length - w], center=True)
-    s = s.offset(w / 2, m3d.JoinType.Round).translate([x, z])
+        s = CS.square([1e-3, length - w], center=True)
+    s = s.offset(w / 2, m3d.JoinType.Round).translate([x, z])       # w wide, length long
     return plate_xz(s, y1, y1 - y0)
 
 
@@ -454,7 +454,8 @@ def carrier(p):
     # side cheeks on the outboard edge of each tab: outside the pod row and clear of the nuts
     cheek_len = 20.0
     for (x0, x1, _, z1) in (arm_ear, pad_ear):
-        tri = CS([[[0, 0], [cheek_len, 0], [0, z1 - 8]]])     # (Y offset, Z) profile
+        # (Y offset, Z) profile: a gusset with a 3 mm flat top rather than a knife-edge point
+        tri = CS([[[0, 0], [cheek_len, 0], [3.0, z1 - 8], [0, z1 - 8]]])
         xc = x1 - 1 if x1 > 0 else x0 - p.wall_t + 1          # outboard edge, 1 mm into the tab
         g = M.extrude(tri, p.wall_t).transform(
             [[0, 0, 1, xc],
@@ -462,15 +463,10 @@ def carrier(p):
              [0, 1, 0, 0]])
         parts.append(g)
 
-    # bosses under the floor for the shroud screws
-    boss_z0 = -p.floor_t - p.lip_h
-    for (x, y) in shroud_tabs(p):
-        parts.append(cyl_z(11, boss_z0, -p.floor_t + 0.01, x, y))
-    # bosses for the screws through the bezel's side wings, outboard of the pods
+    # floor out beside the outer pods, tying into the tab floor (the bezel no longer screws to the
+    # carrier, so the old screw bosses and upright plates here are gone: they left thin slivers)
     for (xa, xb) in wing_boss_x(p):
-        parts.append(box(xa, xb, -89, p.wing_screw_y + 7, -p.floor_t, 0))           # ties into the tab floor
-        xa2, xb2 = (row_w(p) / 2 + 1.25, xb) if xb > 0 else (xa, -row_w(p) / 2 - 1.25)
-        parts.append(box(xa2, xb2, p.wing_screw_y - 7, p.wing_screw_y + 7, -p.floor_t, p.wing_screw_z + 8))
+        parts.append(box(xa, xb, -89, p.wing_screw_y + 7, -p.floor_t, 0))
 
     # nut channel under each pod slot (from the owner's bracket sketch): two rails hold the
     # pod's nut so it can slide with the stud but can't turn, so each pod bolts on from above
@@ -497,22 +493,6 @@ def carrier(p):
     for (_, hx, hz, axis) in mount_points(p):
         ln = p.arm_slot_len if axis == "x" else p.pad_slot_len
         cuts.append(slot_y(p.mount_hole_d, ln, axis, y_back - 1, y_back + p.mount_wall_t + 1, hx, hz))
-    # shroud screw holes near the front edge of the floor, in the gaps between pods
-    for (x, y) in shroud_tabs(p):
-        # blind pilot hole for an M4 self-tapping screw, stops 1.5 mm under the floor top
-        cuts.append(cyl_z(p.shroud_tab_screw_d - 0.4, boss_z0 - 1, -1.5, x, y))
-
-    for (xa, xb) in wing_boss_x(p):
-        xw = xb if xb > 0 else xa
-        x0, x1 = (xw - 7, xw + 1) if xb > 0 else (xw - 1, xw + 7)
-        cuts.append(cyl_x(p.shroud_tab_screw_d - 0.4, x0, x1, p.wing_screw_y, p.wing_screw_z))
-    # keep clear of the bezel's rounded front lip, which sits over the front of the floor
-    xs_ = np.linspace(-row_w(p) / 2 - 40, row_w(p) / 2 + 40, 61)
-    back_ = [bezel_front_y(p, x_) - 2 * p.lip_r - 1.5 for x_ in xs_]
-    lipk = np.array([[x_, y_] for x_, y_ in zip(xs_, back_)] + [[xs_[-1], 400.0], [xs_[0], 400.0]])
-    if np.sum(lipk[:, 0] * np.roll(lipk[:, 1], -1) - np.roll(lipk[:, 0], -1) * lipk[:, 1]) < 0:
-        lipk = lipk[::-1]
-    cuts.append(M.extrude(CS([lipk]), 40.0).translate([0, 0, -33.0]))
     return M.batch_boolean([body] + cuts, m3d.OpType.Subtract)
 
 
@@ -1499,7 +1479,7 @@ def fit_test_mount(p):
         for (_, x, z, axis) in mount_points(p):
             ln = p.arm_slot_len if axis == "x" else p.pad_slot_len
             w = p.mount_hole_d
-            sl = CS.square([ln - w, w] if axis == "x" else [w, ln - w], center=True)
+            sl = CS.square([ln - w, 1e-3] if axis == "x" else [1e-3, ln - w], center=True)   # w wide once offset
             sec = sec - sl.offset(w / 2, m3d.JoinType.Round).translate([x, z])
         pieces.append(sec)
     arm, pad = pieces

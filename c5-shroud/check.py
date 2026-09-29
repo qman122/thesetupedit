@@ -55,8 +55,24 @@ for n, (x, z, ax) in pts.items():
     past = travel + P.mount_hole_d / 2 + 2.5
     px, pz = (x + past, z) if ax == "x" else (x, z + past)
     solid = overlap(carrier, g.cyl_y(2, y_back + 0.5, y_back + t - 0.5, px, pz))
+    # and only as wide as the hole: solid 1.5 mm out from its sides, so the nut's washer bears on it
+    side = P.mount_hole_d / 2 + 1.5
+    for sd in (-side, side):
+        qx, qz = (x, z + sd) if ax == "x" else (x + sd, z)
+        solid = min(solid, overlap(carrier, g.cyl_y(1, y_back + 0.5, y_back + t - 0.5, qx, qz)))
     check(f"{n}: M6 slot open through the wall, +/-{travel:.1f} mm travel",
           max(probe_open) < 1e-6 and solid > 1, f"at x={x:.1f} z={z:.1f}")
+
+# 2b. each pod's stud slot is only as wide as the stud's clearance, with the floor either side of
+#     it, so the nut in the channel below can't pull up through it
+half_ = (P.pod_slot_len - P.pod_bolt_d) / 2
+ok_stud = True
+for pose in g.pod_poses(P):
+    sx_, sy_ = g.pose_pt(pose, 0, P.pod_bolt_nominal_y)
+    for sd in (-(P.pod_bolt_d / 2 + 1.5), P.pod_bolt_d / 2 + 1.5):
+        ok_stud &= overlap(carrier, g.cyl_z(1, -P.floor_t + 0.5, -0.5, sx_ + sd, sy_)) > 1e-3
+    ok_stud &= overlap(carrier, g.cyl_z(P.pod_bolt_d - 1, -P.floor_t - 1, 1, sx_, sy_)) < 1e-6
+check(f"pod stud slots {P.pod_bolt_d} mm wide, floor either side (the nut can't pull through)", ok_stud)
 
 # 3. nuts on the front of the wall clear the carrier and the pods at both slot ends
 for n, (x, z, ax) in pts.items():

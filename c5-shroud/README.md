@@ -169,8 +169,8 @@ Details are in "The bezel" above.
   bezel is clipped flush under the door's outline, so none of the front shows from above.
   - The clip groove and the flange holes moved with it; `cover_scan.py` re-measured them.
 - **The bezel no longer screws to the carrier.**
-  - The wing screws and the tabs under the front are gone. The carrier's bosses for them
-    are still on the carrier, unused.
+  - The wing screws and the tabs under the front are gone, and so are the carrier's bosses
+    and upright plates for them (see "Strength" below).
   - The carrier and pods haven't moved.
 - **The inside wings, masks, rolled rim and access hole are gone.** The hood-end access
   hole isn't in the photo.
@@ -316,6 +316,37 @@ file's path.
 - The driver part is a true mirror of the passenger part.
 - Every STL is one watertight solid lying on the bed.
 
+## Strength
+
+Every part was checked for wall thickness: from points spread over the whole surface, how far
+it is straight through to the other side. The aim is 2.4 mm or more everywhere (six 0.4 mm
+perimeters).
+
+- **Carrier:** 5 mm typical, nothing under 2.4 mm.
+  - **Fixed: the slots were twice as wide as meant.** The pod stud slots were 17.2 mm instead
+    of 8.6 mm, and the M6 mounting slots 12.6 mm instead of 6.3 mm.
+    - The nut rails under each pod hung on by 1.1 mm of floor.
+    - The pod's 13.4 mm nut could pull up through its slot.
+    - The earlier mount fit-test tabs had the same wide slots; the hole spacing they
+      confirmed still holds.
+    - `check.py` now checks there's material either side of every slot.
+  - **Removed thin slivers:**
+    - the unused bosses and upright plates for the old bezel's screws,
+    - an old cut clear of the previous bezel's lip. The bezel still clears the carrier
+      over its whole 16 mm of travel.
+  - The tab gussets have a 3 mm flat top instead of a knife-edge point.
+- **Bezel:** 3.4 mm typical. Under 2.4 mm there's only 286 mm² in all, down from 925.
+  - The clip tongue is 5 mm thick, leaving 3 mm under the clip bar's groove (it was 1 mm).
+  - The tunnels' side and top walls are 3.5 mm.
+  - The outer tunnels are filled out to the corner walls (there was a thin slit between
+    them).
+  - The tunnel floor rises to meet the rolled lip at the front, so the lip isn't a thin fin.
+  - What's left under 2.4 mm:
+    - the ears (2.2-2.3 mm), where they're cut clear of the door and can't go thicker
+      without showing from above or touching the door,
+    - the edges where the fender-side window's corners meet the curved corner wall,
+    - the tongue's chamfered tooth tip.
+
 ## Print order
 
 1. `stl/fit_test_window.stl` (about 15 minutes).
@@ -323,7 +354,9 @@ file's path.
    The bezel uses the 1-notch size, which fit on the car. Already done.
 2. `stl/fit_test_mount_driver.stl` (about 20 minutes, two small flat tabs). Bolt the taller
    tab to the arm (holes 1 and 4) and the shorter one to the aiming pad (both holes).
-   The bolts should go through snugly without forcing. Already done: the spacing fit.
+   The bolts should go through snugly without forcing. Already done: the spacing fit. (Those
+   tabs had slots twice as wide as meant; reprint this if you want to check the M6 bolts are
+   snug in the corrected 6.3 mm slots.)
 3. `stl/fit_test_blade_driver_hood_piece.stl` and `..._fender_piece.stl` (about 45 minutes;
    supports on). These are the bezel's top rail, bead and clip tongue on their own. Tape
    them together and slide them in under the front of the headlight door. Check:
