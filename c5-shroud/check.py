@@ -220,11 +220,18 @@ us_ = g.split_plane_u(P)
 z_top_, z_bu_, z_wb_, _, _ = g.shell_levels(P)
 n_c = float(g.bow(P, us_)) - P.post_depth / 2 - P.post_setback
 dowels_ok = True
-for z in (z_wb_ - 0.2, z_bu_ + 0.2):
+walled = 1.0
+for z in g.dowel_levels(P):
     for du in (-P.dowel_depth + 1, P.dowel_depth - 1):
         probe = g.lift_top(P, g.box(us_ + du - 0.5, us_ + du + 0.5, n_c - 0.4, n_c + 0.4, z - 0.4, z + 0.4).transform(F_))
         dowels_ok &= all(overlap(pc, probe) < 1e-6 for pc in pieces)
-check("dowel holes go into both pieces", dowels_ok)
+    # and there's wall round the hole: a 1 mm ring round it is (almost all) in the bezel
+    ring = (M.cylinder(2 * P.dowel_depth - 1, P.dowel_d / 2 + 1.0, P.dowel_d / 2 + 1.0, 32, True)
+            - M.cylinder(2 * P.dowel_depth, P.dowel_d / 2 + 0.05, P.dowel_d / 2 + 0.05, 32, True))
+    ring = g.lift_top(P, ring.transform([[0, 0, 1, us_], [1, 0, 0, n_c], [0, 1, 0, z]]).transform(F_))
+    walled = min(walled, (ring ^ shroud).volume() / ring.volume())
+check("dowel holes go into both pieces, with wall round them", dowels_ok and walled > 0.85,
+      f"{100 * walled:.0f}% of a 1 mm ring round the hole is solid")
 
 # 7b. keep clear of the car parts next to the holes (seen in the owner's photos)
 z4 = pts["arm hole 4"][1]

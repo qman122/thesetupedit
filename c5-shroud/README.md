@@ -141,13 +141,17 @@ car's frame, and `generate.py` builds every bezel print file from that.
 - **Printing:**
   - It's split through the middle of the hood-side post into a hood piece and a fender
     piece. Both fit the A1's 256 mm bed.
-  - Two 3 mm dowels, 12 mm long, cross the cut. Glue the joint as well.
+  - The joint is a glued butt joint over the whole cut face (about 1,230 mm², 67 × 38 mm).
+    One 3 mm dowel, 12 mm long, in the floor under the post lines the halves up. There's no
+    second dowel: the rail above is only 3 mm thick, and the post between the tunnels is too
+    narrow for a pin to run 6 mm into each half. See "Joining the bezel halves" below.
   - Each piece prints upside down on its rail, tipped to lie as flat as it goes, with
     supports under the rail.
 
-**Before printing the bezel,** print the two halves of `stl/fit_test_blade_driver_*.stl`
-(the blade, bead and tongue only) and tape them together. Slide it in under the front of
-the headlight door and check:
+**Before printing the bezel,** print `stl/fit_test_blade_driver_one_piece.stl` (the rail,
+bead and tongue only, in one piece, already turned diagonally to fit the bed). The two
+`..._hood_piece` / `..._fender_piece` halves are there too, if you'd rather print it in two
+parts and tape them together. Slide it in under the front of the headlight door and check:
 - the tongue clicks onto the clip,
 - the door's lip sits down on the rail's bead at both ends.
 
@@ -357,15 +361,17 @@ perimeters).
    The bolts should go through snugly without forcing. Already done: the spacing fit. (Those
    tabs had slots twice as wide as meant; reprint this if you want to check the M6 bolts are
    snug in the corrected 6.3 mm slots.)
-3. `stl/fit_test_blade_driver_hood_piece.stl` and `..._fender_piece.stl` (about 45 minutes;
-   supports on). These are the bezel's top rail, bead and clip tongue on their own. Tape
-   them together and slide them in under the front of the headlight door. Check:
+3. `stl/fit_test_blade_driver_one_piece.stl` (about 1.5 hours; supports on). This is the
+   bezel's top rail, bead and clip tongue on their own, in one piece. It's 294 mm long, so
+   it's already turned diagonally to fit the bed (229 × 228 mm); don't let the slicer
+   re-orient it. (The `..._hood_piece` and `..._fender_piece` halves also work, taped
+   together.) Slide it in under the front of the headlight door and check:
    - the tongue clicks onto the clip,
    - the door's lip sits down on the bead at both ends.
 4. `stl/carrier_driver.stl`, then `stl/bezel_driver_hood_piece.stl` and
    `stl/bezel_driver_fender_piece.stl`, then the passenger set.
    - The bezel pieces print upside down on the blade; turn supports on.
-   - Join them with two 3 mm × 12 mm dowel pins and glue.
+   - Join them as in "Joining the bezel halves" below.
    - `bezel_*_one_piece.stl` is the whole bezel for reference; it's too wide for the A1.
    - The carrier is 263 mm long, too long to lie straight on the A1's 256 mm bed. Turn it 45°
      in the slicer: its footprint is then 229 × 211 mm.
@@ -384,7 +390,27 @@ bay. Use 4 walls, 40% gyroid infill, and 6 top and bottom layers.
   tightens from above with one hand, as in the owner's bracket sketch.
 - The stock bezel ear screws, through each ear and the door's flange into the headlight, as
   stock (2 at the hood end in the photo; use the fender end's as found)
-- 2 × 3 mm × 12 mm dowel pins, and glue, for the two bezel pieces
+- 1 × 3 mm × 12 mm dowel pin, and plastic epoxy (or a plastic-welding pen), for the two bezel
+  pieces
+
+## Joining the bezel halves
+
+The two pieces meet at a flat cut through the post between the hood-side and middle lights.
+
+1. **Dry-fit first.** Push the dowel pin into one half, fit the other half on, and tape the
+   two together. Try the whole bezel on the car before gluing.
+2. **Prepare the faces.** Sand both cut faces flat with 120-grit on a flat board and wipe
+   them with isopropyl alcohol. Test that they sit together with no gap and nothing rocking.
+3. **Glue.** Use a two-part epoxy made for plastics (J-B Weld PlasticBonder, Loctite Epoxy
+   Plastic Bonder or similar). Superglue is brittle on PCTG/PETG.
+   - Coat both faces and the dowel hole.
+   - Push the halves together on the pin, wipe off the squeeze-out and check the front runs
+     smooth across the joint.
+   - Hold them with tape or a light clamp while it cures, flat on the bench, rail down.
+4. **Optional: stronger still.** Once the epoxy has cured, run a plastic-welding pen or a
+   soldering iron with PCTG filament along the inside of the seam (inside the tunnels and
+   under the rail, where it won't show).
+5. **Finish.** Fill any line on the front with a little epoxy or filler, sand, and paint.
 
 ## Fitting
 

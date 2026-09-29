@@ -1423,15 +1423,37 @@ def split_plane_u(p):
     return (us[0] + us[1]) / 2
 
 
+def on_bed_diagonal(man, bed=256.0):
+    """Turn a long flat part about Z to whatever angle takes the least room on the bed, and centre it."""
+    v = np.asarray(man.to_mesh().vert_properties)[:, :3]
+    best = None
+    for a in np.arange(0.0, 180.0, 0.5):
+        c, s_ = math.cos(math.radians(a)), math.sin(math.radians(a))
+        xy = v[:, :2] @ np.array([[c, s_], [-s_, c]])
+        side = max(np.ptp(xy, axis=0))
+        if best is None or side < best[0]:
+            best = (side, a)
+    out = man.rotate([0, 0, best[1]])
+    b = out.bounding_box()
+    return out.translate([-(b[0] + b[3]) / 2, -(b[1] + b[4]) / 2, -b[2]])
+
+
+def dowel_levels(p):
+    """Heights of the dowel pins across the print split. Just the one, in the floor under the
+    post: the cut face is solid there. (The rail above is only 3 mm thick, too thin for a 3 mm pin,
+    and the post between the tunnels is too narrow for one to run 6 mm into each half.) The
+    joint's strength is the glue over the whole cut face; the pin lines the halves up."""
+    return (shell_levels(p)[2] - 0.2,)
+
+
 def split_shell(p, man):
-    """The two print pieces: cut through the middle of the hood-side post, with two dowel holes
-    across the cut, one where the post meets the floor and one where it meets the blade."""
+    """The two print pieces: cut through the middle of the hood-side post, with a dowel hole
+    across the cut in the floor under the post (dowel_levels)."""
     F = front_frame(p)
     us = split_plane_u(p)
-    z_top, z_bu, z_wb, z_fb, z_lb = shell_levels(p)
     n_c = float(bow(p, us)) - p.post_depth / 2 - p.post_setback
     pins = []
-    for z in (z_wb - 0.2, z_bu + 0.2):
+    for z in dowel_levels(p):
         pin = M.cylinder(2 * p.dowel_depth, p.dowel_d / 2, p.dowel_d / 2, 24, True)
         pins.append(pin.transform([[0, 0, 1, us], [1, 0, 0, n_c], [0, 1, 0, z]]))
     pins = lift_top(p, M.batch_boolean(pins, m3d.OpType.Add).transform(F))
@@ -1624,6 +1646,10 @@ if __name__ == "__main__":
     for tag, piece in zip(("hood_piece", "fender_piece"), split_shell(P, blade)):
         save(print_orient_shroud(piece), os.path.join(out, f"fit_test_blade_passenger_{tag}.stl"))
         save(mirror_x(print_orient_shroud(piece)), os.path.join(out, f"fit_test_blade_driver_{tag}.stl"))
+    # ...and in one piece: 294 mm long, it fits the A1's 256 mm bed turned diagonally (already turned)
+    whole = on_bed_diagonal(print_orient_shroud(blade))
+    save(whole, os.path.join(out, "fit_test_blade_passenger_one_piece.stl"))
+    save(on_bed_diagonal(mirror_x(print_orient_shroud(blade))), os.path.join(out, "fit_test_blade_driver_one_piece.stl"))
     save(fit_test_mount(P), os.path.join(out, "fit_test_mount_passenger.stl"))
     save(mirror_x(fit_test_mount(P)), os.path.join(out, "fit_test_mount_driver.stl"))
     save(spacers(P), os.path.join(out, "spacer_washers.stl"))
