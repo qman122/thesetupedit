@@ -71,8 +71,9 @@ stand-ins for the pods in place, to check the fit (not for printing). The driver
 passenger side mirrored.
 At 18 mm it hits the arm's nuts.
 
-- **Carrier:** a stepped beam under the pods with a pocket for each pod's bracket foot. Each
-  pod still slides straight fore and aft in its slot (16 mm forward, 10 mm back). Knees at
+- **Carrier:** a stepped beam under the pods with a pocket for each pod's bracket foot. The
+  pockets are 77.7 mm (3 in plus 0.75 mm each side) wide, for the pods' 3 in wide feet, and
+  neighbouring pockets share one 7 mm wall. Each pod still slides straight fore and aft in its slot (16 mm forward, 10 mm back). Knees at
   each end run back to the arm and pad tabs.
 - **Bezel:** one continuous front sweeps back along the same line as the pods (see below).
 

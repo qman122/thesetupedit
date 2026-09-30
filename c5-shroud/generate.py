@@ -37,7 +37,7 @@ class Params:
     pod_body_h: float = 46.0      # body height
     pod_depth: float = 45.7       # front to back (1.8 in)
     pod_lift: float = 7.6         # the bracket holds the body this far above the floor (2.1 in overall minus the 1.8 in body)
-    pod_bracket_w: float = 43.0   # width of the bracket foot
+    pod_bracket_w: float = 76.2   # width of the bracket foot (3.0 in, the owner's pods; was 43)
     pod_bracket_d: float = 21.0   # front-to-back length of the bracket foot
     pod_gap: float = 8.0          # space between neighbouring pods
     # The row follows the slope of the headlight opening: every pod faces straight ahead, and
@@ -66,7 +66,7 @@ class Params:
 
     # --- carrier ---
     floor_t: float = 5.0          # floor thickness
-    cup_wall: float = 3.0         # walls of the pocket each pod's bracket foot sits in
+    cup_wall: float = 3.5         # walls of the pocket each pod's bracket foot sits in (neighbours' walls fuse)
     cup_h: float = 2.6            # pocket depth (stays under the bezel's floor, which the pods now sit over)
     wall_t: float = 4.0           # end cheeks and dividers
     divider_h: float = 14.0       # height of the locating ribs between pods
