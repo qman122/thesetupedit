@@ -186,9 +186,15 @@ def bar(dn=0.0, dz=0.0):
     return M.hull_points(pts).transform(F_)
 
 
-check("the clip's cross bar sits in the groove across the tongue", overlap(shroud, bar()) < 1e-3)
-check("pulled forward, the bar catches on the tongue's tooth",
-      overlap(shroud, bar(dn=-(P.clip_bar_t + 2 * P.groove_clear))) > 1)
+# the tongue ends where its taper ends: the owner's fit test clipped on once its narrow end
+# (with the groove and tooth) was cut off there. It stays clear of the clip's cross bar.
+check("the clip's cross bar clears the tongue", overlap(shroud, bar()) < 1e-3)
+n_tip = min(g.clip_n(P, u) + P.groove_clear for u in (P.clip_u - P.tongue_w / 2, P.clip_u + P.tongue_w / 2)) + 7
+lip_ = z_top + float(g.top_rise(P, P.clip_u))
+tip_in = g.box(P.clip_u - 3, P.clip_u + 3, n_tip + bow(P.clip_u) + 1, n_tip + bow(P.clip_u) + 2, lip_ - 3, lip_ - 2).transform(F_)
+tip_out = g.box(P.clip_u - 3, P.clip_u + 3, n_tip + bow(P.clip_u) - 3, n_tip + bow(P.clip_u) - 2, lip_ - 5, lip_ + 1).transform(F_)
+check(f"the tongue ends where its taper ends, {-P.blade_depth + 1.5 - n_tip:.0f} mm behind the rail",
+      overlap(shroud, tip_in) > 1 and overlap(shroud, tip_out) < 1e-3)
 tw = P.tongue_w
 check(f"the tongue ({tw:.0f} mm) fits between the clip's legs ({P.clip_leg_gap:.0f} mm apart)",
       P.clip_leg_gap - tw >= 2)

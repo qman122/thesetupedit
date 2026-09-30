@@ -108,9 +108,14 @@ car's frame, and `generate.py` builds every bezel print file from that.
     tunnels' flat bottoms sit on the floor.
   - **Blend into the shell:** 2 mm, shrinking to 0.5 mm near the floor's underside so it
     stays flat.
-- **Clip tongue.** A thin plate, tapered from 40 mm and slotted along its middle, blended into
-  the back of the rail. The clip's cross bar drops into a groove across it, and a chamfered
-  tooth catches the bar.
+- **Clip tongue.** A 5 mm plate, tapered from 40 mm at the rail to 23 mm, slotted along its
+  middle and blended into the back of the rail. It ends where the taper ends, 23 mm behind the
+  rail, with its tip chamfered so it slides in under the door's clip.
+  - This is from the owner's test fit on the car. The first fit test carried on past the taper
+    as a narrow tooth with a groove for the clip's bar. It was too long, and clipped on fine
+    once that narrow end was cut off.
+  - Line the tongue up with the moulded line on the underside of the headlight door, which
+    runs to the clip.
 - **Every edge is rounded, 1 mm or more.** Each round is part of the shape itself: the
   section's corners, the windows' edges (1.5 mm), the holes, the tongue and the ear tips.
 - **Mesh accuracy.** Each vertex is snapped onto the exact surface. Anywhere a triangle
@@ -340,7 +345,8 @@ perimeters).
       over its whole 16 mm of travel.
   - The tab gussets have a 3 mm flat top instead of a knife-edge point.
 - **Bezel:** 3.4 mm typical. Under 2.4 mm there's only 286 mm² in all, down from 925.
-  - The clip tongue is 5 mm thick, leaving 3 mm under the clip bar's groove (it was 1 mm).
+  - The clip tongue is 5 mm thick (it was 3 mm, with only 1 mm under the clip bar's groove;
+    the groove is gone now).
   - The tunnels' side and top walls are 3.5 mm.
   - The outer tunnels are filled out to the corner walls (there was a thin slit between
     them).
@@ -349,7 +355,7 @@ perimeters).
     - the ears (2.2-2.3 mm), where they're cut clear of the door and can't go thicker
       without showing from above or touching the door,
     - the edges where the fender-side window's corners meet the curved corner wall,
-    - the tongue's chamfered tooth tip.
+    - the tongue's chamfered tip.
 
 ## Print order
 
@@ -420,8 +426,9 @@ The two pieces meet at a flat cut through the post between the hood-side and mid
 2. If there's a gap at the arm or the pad, fill it with spacer washers.
 3. Bolt the pods on through the floor slots. Slide them forward or back so the lenses sit
    where you want them in the opening, then tighten.
-4. Slide the bezel's top blade in under the front of the headlight door until the tongue
-   clicks onto the clip, like the stock bezel. Then hold each ear against the door's side
+4. Slide the bezel's top blade in under the front of the headlight door, with the tongue
+   lined up on the moulded line on the door's underside, until it clips on, like the stock
+   bezel. Then hold each ear against the door's side
    flange and put the stock ear screws back in through the ear and the flange.
 5. Cycle the lights slowly by hand with the motor knob and check nothing touches the door
    or the body, then tighten everything.

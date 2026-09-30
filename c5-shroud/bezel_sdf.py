@@ -44,7 +44,7 @@ TUNNEL_BACK = 18.0  # the tunnels round the lights reach this far back past each
 TUNNEL_CLEAR = 1.0  # round the pod's body inside the tunnel
 TUNNEL_T = 3.5      # the tunnels' side and top walls (a little over 3 so the taper doesn't thin them)
 OUTER_FILL = 14.0   # the outer tunnels' outboard walls reach this much further out, to the corner walls
-TONGUE_T = 5.0      # the clip tongue's thickness: 3 mm left under the 2 mm groove
+TONGUE_T = 5.0      # the clip tongue's thickness
 FLARE_SIDE = 0.5    # the opening at the front: this much wider each side than the window,
 FLARE_TOP = 6.0     # and up to this much taller at the top (less where the rail comes lower)
 FLOOR_B = g.shell_levels(P)[2] - 0.15 - T_WALL   # the underside of the floor across the front
@@ -280,8 +280,6 @@ def feature_geometry(sw):
     z_top = g.shell_levels(P)[0]
     ul, ur = P.clip_u - P.tongue_w / 2, P.clip_u + P.tongue_w / 2
     g0 = [g.clip_n(P, u) + P.groove_clear for u in (ul, ur)]
-    g1 = [g.clip_n(P, u) - P.clip_bar_t - P.groove_clear for u in (ul, ur)]
-    tb = [n_ - P.tooth_len for n_ in g1]
     rw = P.tongue_root_w / 2
     n_r = -P.blade_depth + 1.5
     n_n = min(g0) + 7
@@ -289,21 +287,22 @@ def feature_geometry(sw):
 
     def xy(u, n_):
         return g._fpt(F, u, n_ + float(g.bow(P, u)))
-    tongue = np.array([xy(ul, tb[0]), xy(ur, tb[1]), xy(ur, n_n), xy(P.clip_u + rw, n_r),
-                       xy(P.clip_u - rw, n_r), xy(ul, n_n)])
+    # it ends where its taper ends: on the car the owner's fit test clipped on once the narrow
+    # end (the groove and tooth behind it) was cut off there
+    n_end = n_n
+    tongue = np.array([xy(ul, n_end), xy(ur, n_end), xy(P.clip_u + rw, n_r), xy(P.clip_u - rw, n_r)])
     su0, su1 = P.clip_u - P.tongue_slot_w / 2, P.clip_u + P.tongue_slot_w / 2
-    slot = np.array([xy(su0, n_n - 2), xy(su1, n_n - 2), xy(su1, n_r - 4), xy(su0, n_r - 4)])
-    groove = np.array([xy(ul - 1, g1[0] - P.clip_skew), xy(ur + 1, g1[1] + P.clip_skew),
-                       xy(ur + 1, g0[1] + P.clip_skew), xy(ul - 1, g0[0] - P.clip_skew)])
-    # the tooth's chamfer: from 2.4 mm down at the tooth's end, up to the top 5.67 mm further in
-    ta, tb_ = xy(ul - 1, tb[0] - P.clip_skew - 1), xy(ur + 1, tb[1] + P.clip_skew - 1)
+    slot = np.array([xy(su0, n_end + 4), xy(su1, n_end + 4), xy(su1, n_r - 4), xy(su0, n_r - 4)])
+    # the tip's chamfer: from 2.4 mm down at the tip, up to the top 5.67 mm in, so it slides
+    # in under the clip
+    ta, tb_ = xy(ul - 1, n_end - 1), xy(ur + 1, n_end - 1)
     tooth = (ta, tb_, lip_c - 2.4, 3.4 / 5.67)
 
     holes = []
     for name in ("hood", "fender"):
         for h in sw.sides[name]["holes"]:
             holes.append((np.asarray(h["at"], float), np.asarray(h["normal"], float) / np.linalg.norm(h["normal"])))
-    return dict(wins=wins, tunnels=tunnels, tongue=tongue, slot=slot, groove=groove, tooth=tooth, lip_c=lip_c,
+    return dict(wins=wins, tunnels=tunnels, tongue=tongue, slot=slot, tooth=tooth, lip_c=lip_c,
                 holes=holes, door=door_lookup())
 
 
@@ -371,15 +370,13 @@ def apply_features(F, x, y, z, fg, pointwise=False, outside=None, door=None):
     tongue = inter_round(plan, slab + 0 * plan, R_EDGE)
     slot = round_poly_sdf(x, y, fg["slot"], 1.5)[:, None] + 0 * Z
     tongue = diff_round(tongue, slot, R_EDGE)
-    groove = inter_round(round_poly_sdf(x, y, fg["groove"], R_EDGE)[:, None] + 0 * Z, (lip_c - P.groove_depth) - Z, R_EDGE)
-    tongue = diff_round(tongue, groove, R_EDGE)
-    # the tooth's chamfer: w is the distance in from the tooth's end, and everything above a
-    # plane from 2.4 mm down at the end, rising to the top 5.67 mm in, is taken off
+    # the tip's chamfer: w is the distance in from the tip, and everything above a plane from
+    # 2.4 mm down at the tip, rising to the top 5.67 mm in, is taken off
     ta, tb, z0, slope = fg["tooth"]
     dx, dy = tb[0] - ta[0], tb[1] - ta[1]
     L = np.hypot(dx, dy)
     w = ((X - ta[0]) * dy - (Y - ta[1]) * dx) / L
-    c = np.mean(fg["tongue"][2:6], axis=0) - ta
+    c = np.mean(fg["tongue"][2:], axis=0) - ta                # the root, inside the tongue
     if (c[0] * dy - c[1] * dx) < 0:                          # w grows into the tongue
         w = -w
     above = -(Z - (z0 + w * slope)) / np.hypot(1, slope)   # negative above the plane
