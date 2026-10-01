@@ -29,6 +29,7 @@ from scipy.spatial import cKDTree
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import bezel_cad as bc  # noqa: E402  (path, section parameters and fit, shared with the CAD loft)
+import bezel_styles as bs  # noqa: E402  (light slots, frames, tray: BEZEL_STYLE)
 
 g, P = bc.g, bc.P
 HERE = bc.HERE
@@ -51,6 +52,7 @@ FLOOR_B = g.shell_levels(P)[2] - 0.15 - T_WALL   # the underside of the floor ac
 RL_MAX = 4.0        # the rolled bottom lip's radius across the front
 BEAD_N = P.cover_edge_n + 2.5   # the bead's centre behind the front: under the middle of the door's lip
 TARGET_FACES = 600_000   # after simplifying (the refine step adds back what the 0.05 mm needs)
+STYLE = os.environ.get("BEZEL_STYLE", "")    # "", "A", "B", "C" or "BC" (see bezel_styles.py)
 
 
 # ---------- SDF building blocks (all vectorised over numpy arrays) ----------
@@ -272,8 +274,9 @@ def feature_geometry(sw):
         back = (P.pod_body_w / 2 + TUNNEL_CLEAR, (zb1 - zb0) / 2, (zb0 + zb1) / 2, 3.0)
         on = np.abs(sw.path[:, 0] - px) < ww / 2 + 4
         rail_under = float(np.min(sw.T[on & (sw.path[:, 1] > -60)])) - T_WALL
-        top = max(z_topw, min(z_topw + FLARE_TOP, rail_under - T_WALL - 2.0))
-        front = (ww / 2 + FLARE_SIDE, (top - z_bot) / 2, (top + z_bot) / 2, WIN_R)
+        flare = 0.0 if STYLE in ("B", "C", "BC") else FLARE_TOP     # even windows for the frames and the tray
+        top = max(z_topw, min(z_topw + flare, rail_under - T_WALL - 2.0))
+        front = (ww / 2 + FLARE_SIDE, (top - z_bot) / 2, (top + z_bot) / 2, 3.0 if STYLE in ("B", "BC") else WIN_R)
         tunnels.append((px, py, back, front))
 
     F = g.front_frame(P)
@@ -302,8 +305,10 @@ def feature_geometry(sw):
     for name in ("hood", "fender"):
         for h in sw.sides[name]["holes"]:
             holes.append((np.asarray(h["at"], float), np.asarray(h["normal"], float) / np.linalg.norm(h["normal"])))
-    return dict(wins=wins, tunnels=tunnels, tongue=tongue, slot=slot, tooth=tooth, lip_c=lip_c,
-                holes=holes, door=door_lookup())
+    fg = dict(wins=wins, tunnels=tunnels, tongue=tongue, slot=slot, tooth=tooth, lip_c=lip_c,
+              holes=holes, door=door_lookup())
+    fg["style"] = bs.Style(STYLE, sw, fg, sys.modules[__name__]) if STYLE else None
+    return fg
 
 
 DOOR_SDF = os.path.join(HERE, "door_sdf.npz")
@@ -358,11 +363,14 @@ def door_lookup():
     return f
 
 
-def apply_features(F, x, y, z, fg, pointwise=False, outside=None, door=None):
+def apply_features(F, x, y, z, fg, pointwise=False, outside=None, door=None, sc=None):
     """F (N, M) for plan points x, y (N,) and heights z (M,); pointwise: z (N,) and F (N, 1).
-    outside: the sweep's distance out past its outside face at each plan point (N, 1)."""
+    outside: the sweep's distance out past its outside face at each plan point (N, 1); sc: the
+    path parameter of each plan point (N,), for the face styles."""
     X, Y = x[:, None], y[:, None]
     Z = z[:, None] if pointwise else z[None, :]
+    st = fg.get("style")
+    sctx = st.ctx(X, Z, outside, sc) if st is not None else None
     # the tongue: a thin tapered plate, top at the door's lip, blended into the rail
     lip_c = fg["lip_c"]
     plan = round_poly_sdf(x, y, fg["tongue"], 2.0)[:, None]
@@ -397,11 +405,11 @@ def apply_features(F, x, y, z, fg, pointwise=False, outside=None, door=None):
         (hw_b, hh_b, zc_b, r_b), (hw_f, hh_f, zc_f, r_f) = back, front
         top = (zc_b + hh_b) + ((zc_f + hh_f) - (zc_b + hh_b)) * e_
         bot = (zc_b - hh_b) + ((zc_f - hh_f) - (zc_b - hh_b)) * eb
-        return [hw_b + (hw_f - hw_b) * e_, (top - bot) / 2, (top + bot) / 2, r_b + (r_f - r_b) * e_]
+        return [hw_b + (hw_f - hw_b) * e_, (top - bot) / 2, (top + bot) / 2, r_b + (r_f - r_b) * e_, e_]
     blocks = None
     n_t = len(fg["tunnels"])
     for k, (px, py, back, front) in enumerate(fg["tunnels"]):
-        hw, hh, zc_, r_ = section_at(py, back, front)
+        hw, hh, zc_, r_, _ = section_at(py, back, front)
         # flat along the bottom (a 3 mm wall), so the posts between the tunnels stand on the floor;
         # the outer tunnels reach out to the corner walls, so there's no thin slit between them
         z_lo = zc_ - hh - T_WALL
@@ -416,10 +424,22 @@ def apply_features(F, x, y, z, fg, pointwise=False, outside=None, door=None):
     # the blend is 2 mm, shrinking to 0.5 mm near the floor's underside, which the tunnels' bottoms
     # run just above (a bigger blend there would bulge it)
     F = union_round(F, blocks, 0.5 + 1.5 * np.clip((Z - FLOOR_B - 1.5) / 1.5, 0, 1))
+    keep = None
+    if st is not None:
+        F = st.solids(F, sctx)            # chin, tray backing, pod frames, light channels' walls
+        F = st.pre_cuts(F, sctx)          # the tray, its light bar and its fins
+        keep = st.keep(sctx)
     for (px, py, back, front) in fg["tunnels"]:
-        hw, hh, zc_, r_ = section_at(py, back, front)
-        w = inter_round(round_rect_xz(X - px, Z - zc_, hw, hh, r_), (py - TUNNEL_BACK - 2.0) - Y + 0 * Z, R_EDGE)
+        hw, hh, zc_, r_, e_ = section_at(py, back, front)
+        shape = st.window(X - px, Z - zc_, hw, hh, r_, e_) if st is not None else None
+        if shape is None:
+            shape = round_rect_xz(X - px, Z - zc_, hw, hh, r_)
+        w = inter_round(shape, (py - TUNNEL_BACK - 2.0) - Y + 0 * Z, R_EDGE)
+        if keep is not None:
+            w = diff_round(w, keep, 1.0)
         F = diff_round(F, w, R_WIN_EDGE)
+    if st is not None:
+        F = st.post_cuts(F, sctx)         # the light slots and channels, the frames' bevels
     # a round boss on each of the door's flange holes, from the flange out to the ear, blended in
     axes = []
     for (at, nv) in fg["holes"]:
@@ -449,7 +469,7 @@ def sdf_points(sw, fg, pts):
         T, B, Dr, Df, rb, Rl = sw.params(sc)
         F = inter_round(sw.section(nn, q[:, 2], T, B, Dr, Df, rb, Rl), e, R_EDGE)
         out[a:a + len(q)] = apply_features(F[:, None], q[:, 0], q[:, 1], q[:, 2], fg, pointwise=True,
-                                           outside=nn[:, None], door=fg["door"])[:, 0]
+                                           outside=nn[:, None], door=fg["door"], sc=sc)[:, 0]
     return out
 
 
@@ -573,7 +593,7 @@ def untangle(verts, faces, sw, fg, rounds=8):
     return verts
 
 
-def build(h=H):
+def build(h=H, preview=False):
     t0 = time.time()
     sw = Sweep()
     fg = feature_geometry(sw)
@@ -601,7 +621,7 @@ def build(h=H):
         if not act.any():
             continue
         F = sw.body(x[act], y[act], zs)
-        F = apply_features(F, x[act], y[act], zs, fg, outside=nn[act][:, None], door=fg["door"])
+        F = apply_features(F, x[act], y[act], zs, fg, outside=nn[act][:, None], door=fg["door"], sc=sc[act])
         blk = np.full((len(x), len(zs)), 4.0, np.float32)
         blk[act] = np.clip(F, -4, 4)
         V[i:i + 8] = blk.reshape(X.shape[0], X.shape[1], len(zs))
@@ -613,10 +633,12 @@ def build(h=H):
     verts += np.array([xs[0], ys[0], zs[0]])
     print(f"meshed {len(faces)} triangles, {time.time() - t0:.0f} s", flush=True)
     verts = snap(verts, sw, fg)
-    verts, faces = decimate(verts, faces, TARGET_FACES)
+    verts, faces = decimate(verts, faces, TARGET_FACES if not preview else 350_000)
     print(f"decimated to {len(faces)} triangles, {time.time() - t0:.0f} s", flush=True)
     verts = snap(verts, sw, fg)
     print(f"snapped, {time.time() - t0:.0f} s", flush=True)
+    if preview:                                 # a quick look: no refining
+        return verts, faces, sw, fg
     verts, faces = refine(verts, faces, sw, fg, rounds=6)
     for _ in range(4):                          # untangling can leave a triangle off; refine again
         verts = untangle(verts, faces, sw, fg)
@@ -626,6 +648,30 @@ def build(h=H):
             break
     print(f"refined, {time.time() - t0:.0f} s", flush=True)
     return verts, faces, sw, fg
+
+
+def build_inserts(sw, fg, h=0.2):
+    """The frosted diffuser inserts for the style's light channels, meshed on their own."""
+    st = fg["style"]
+    if st is None or not st.channels:
+        return None
+    from skimage.measure import marching_cubes
+    pts = np.vstack([ch.path.pts for ch in st.channels])
+    xy = sw.cs(np.clip(pts[:, 0], 0, sw.L[-1]))
+    x0, x1 = xy[:, 0].min() - 15, xy[:, 0].max() + 15
+    y0, y1 = xy[:, 1].min() - 15, xy[:, 1].max() + 15
+    z0, z1 = pts[:, 1].min() - 6, pts[:, 1].max() + 6
+    xs, ys, zs = np.arange(x0, x1, h), np.arange(y0, y1, h), np.arange(z0, z1, h)
+    X, Y = np.meshgrid(xs, ys, indexing="ij")
+    sc, nn, e = sw.project(X.ravel(), Y.ravel())
+    a = np.interp(sc, np.arange(sw.n), sw.L)[:, None]
+    V = np.full((X.size, len(zs)), 4.0, np.float32)
+    near = nn > -15
+    V[near] = np.clip(st.inserts(a[near], nn[near][:, None], zs[None, :]), -4, 4)
+    V = V.reshape(len(xs), len(ys), len(zs))
+    V[np.abs(V) < 1e-3] = 1e-3
+    verts, faces, _, _ = marching_cubes(V, level=0.0, spacing=(h, h, h))
+    return verts + np.array([xs[0], ys[0], zs[0]]), faces
 
 
 if __name__ == "__main__":
