@@ -274,6 +274,8 @@ def feature_geometry(sw):
     """Windows, tongue and screw holes: the same geometry as bezel_cad.features, and the door."""
     zc = g.pod_zc(P)
     ww, wh = P.pod_face_w + 2 * P.window_clear_x, P.pod_face_h + 2 * P.window_clear_y
+    if STYLE.startswith("P3"):          # three small projectors instead of the pods (bezel_styles.PROJ)
+        ww, wh = bs.PROJ_W + 4.0, bs.PROJ_H + 4.0
     floor_top = g.shell_levels(P)[2] - 0.15
     z_bot = floor_top - T_WALL + RL_MAX + 1.0      # the sill sits 1 mm above the rolled lip's top, so the
                                                    # lip under it is solid (not a thin upturned edge)
@@ -286,11 +288,14 @@ def feature_geometry(sw):
     for (px, py, _) in g.pod_poses(P):
         zb0, zb1 = P.pod_lift - TUNNEL_CLEAR, g.pod_top(P) + TUNNEL_CLEAR
         back = (P.pod_body_w / 2 + TUNNEL_CLEAR, (zb1 - zb0) / 2, (zb0 + zb1) / 2, 3.0)
+        if STYLE.startswith("P3"):
+            zb0, zb1 = zc - bs.PROJ_H / 2 - TUNNEL_CLEAR, zc + bs.PROJ_H / 2 + TUNNEL_CLEAR
+            back = (bs.PROJ_W / 2 + TUNNEL_CLEAR, (zb1 - zb0) / 2, (zb0 + zb1) / 2, 3.0)
         on = np.abs(sw.path[:, 0] - px) < ww / 2 + 4
         rail_under = float(np.min(sw.T[on & (sw.path[:, 1] > -60)])) - T_WALL
-        flare = 0.0 if STYLE in ("B", "C", "BC", "C7") else FLARE_TOP     # even windows for the frames and the tray
+        flare = 0.0 if STYLE in ("B", "C", "BC", "C7") or STYLE.startswith("P3") else FLARE_TOP     # even windows for the frames and the tray
         top = max(z_topw, min(z_topw + flare, rail_under - T_WALL - 2.0))
-        front = (ww / 2 + FLARE_SIDE, (top - z_bot) / 2, (top + z_bot) / 2, 3.0 if STYLE in ("B", "BC") else 2.5 if STYLE == "C7" else WIN_R)
+        front = (ww / 2 + FLARE_SIDE, (top - z_bot) / 2, (top + z_bot) / 2, 3.0 if STYLE in ("B", "BC") else 2.5 if STYLE == "C7" else 5.0 if STYLE.startswith("P3") else WIN_R)
         tunnels.append((px, py, back, front))
 
     F = g.front_frame(P)

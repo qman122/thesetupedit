@@ -60,7 +60,8 @@ LOW = Spec(slot=3.0, inner=4.2, wall=1.0, skin=1.6, depth=4.0, insert=1.5)
 BLADE = Spec(slot=4.2, inner=4.2, wall=1.0, skin=0.0, depth=3.8, insert=1.5, front=True)
 BLADE_FLUSH = 0.3    # the diffuser's face sits this far behind the bezel's
 WIRE_R = 1.3         # wire hole from the blade's channel out underneath
-LOW_Z = 3.6          # the lower lights' centre line: walls from 0.5 (bracket floor at 0) to 6.7 (pods at 7.6)
+LOW_Z = 3.6          # the lower lights' centre line
+PROJ_W, PROJ_H = 46.0, 44.0   # P3 looks: a 1.5 in projector's square housing, face on (to confirm with the real ones): walls from 0.5 (bracket floor at 0) to 6.7 (pods at 7.6)
 CHIN_Z = 0.4         # the bottom edge comes down to here wherever there's a lower light
 INSERT_CLEAR = 0.15  # the diffuser insert is this much smaller than its channel all round
 
@@ -298,6 +299,31 @@ class Style:
             self.wire = (a1 - 6.0, 3.0)        # the blade's wire hole: arc position and height
             self.channels.append(lad)
             self.chin = (a0 - 22.0, a1 + 22.0)
+        if name in ("P3J", "P3W"):
+            # three small projectors at the pods' places; one light strip under them that sweeps up
+            # past the fender-side one: straight (J) or dipping under each and peaking between (W)
+            pxs = [t[0] for t in fg["tunnels"]]
+            half = PROJ_W / 2 + 2.0
+            if name == "P3J":
+                pts = rounded_l((ax(pxs[0] - half + 4.0), LOW_Z), (ax(pxs[-1] + half + 9.0), LOW_Z),
+                                (ax(pxs[-1] + half + 9.0), 46.0), 7.0)[::-1]
+            else:
+                xs = [pxs[0] - half + 4.0, pxs[0] - half + 9.0]
+                zs = [LOW_Z + 6.0, LOW_Z]
+                for xa, xb in zip(pxs, pxs[1:]):         # flat under each window, peaking in the gaps
+                    xm = (xa + xb) / 2
+                    xs += [xa + half + 1.0, xm - 3.0, xm, xm + 3.0, xb - half - 1.0]
+                    zs += [LOW_Z, 25.0, 27.0, 25.0, LOW_Z]
+                xs += [pxs[-1] + half + 1.0, pxs[-1] + half + 9.0, pxs[-1] + half + 9.0]
+                zs += [LOW_Z, LOW_Z + 7.0, 46.0]
+                pts = np.c_[[ax(x) for x in xs], zs]
+                for _ in range(3):                       # round the corners a little (Chaikin)
+                    q = [pts[0]]
+                    for p0, p1 in zip(pts[:-1], pts[1:]):
+                        q += [0.85 * p0 + 0.15 * p1, 0.15 * p0 + 0.85 * p1]
+                    pts = np.array(q + [pts[-1]])
+            self.channels.append(Channel(pts, BLADE))
+            self.chin = (ax(pxs[0] - half) - 22.0, ax(pxs[-1] + half + 12.0) + 12.0)
         if self.chin is not None:
             # the front wall comes down to CHIN_Z between the chin's ends, fading out over 20 mm;
             # the sweep builds it into its own section (Sweep.Bw), so it can't leave a lip
