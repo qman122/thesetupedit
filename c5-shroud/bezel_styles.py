@@ -88,9 +88,14 @@ P3C_TRAY_HOOD_X = -129.0  # ...its hood end, where P4's first window ends (the h
 # P3J's light line: a thin strip (5 mm, like a modern car's), the face's full width, kicking up at
 # both ends at crisp corners (in three pieces of strip, or one that bends that tight edgeways)
 THIN = Spec(slot=5.0, inner=5.0, wall=1.0, skin=0.0, depth=7.0, insert=6.0, front=True, closed=1.5)
+# ...now 8 mm, behind a frosted diffuser pressed in flush (printed, drl_diffusers_*.stl): the strip
+# (a flat COB strip or a side-bend neon, up to 5 mm thick) sits behind it, and its joins don't show
+DIFF = Spec(slot=8.0, inner=8.0, wall=1.0, skin=0.0, depth=8.0, insert=2.5, front=True, closed=1.5)
+HOOK_GAP = 1.2       # the light line's hook wraps the outer pocket's bottom corner on the same centre,
+                     # with this much plastic between the channel's wall and the pocket
 THIN_Z = 3.0         # its bottom run: walls from -0.5 to 6.5 (the pockets' chamfered bottoms end at 8)
 THIN_CHIN = -1.2     # the bottom edge under it
-STRIP_HOOD_X = -137.0   # the inner kick-up, where the face starts turning into the hood-side corner
+STRIP_HOOD_X = -146.0   # the inner kick-up, on the hood-side corner itself (the line runs the full length)
 KICK_IN = (3.0, 24.0)   # ...leaning 3 mm toward the corner, up to z 24
 HOOK_CURVE_R = 36.0  # the outer end's J: its radius on the centre line (the bigger, the easier on the strip)
 KICK_IN_R = 10.0     # ...and the inner kick-up's
@@ -100,12 +105,12 @@ KICK_OUT = (6.0, 44.0)  # ...and kicks up on the side, swept 6 mm back, up to z 
                         # screw boss, 40 mm further back)
 EYELID = 2.0         # P3J: the whole light face (pockets and line) sits this far back in a recess under the top
                      # rail, so the rail overhangs it like an eyelid
-EYELID_BOTTOM, EYELID_TOP = -2.0, (5.0, 58.0)   # the recess: from just under the light line up to 5 mm under
+EYELID_BOTTOM, EYELID_TOP = -2.7, (5.0, 58.0)   # the recess: from just under the light line up to 5 mm under
                                                 # the rail's top (at most z 58); a 1 mm lip stays below it
-EYELID_CHIN = -3.0   # the bottom edge under it
-POCKET_TOP_R = (4.0, 8.0)   # the pockets' top corners: rounded 4 mm at the head (clear of the lens) to 8 at
+EYELID_CHIN = -3.7   # the bottom edge under it
+POCKET_R = (4.0, 8.0)   # the pockets' top corners: rounded 4 mm at the head (clear of the lens) to 8 at
                             # the face
-POCKET_CHAMFER = (8.0, 2.5, 0.0)   # P3J's pockets at the face: this much wider each side and deeper at
+POCKET_CHAMFER = (8.0, 1.5, 0.0)   # P3J's pockets at the face: this much wider each side and deeper at
                                    # the bottom than at the head, in flat chamfers; none at the top,
                                    # which stays a straight, sharp brow over the lenses
 BOLD_STYLES = ("P3J", "P4J", "P3C")   # the looks with the bold strip (and the lower bottom edge)
@@ -399,8 +404,19 @@ class Style:
             half = PROJ_W / 2 + 1.0
             a_start, a0 = ax(STRIP_HOOD_X), ax(pxs[-1] + half + 12.0)
             head = [(a_start - KICK_IN[0], KICK_IN[1]), (a_start, THIN_Z)]
-            end = os.environ.get("P3J_END", "curve")   # the fender end's shape (the others were options tried)
-            if end == "hook":            # a smooth hook up the face
+            end = os.environ.get("P3J_END", "wrap_pocket")   # the fender end's shape (others: options tried)
+            if end == "wrap_pocket":     # a J round the outer pocket's bottom corner, on the same centre
+                xe = pxs[-1] + PROJ_W / 2 - PROJ_LIP[0] + POCKET_CHAMFER[0]          # the pocket's outer edge
+                zbot = self.fronts[-1][2] - (PROJ_H / 2 - PROJ_LIP[1]) - POCKET_CHAMFER[1]
+                rp = POCKET_R[1]
+                x_cen, z_cen = xe - rp, zbot + rp                                       # its corner's centre
+                rj = rp + HOOK_GAP + DIFF.inner / 2 + DIFF.wall
+                th = np.linspace(-np.pi / 2, 0.0, 24)     # laid out as seen head-on, then onto the face
+                arc = [(ax(x_cen + rj * np.cos(v)), z_cen + rj * np.sin(v)) for v in th]
+                zrun = z_cen - rj                                                       # the bottom run's height
+                head = [(a_start - KICK_IN[0], KICK_IN[1]), (a_start, zrun)]
+                pts = list(filleted(head + [arc[0]], [KICK_IN_R])) + arc[1:] + [(ax(x_cen + rj), 46.0)]
+            elif end == "hook":            # a smooth hook up the face
                 pts = list(filleted(head + [(a0, THIN_Z), (a0 + 8.0, 46.0)], 14.0))
             elif end.startswith("curve"):   # a big, smooth J up the outer corner (curve26, curve36: radius);
                 r = float(end[5:] or HOOK_CURVE_R)    # the inner kick-up curves to match, smaller
@@ -416,9 +432,9 @@ class Style:
             else:                        # round the corner, kicking up on the side
                 pts = head + [(a0 + WRAP, THIN_Z), (a0 + WRAP + KICK_OUT[0], KICK_OUT[1])]
             a_bend = max(p[0] for p in pts) - 8.0
-            self.channels.append(Channel(pts, THIN, base=EYELID))
-            self.wire = (a_start + 12.0, THIN_Z, 25.0)
-            hw_line = THIN.inner / 2 + THIN.wall
+            self.channels.append(Channel(pts, DIFF, base=EYELID))
+            self.wire = (a_start + 12.0, min(p[1] for p in pts), 25.0)
+            hw_line = DIFF.inner / 2 + DIFF.wall
             ea0 = min(p[0] for p in pts) - hw_line - 5.0
             ea1 = max(p[0] for p in pts) + hw_line + 5.0
             self.tray = dict(u0=ea0, u1=ea1, zb=EYELID_BOTTOM, zmid=self.fronts[0][2], r=4.0, top=EYELID_TOP)
@@ -532,9 +548,9 @@ class Style:
             else:
                 t = np.sqrt(np.clip(e_, 0, 1))   # e_ is the square of the depth fraction
             zt, zb = hh + ct * t, -hh - cb * t
-            rt = POCKET_TOP_R[0] + (POCKET_TOP_R[1] - POCKET_TOP_R[0]) * t
+            rc = POCKET_R[0] + (POCKET_R[1] - POCKET_R[0]) * t     # all four corners
             hx = hw + cs * t
-            return self.ops.round_box2(x, z, -hx, hx, zb, zt, rt, r_, rt, r_)
+            return self.ops.round_box2(x, z, -hx, hx, zb, zt, rc, rc, rc, rc)
         if self.rake:
             return self.ops.round_rect_xz(x - self.shear(z, e_), z, hw, hh, r_)
         return None

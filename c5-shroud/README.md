@@ -72,41 +72,42 @@ alternative: the same heads in a recessed housing with raked windows and fins, a
 
 **Look.** Three projectors in a line, spread as far apart as the car allows. The whole light
 face (pockets and light line) sits 2 mm back in a recess under the top rail, so the rail, just
-under the door's front edge, overhangs it like an eyelid (`EYELID`). Each projector sits in a shallow, stepped
-pocket: flat bevels from the recess's floor down to the head, 8 mm on the sides and 2.5 mm at the
-bottom, which leaves slim posts (about 8 mm) between the pockets and makes the lenses read
-bigger; no bevel at the top, which stays a straight, sharp brow; the top corners rounded (4 mm
-at the head, 8 at the floor). A thin light line runs the face's full width under them and
-curves up at both ends: a small curve (10 mm radius) at the hood end, and a big, smooth J (36 mm
-radius) up the fender-side corner (`POCKET_CHAMFER`, `POCKET_TOP_R`, `THIN`, `KICK_IN`,
-`KICK_IN_R`, `HOOK_CURVE_R` in `bezel_styles.py`; `P3J_END` picks the other end shapes that were
+under the door's front edge, overhangs it like an eyelid (`EYELID`). Each projector sits in a
+shallow, stepped pocket: flat bevels from the recess's floor down to the head, 8 mm on the sides
+and 1.5 mm at the bottom, which leaves slim posts (about 8 mm) between the pockets and makes the
+lenses read bigger; no bevel at the top, which stays a straight, sharp brow; the corners rounded
+(4 mm at the head, 8 at the floor). The light line (8 mm, behind a frosted diffuser) runs the
+face's full length under them, from the hood-side corner, where it curves up (10 mm radius), to
+the outer pocket, where it wraps round the pocket's bottom corner on the same centre, 1.2 mm of
+plastic away, and runs straight up beside it (`POCKET_CHAMFER`, `POCKET_R`, `DIFF`, `HOOK_GAP`,
+`KICK_IN`, `KICK_IN_R` in `bezel_styles.py`; `P3J_END` picks the other end shapes that were
 tried). The heads' faces are flat and the bezel's face curves in plan, so each pocket is
 shallower on its fender side than on its hood side.
 
-**Finish.** Gloss black reads as a housing; print in black and clear-coat it, or paint gloss
-black. The side ears' screw holes stay where the door's stock flange holes are (there's as
+**Finish.** Satin black is the easy finish: it hides layer lines. Gloss black looks best but
+shows every flaw: sand, filler-primer, sand again (repeat until smooth), then gloss paint or
+clear. The side ears' screw holes stay where the door's stock flange holes are (there's as
 little as 2 mm of plastic there, too thin to recess a screw head); use black screws.
 
 **Bezel.** The same top rail, bead, clip tongue, ears and fit to the door as the C7 bezel. Each
 pocket's back is a little smaller than the head's face (1.5 mm each side, 1 mm top and bottom),
 so the bezel frames the face, the lens stays clear, and no gap round the head shows from the
-front; the head sits just behind it, its front 4 mm behind the face. Behind each head's front the
-bezel keeps 2 mm clear of it side to side and 0.75 mm up and down, so a little misalignment
-between the bezel (on the door) and the bracket (on the arm) can't make them rub. The heads only
-just fit under the door: at the fender end there's about 1 mm between the head and the rail,
-which is why they sit 2.9 mm higher than the pods did (the strip runs under them). The print
-split runs through the post between the first two heads, with the dowel pin in a small boss under
-the post.
+front; the head sits just behind it. Behind each head's front the bezel keeps 2 mm clear of it
+side to side and 0.75 mm up and down, so a little misalignment between the bezel (on the door)
+and the bracket (on the arm) can't make them rub. The heads only just fit under the door: at the
+fender end there's about 1 mm between the head and the rail, which is why they sit 2.9 mm higher
+than the pods did (the line runs under them). The print split runs through the post between the
+first two heads, with the dowel pin in a small boss under the post.
 
-**Light line.** A channel 5 mm wide and 7 mm deep for a strip up to 6 mm thick (`THIN`: change it
-to the strip you buy), closed behind by a 1.5 mm wall tied into the bezel's floor; the bezel's
-bottom edge comes down 3 mm below the bracket's floor to carry it, with a 1 mm lip under the
-recess. The strip presses in from
-the front, flush, and is its own diffuser; a few dots of clear silicone hold it. The line bends
-edgeways at its curves, so buy a side-bend ("horizontal bend") strip rated for a 10 mm radius
-(or butt a separate short piece in at the hood end and bend just the 36 mm J); for an even
-line use a dense or COB/neon-type strip with no visible dots. Its wires go out through a hole at the hood end, low down, and back in a
-groove under the bezel's floor to the bracket.
+**Light line.** A channel 8 mm wide and 8 mm deep, closed behind by a 1.5 mm wall tied into the
+bezel's floor; the bezel's bottom edge comes down 3.7 mm below the bracket's floor to carry it,
+with a 1 mm lip under the recess. A frosted diffuser (`drl_diffusers_*.stl`, one piece the line's
+whole length, 2.5 mm thick) presses in from the front, 0.3 mm behind the recess's floor. The strip
+sits behind it, up to 5 mm thick: a white/amber switchback strip 5-8 mm wide (a flat COB strip, or
+a side-bend neon for the curves). The diffuser evens the line out and hides any joins, so the
+strip can be cut into pieces at the curves. Print the diffuser in natural (clear) PCTG or PETG,
+100% infill; it's meant to be frosted. The strip's wires go out through a hole at the hood end,
+low down, and back in a groove under the bezel's floor to the bracket.
 
 **Bracket** (`carrier_*.stl`). The same mounting tabs, slots, knees and gussets as the pod
 bracket, so it bolts to the arm and the aiming pad the same way, and the stock adjusters aim all

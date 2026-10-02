@@ -508,10 +508,10 @@ def carrier_projectors(p):
     parts, cuts = [], []
     bw = p.proj_body_w / 2 + p.cradle_clear            # half the cradle's inside
     ow = bw + p.cradle_wall                             # ...and its outside
-    # the beam stops this far behind the heads' fronts: 3 mm, or 9 under the bold strip, whose
-    # channel brings the bezel's bottom edge down to -3.5, over the beam's front
+    # the beam stops this far behind the heads' fronts: 3 mm, or 11 under the light line, whose
+    # channel brings the bezel's bottom edge down to -3.7 (P3J), over the beam's front
     import bezel_styles as bs
-    gap = 9.0 if os.environ.get("BEZEL_STYLE", "P3J") in bs.BOLD_STYLES else 3.0
+    gap = 11.0 if os.environ.get("BEZEL_STYLE", "P3J") in bs.BOLD_STYLES else 3.0
     feet, spans = [], []
     for (x, yf, zc) in proj_poses(p):
         y0, y1 = proj_cradle_span(p, yf, x)
@@ -1867,9 +1867,9 @@ def preview(p, out):
 
 
 def write_projector_set(here):
-    """LIGHTS=projectors: the projector bracket, its straps, and the bezel for BEZEL_STYLE (P3J or
-    P3W), in stl/projectors_<J|W>/, with a fit-check assembly. The fit tests, spacers and the
-    rest stay in stl/ (they don't change)."""
+    """LIGHTS=projectors: the projector bracket, its straps, the bezel for BEZEL_STYLE (P3J) and
+    its light line's diffusers, in stl/projectors_<style>/, with a fit-check assembly. The fit
+    tests, spacers and the rest stay in stl/ (they don't change)."""
     st = os.environ.get("BEZEL_STYLE", "P3J")
     out = os.path.join(here, "stl", "projectors_" + st)
     os.makedirs(os.path.join(out, "assembled"), exist_ok=True)
@@ -1880,6 +1880,9 @@ def write_projector_set(here):
         for tag, piece in zip(("hood_piece", "fender_piece"), split_shell(P, s)):
             save(f(print_orient_shroud(piece)), os.path.join(out, f"bezel_{side}_{tag}.stl"))
         save(f(projector_straps(P)), os.path.join(out, f"projector_straps_{side}.stl"))
+        dif = diffusers(P)
+        if dif is not None:
+            save(on_bed_diagonal(f(dif)), os.path.join(out, f"drl_diffusers_{side}.stl"))   # longer than the bed
         save(M.compose([f(c), f(s), f(projector_dummy(P))]), os.path.join(out, "assembled", f"assembly_{side}.stl"))
 
 
