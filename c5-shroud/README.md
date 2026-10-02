@@ -70,6 +70,16 @@ threaded mounting stem on the back is a separate bracket held by 4 screws, and c
 thin switchback strip (white DRL, amber turn signal). (`stl/projectors_P3C/` is a C7-styled
 alternative: the same heads in a recessed housing with raked windows and fins, and a 10 mm strip.)
 
+**W (`stl/projectors_P3V/`), the owner's concept sheet.** The same heads, bracket, eyelid recess
+and pockets as J, with smaller side bevels (5 mm, so the posts between the pockets are wider), and
+a 4 mm light line (`LINE4`: a 5 mm channel, 7 mm deep, with a 2 mm frosted diffuser pressed in
+flush, `drl_diffusers_*.stl`) in a W: it runs under the pockets, humps up between them round
+their rounded bottom corners (1.2 mm of plastic all the way round), leaves the outer pocket's
+corner in a diagonal leg that stops before the tight fender corner (`V_LEG`), and at the hood
+end sweeps up round the curved corner (`V_HOOD`).
+
+![W](preview/bezel_p3v.png)
+
 **Look.** Three projectors in a line, spread as far apart as the car allows. The whole light
 face (pockets and light line) sits 2 mm back in a recess under the top rail, so the rail, just
 under the door's front edge, overhangs it like an eyelid (`EYELID`). Each projector sits in a
