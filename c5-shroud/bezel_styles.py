@@ -113,7 +113,16 @@ POCKET_R = (4.0, 8.0)   # the pockets' top corners: rounded 4 mm at the head (cl
 POCKET_CHAMFER = (8.0, 1.5, 0.0)   # P3J's pockets at the face: this much wider each side and deeper at
                                    # the bottom than at the head, in flat chamfers; none at the top,
                                    # which stays a straight, sharp brow over the lenses
-BOLD_STYLES = ("P3J", "P4J", "P3C")   # the looks with the bold strip (and the lower bottom edge)
+# P3V (the owner's concept sheet): J's heads, pockets and recess, with a 4 mm light line in a W under
+# them (humps between the pockets), a diagonal leg at the fender end that stops before the tight
+# corner, and a sweep up and round the curved corner at the hood end
+LINE4 = Spec(slot=5.0, inner=5.0, wall=1.0, skin=0.0, depth=7.0, insert=2.0, front=True, closed=1.5)
+V_LEG = (-15.0, 40.0)     # the fender leg leaves the outer pocket's corner at this angle (deg), up to z 42
+V_HOOD = (-140.0, 18.0, 6.0, 44.0)   # the hood end: turns up at x -140, radius 18, leaning 6 mm round
+                                     # the corner, up to z 44
+V_HUMP = 35.0             # each hump leaves the pockets' corners at this angle (deg) and peaks between them
+V_CHAMFER = (5.0, 1.5, 0.0)   # V's pockets: smaller side bevels than J's, for wider posts to hump between
+BOLD_STYLES = ("P3J", "P4J", "P3C", "P3V")   # the looks with the bold strip (and the lower bottom edge)
 
 
 def is_proj(style):
@@ -125,7 +134,7 @@ def proj_layout(style, pod_ys):
     pods' faces (pod_ys)."""
     if style.startswith("P4"):
         return list(PROJ4)
-    if style == "P3J":
+    if style in ("P3J", "P3V"):
         return list(PROJ3J)
     if style == "P3C":
         return list(PROJ3C)
@@ -397,6 +406,61 @@ class Style:
             self.wire = (a1 - 6.0, 3.0, 6.0)   # the blade's wire hole: arc position, height, length behind the channel
             self.channels.append(lad)
             self.chin = (a0 - 22.0, a1 + 22.0)
+        if name == "P3V":
+            pxs = [t[0] for t in fg["tunnels"]]
+            zc = self.fronts[0][2]
+            hwp = PROJ_W / 2 - PROJ_LIP[0] + V_CHAMFER[0]               # the pockets at the recess's floor
+            zbot = zc - (PROJ_H / 2 - PROJ_LIP[1]) - V_CHAMFER[1]
+            rp = POCKET_R[1]
+            off = rp + HOOK_GAP + LINE4.inner / 2 + LINE4.wall          # the line's centre round a corner
+            zrun = zbot + rp - off                                       # under the pockets
+            zcc = zbot + rp                                              # the bottom corners' centres' height
+            vh = np.radians(V_HUMP)
+            arc_up = np.linspace(-np.pi / 2, -vh, 24)
+            xy = []                                                      # head-on (x, z), hood to fender
+            for k, px in enumerate(pxs):
+                cl, cr = px - hwp + rp, px + hwp - rp                    # this pocket's bottom corners' centres
+                if k > 0:                                                # down from the hump, round the left corner
+                    xy += [(cl - off * np.cos(v), zcc + off * np.sin(v)) for v in arc_up[::-1]]
+                xy += [(cl, zrun), (cr, zrun)]
+                if k < len(pxs) - 1:                                     # round the right corner, up to the hump
+                    xy += [(cr + off * np.cos(v), zcc + off * np.sin(v)) for v in arc_up]
+                    x0, z0 = xy[-1]
+                    xm = (cr + pxs[k + 1] - hwp + rp) / 2                # halfway to the next pocket's corner
+                    xy.append((xm, z0 + (xm - x0) / np.tan(vh)))          # the peak, on the tangents
+            # the fender end: round the outer pocket's corner to the leg's angle, then straight on up
+            cr = pxs[-1] + hwp - rp
+            v_end = np.radians(V_LEG[0])
+            for v in np.linspace(-np.pi / 2, v_end, 30)[1:]:
+                xy.append((cr + off * np.cos(v), zcc + off * np.sin(v)))
+            x0, z0 = xy[-1]
+            dx, dz = -np.sin(v_end), np.cos(v_end)                        # the tangent there
+            xy.append((x0 + dx * (V_LEG[1] - z0) / dz, V_LEG[1]))
+            pts = [(ax(x), z) for x, z in xy]
+            # the hood end: from the run, turn up round the curved corner
+            hx, hr, hlean, htop = V_HOOD
+            a_turn = ax(hx)
+            pts = list(filleted([(a_turn - hlean, htop), (a_turn, zrun), pts[0]], [hr])) + pts[1:]
+            # round the humps' peaks a little (Chaikin on the whole line keeps it smooth)
+            arr = np.array(pts)
+            for _ in range(2):
+                q = [arr[0]]
+                for p0, p1 in zip(arr[:-1], arr[1:]):
+                    q += [0.8 * p0 + 0.2 * p1, 0.2 * p0 + 0.8 * p1]
+                arr = np.array(q + [arr[-1]])
+            pts = [tuple(p) for p in arr]
+            self.channels.append(Channel(pts, LINE4, base=EYELID))
+            self.wire = (a_turn + 12.0, zrun, 25.0)
+            hw_line = LINE4.inner / 2 + LINE4.wall
+            ea0 = min(p[0] for p in pts) - hw_line - 5.0
+            ea1 = max(p[0] for p in pts) + hw_line + 5.0
+            zb_t = zrun - hw_line - 0.8
+            self.tray = dict(u0=ea0, u1=ea1, zb=zb_t, zmid=zc, r=4.0, top=EYELID_TOP)
+            self.tray_recess = EYELID
+            self.chin = (ea0 - 20.0, ea1 + 20.0)
+            self.chin_z = zb_t - 1.0
+            self.pocket = V_CHAMFER
+            self.block_extra = V_CHAMFER[0]
         if name == "P3J":
             # three projectors in a line, in stepped pockets under a sharp brow; a thin light line
             # runs the face's full width under them and kicks up at both ends at crisp corners
