@@ -68,8 +68,9 @@ a lower bar under each pod) are still there: set `BEZEL_STYLE` and rerun `bezel_
 ![C: the C7 look](preview/bezel_p3c.png)
 
 A second set, for the owner's mini 2.0 in bi-LED projectors (from the eBay listing: heads 55 wide
-x 48 tall x 50 deep, a 41 mm square fan body 44 deep behind, and a threaded stem 37 mm long
-behind that) and a thick switchback strip (white DRL, amber turn signal). Three looks:
+x 48 tall x 50 deep, and a 41 mm square fan body 44 deep behind, 94 mm in all; the threaded
+mounting stem on the back is a separate bracket held by 4 screws, and comes off) and a thick
+switchback strip (white DRL, amber turn signal). Three looks:
 
 - `stl/projectors_P3C/`: **the C7 look.** Three projectors spread as far apart as the car allows
   (the hood-side body just clears the pad's square adjuster, the fender-side one the arm's tab),
@@ -133,19 +134,17 @@ clears the arm's mounting tab, the hood-side one 9.5 mm in so its body clears th
 aim adjuster, and the middle one halfway: as far apart as they go. On P3J and P3C each head's
 front is 4 mm behind the face across its width; on P3W 1 mm behind the pods' faces.
 
-**Projector placement, four (P4J): two things to know.**
-- The hood-end projector goes in **with its threaded stem taken off**. Its stem would land right
-  on the aiming pad's bolts. If the stem doesn't unscrew, P4J isn't for those projectors.
-- The top 8 mm of the hood-end projector's body reaches into the space above the aiming pad
-  where the square aim adjuster is, up to 11 mm in front of the tab's face. The bracket stays
-  out of it, but the projector can't. Check on the car that the adjuster doesn't stick out that
-  far (`check.py` flags it as the one P4J fail besides the lip gap).
+**Projector placement, four (P4J): one thing to know.** The top 8 mm of the hood-end
+projector's body reaches into the space above the aiming pad where the square aim adjuster is, up
+to 11 mm in front of the tab's face. The bracket stays out of it, but the projector can't. Check
+on the car that the adjuster doesn't stick out that far (`check.py` flags it as the one P4J fail
+besides the lip gap).
 
 **Still to check on the car:** what's behind the mounting tabs (their back face, against the arm
-and the pad). Without stems, the projectors' bodies end (hood side first) 23 and 13 mm in front
-of it and 3 mm behind on P3J and P3C; 23 and 4 mm in front and 15 mm behind on P3W; 25, 20 and
-11 mm in front and 3 mm behind on P4J. With the stems on, they reach 14, 24 and 40 mm behind it
-(P3J, P3C), 14, 33 and 52 mm (P3W), and 18, 26 and 40 mm (P4J, all but the hood one). Measure the room there before printing.
+and the pad). Take the projectors' mounting stems off (4 screws on the back of each; keep the
+screws in the fan's holes). Then the bodies end (hood side first) 23 and 13 mm in front of it and
+3 mm behind on P3J and P3C; 23 and 4 mm in front and 15 mm behind on P3W; 25, 20 and 11 mm in
+front and 3 mm behind on P4J. Leave a few mm of air behind each fan.
 
 **Print:** the bracket stands on the back of its mounting tabs, like the pod bracket (turn it
 45 degrees on the bed); the straps print flat. Use ASA if you can, or PCTG: the projectors get

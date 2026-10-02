@@ -74,8 +74,9 @@ class Params:
     proj_head_d: float = 50.0     # head, front to back
     proj_body_w: float = 41.0     # fan / heatsink body behind the head, square (confirm with calipers)
     proj_body_d: float = 44.0
-    proj_stem_d: float = 24.0     # threaded stem behind the body (removable on some), 37 mm long
-    proj_stem_len: float = 37.0
+    proj_stem_d: float = 24.0     # threaded mounting stem behind the body, 37 mm long: a detachable bracket
+    proj_stem_len: float = 37.0   # (4 screws on the back, per the listing); the cradles hold the body, so it
+    proj_stem: bool = False       # comes off. True puts it back on the stand-ins (checks, pictures)
     cradle_wall: float = 4.0      # cradle walls round the body
     cradle_clear: float = 0.4     # body to cradle (add a strip of foam tape)
     strap_t: float = 3.5          # the strap across the top of each body
@@ -465,7 +466,7 @@ def projector_dummy(p, dy=0.0):
         bw = p.proj_body_w / 2
         out += [box(x - bs.PROJ_W / 2, x + bs.PROJ_W / 2, yf - p.proj_head_d, yf, zc - bs.PROJ_H / 2, zc + bs.PROJ_H / 2),
                 box(x - bw, x + bw, yf - p.proj_head_d - p.proj_body_d, yf - p.proj_head_d + 0.5, zc - bw, zc + bw)]
-        if not proj_stem_off(p, x, yf):
+        if p.proj_stem and not proj_stem_off(p, x, yf):
             out.append(M.cylinder(p.proj_stem_len + 0.5, p.proj_stem_d / 2, p.proj_stem_d / 2 - 2, 48).rotate([90, 0, 0])
                        .translate([x, yf - p.proj_head_d - p.proj_body_d + 0.5, zc]))
     return M.batch_boolean(out, m3d.OpType.Add).translate([0, dy, 0])
