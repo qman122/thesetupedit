@@ -62,7 +62,7 @@ a lower bar under each pod) are still there: set `BEZEL_STYLE` and rerun `bezel_
 
 ## Projector version (v11): bi-LED projectors and a thick light strip
 
-![J: three in a line, bold white strip](preview/bezel_p3j.png)
+![J: the goal, three in a line, bold white strip](preview/bezel_p3j.png)
 ![W: thick amber strip](preview/bezel_p3w.png)
 ![J bold: four projectors](preview/bezel_p4j.png)
 ![C: the C7 look](preview/bezel_p3c.png)
@@ -77,9 +77,9 @@ behind that) and a thick switchback strip (white DRL, amber turn signal). Three 
   the hood-side head to fill the bezel, the windows leaning back 10 degrees like the C7's, and a
   raked fin between each pair. The bold 10 mm strip runs just under the housing and kicks up
   past its fender end, parallel to it.
-- `stl/projectors_P3J/`: three projectors in a tight line (6 mm apart, in the middle of the
-  bezel, each 4 mm behind its face), like the owner's reference render; the bold 10 mm strip runs
-  under them and wraps up round the fender end in a wide curve.
+- `stl/projectors_P3J/`: **the owner's goal render.** Three projectors in a line, spread as far
+  apart as the car allows (as P3C), on a plain black face; the bold 10 mm strip runs under them,
+  from a little before the hood-side one, and wraps up round the fender end in a wide curve.
 - `stl/projectors_P3W/`: three projectors spread out; a 6.5 mm strip dips under each one and peaks
   in the gaps between them, then sweeps up at the end.
 - `stl/projectors_P4J/`: **four** projectors in a line and the bold 10 mm strip, wrapping up past
@@ -122,11 +122,10 @@ heads and by the hood end, where the strip's wires come back. Each projector nee
 ground and a high-beam wire; run them back with the strip's wires to the headlight harness
 through a relay, and fuse it.
 
-**Projector placement, three.** P3C's heads stand where P3W's do, spread as far as they go.
-P3J's row sits between the two limits: the hood-side body clears
-the pad's square aim adjuster by 9.5 mm, the fender-side one the arm's mounting tab by 22 mm. On
-P3W the fender-side head is 8 mm in from the pod's place so its body clears the arm's mounting
-tab, the hood-side one 9.5 mm in so its body clears the adjuster, and the middle one halfway.
+**Projector placement, three.** The fender-side head is 8 mm in from the pod's place so its body
+clears the arm's mounting tab, the hood-side one 9.5 mm in so its body clears the pad's square
+aim adjuster, and the middle one halfway: as far apart as they go. On P3J and P3C each head's
+front is 4 mm behind the face across its width; on P3W 1 mm behind the pods' faces.
 
 **Projector placement, four (P4J): two things to know.**
 - The hood-end projector goes in **with its threaded stem taken off**. Its stem would land right
@@ -137,11 +136,10 @@ tab, the hood-side one 9.5 mm in so its body clears the adjuster, and the middle
   far (`check.py` flags it as the one P4J fail besides the lip gap).
 
 **Still to check on the car:** what's behind the mounting tabs (their back face, against the arm
-and the pad). Without stems, the projectors' bodies end (hood side first) 22, 14 and 2 mm in front
-of it on P3J; 23 and 13 mm in front and 3 mm behind on P3C; 23 and 4 mm in front and 15 mm
-behind on P3W; 25, 20 and 11 mm in front and 3 mm behind on P4J. With the stems on, they reach
-15, 23 and 35 mm behind it (P3J), 14, 24 and 40 mm (P3C), 14, 33 and 52 mm (P3W), and 18, 26
-and 40 mm (P4J, all but the hood one). Measure the room there before printing.
+and the pad). Without stems, the projectors' bodies end (hood side first) 23 and 13 mm in front
+of it and 3 mm behind on P3J and P3C; 23 and 4 mm in front and 15 mm behind on P3W; 25, 20 and
+11 mm in front and 3 mm behind on P4J. With the stems on, they reach 14, 24 and 40 mm behind it
+(P3J, P3C), 14, 33 and 52 mm (P3W), and 18, 26 and 40 mm (P4J, all but the hood one). Measure the room there before printing.
 
 **Print:** the bracket stands on the back of its mounting tabs, like the pod bracket (turn it
 45 degrees on the bed); the straps print flat. Use ASA if you can, or PCTG: the projectors get

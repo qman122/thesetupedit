@@ -70,13 +70,13 @@ PROJ_X = (-75.0, 0.75, 76.5)  # head centres: the fender one 8 mm in from the po
 # four heads (P4 looks): evenly spaced from the hood corner to where the fender-side body just
 # clears the arm's tab (0.8 mm), each front 4 mm behind the bezel's face across its width
 PROJ4 = ((-101.0, 24.3), (-41.67, 18.5), (17.67, 9.7), (77.0, -3.6))
-# P3J (the owner's reference render: three in a tight line, the bold strip under them wrapping up
-# round the outer end): 6 mm between the heads, the row in the middle of the bezel, each front
-# 4 mm behind the face across its width (the face as PROJ4 found it)
-PROJ3J = ((-66.0, 20.9), (-5.0, 13.1), (56.0, 1.1))
-# P3C (C7 look): the three spread as far as the car allows (the hood one's body clears the pad's
-# square adjuster, the fender one's the arm's tab), each front 4 mm behind the face
-PROJ3C = ((-75.0, 21.8), (0.75, 12.2), (76.5, -3.5))
+# P3J (the owner's reference render, "the goal": three in a line with the bold strip under them
+# wrapping up round the outer end): spread as far as the car allows, like the render's close-up
+# (the hood one's body clears the pad's square adjuster, the fender one's the arm's tab), each
+# front 4 mm behind the face across its width (the face as PROJ4 found it)
+PROJ3J = ((-75.0, 21.8), (0.75, 12.2), (76.5, -3.5))
+# P3C (C7 look): the heads where P3J's are
+PROJ3C = PROJ3J
 P3C_STRIP_Z = 2.5    # P3C: the bold strip's bottom run, its walls from -3.5 to 8.5, just under the housing
 P3C_CHIN = -4.0      # ...and the bottom edge under it
 P3C_TRAY_BOTTOM = 9.0   # the housing's bottom edge: the windows' bottoms
@@ -362,11 +362,11 @@ class Style:
             self.channels.append(lad)
             self.chin = (a0 - 22.0, a1 + 22.0)
         if name == "P3J":
-            # three projectors in a tight line; the bold strip runs under them and wraps up round
-            # the fender end in a wide curve, toward the corner's top
+            # three projectors in a line; the bold strip runs under them, from a little before the
+            # hood-side one, and wraps up round the fender end in a wide curve, toward the corner's top
             pxs = [t[0] for t in fg["tunnels"]]
             half = PROJ_W / 2 + 1.0
-            a_start, a_bend = ax(pxs[0] - half + 3.5), ax(pxs[-1] + half + 14.0)
+            a_start, a_bend = ax(pxs[0] - half - 10.0), ax(pxs[-1] + half + 14.0)
             pts = filleted([(a_start, BOLD_Z), (a_bend, BOLD_Z), (a_bend + 10.0, 46.0)], 16.0)
             self.channels.append(Channel(pts, BOLD))
             self.wire = (a_start + 12.0, 0.5, 25.0)
