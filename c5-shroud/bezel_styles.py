@@ -306,8 +306,12 @@ class Style:
             # the front wall carried down: its top ends inside the floor, and it's filleted 1 mm
             # into the floor's underside behind (not at the front, where its face carries on the
             # wall's own face; nor where it fades out, where the two bottoms meet)
-            chin = o.round_box2(nn, Z, -3.0, 0.0, zb, B + 0.5, 0.0, np.maximum(Rl, 1.0), 0.0, 1.0)
-            F = o.union_round(F, chin, np.clip((-nn - 1.0) / 1.5, 0, 1) * f)
+            # Round the ears (and wherever the floor is no deeper than the wall) the chin's
+            # faces lie on the wall's own faces, so there it's a plain union with the wall's own
+            # bottom rounds; the fillet is only where there's a floor behind it to fillet into.
+            chin = o.round_box2(nn, Z, -3.0, 0.0, zb, B + 0.5, 0.0, np.maximum(Rl, 1.0), 0.0, o.R_OUT)
+            floor = np.clip((Df - 4.0) / 3.0, 0, 1)
+            F = o.union_round(F, chin, np.clip((-nn - 1.0) / 1.5, 0, 1) * f * floor)
         if self.tray is not None:
             t2 = self.tray2d(a, Z)
             backing = iround(iround(t2 - 2.5, slab(nn, -(TRAY_RECESS + 2.5), -0.5), 1.0),
