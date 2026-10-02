@@ -70,14 +70,22 @@ threaded mounting stem on the back is a separate bracket held by 4 screws, and c
 thin switchback strip (white DRL, amber turn signal). (`stl/projectors_P3C/` is a C7-styled
 alternative: the same heads in a recessed housing with raked windows and fins, and a 10 mm strip.)
 
-**Look.** Three projectors in a line, spread as far apart as the car allows, each in a stepped
-pocket: flat chamfers on the sides (4 mm) and bottom (2.5 mm), narrowing from the face to the
-head, so the lenses look set deep, and no chamfer at the top, which stays a straight, sharp brow
-over them; the pockets' top corners are rounded (4 mm at the head, 8 at the face). A thin light
-line runs the face's full width under them and curves up at both ends: a small curve (10 mm
-radius) at the hood end, and a big, smooth J (36 mm radius) up the fender-side corner
-(`POCKET_CHAMFER`, `POCKET_TOP_R`, `THIN`, `KICK_IN`, `KICK_IN_R`, `HOOK_CURVE_R` in
-`bezel_styles.py`; `P3J_END` picks the other end shapes that were tried).
+**Look.** Three projectors in a line, spread as far apart as the car allows. The whole light
+face (pockets and light line) sits 2 mm back in a recess under the top rail, so the rail, just
+under the door's front edge, overhangs it like an eyelid (`EYELID`). Each projector sits in a shallow, stepped
+pocket: flat bevels from the recess's floor down to the head, 8 mm on the sides and 2.5 mm at the
+bottom, which leaves slim posts (about 8 mm) between the pockets and makes the lenses read
+bigger; no bevel at the top, which stays a straight, sharp brow; the top corners rounded (4 mm
+at the head, 8 at the floor). A thin light line runs the face's full width under them and
+curves up at both ends: a small curve (10 mm radius) at the hood end, and a big, smooth J (36 mm
+radius) up the fender-side corner (`POCKET_CHAMFER`, `POCKET_TOP_R`, `THIN`, `KICK_IN`,
+`KICK_IN_R`, `HOOK_CURVE_R` in `bezel_styles.py`; `P3J_END` picks the other end shapes that were
+tried). The heads' faces are flat and the bezel's face curves in plan, so each pocket is
+shallower on its fender side than on its hood side.
+
+**Finish.** Gloss black reads as a housing; print in black and clear-coat it, or paint gloss
+black. The side ears' screw holes stay where the door's stock flange holes are (there's as
+little as 2 mm of plastic there, too thin to recess a screw head); use black screws.
 
 **Bezel.** The same top rail, bead, clip tongue, ears and fit to the door as the C7 bezel. Each
 pocket's back is a little smaller than the head's face (1.5 mm each side, 1 mm top and bottom),
@@ -92,7 +100,8 @@ the post.
 
 **Light line.** A channel 5 mm wide and 7 mm deep for a strip up to 6 mm thick (`THIN`: change it
 to the strip you buy), closed behind by a 1.5 mm wall tied into the bezel's floor; the bezel's
-bottom edge comes down 1.2 mm below the bracket's floor to carry it. The strip presses in from
+bottom edge comes down 3 mm below the bracket's floor to carry it, with a 1 mm lip under the
+recess. The strip presses in from
 the front, flush, and is its own diffuser; a few dots of clear silicone hold it. The line bends
 edgeways at its curves, so buy a side-bend ("horizontal bend") strip rated for a 10 mm radius
 (or butt a separate short piece in at the hood end and bend just the 36 mm J); for an even

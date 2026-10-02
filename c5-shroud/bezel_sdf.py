@@ -446,8 +446,9 @@ def apply_features(F, x, y, z, fg, pointwise=False, outside=None, door=None, sc=
         # the outer tunnels reach out to the corner walls, so there's no thin slit between them
         z_lo = zc_ - hh - T_WALL
         r_lo = 1.5 + 0 * r_
-        x0 = -hw - TUNNEL_T - (OUTER_FILL if k == 0 else 0.0)
-        x1 = hw + TUNNEL_T + (OUTER_FILL if k == n_t - 1 else 0.0)
+        bx = st.block_extra if st is not None else 0.0    # wider where the style chamfers the pockets
+        x0 = -hw - TUNNEL_T - bx - (OUTER_FILL if k == 0 else 0.0)
+        x1 = hw + TUNNEL_T + bx + (OUTER_FILL if k == n_t - 1 else 0.0)
         lean = st.shear(Z - zc_, e_) if st is not None else 0.0
         blk = round_box2(X - px - lean, Z, x0, x1, z_lo, zc_ + hh + TUNNEL_T,
                          r_ + TUNNEL_T, r_lo, r_ + TUNNEL_T, r_lo)
@@ -476,7 +477,7 @@ def apply_features(F, x, y, z, fg, pointwise=False, outside=None, door=None, sc=
         keep = st.keep(sctx)
     for (px, py, back, front) in fg["tunnels"]:
         hw, hh, zc_, r_, e_ = section_at(py, back, front)
-        shape = st.window(X - px, Z - zc_, hw, hh, r_, e_) if st is not None else None
+        shape = st.window(X - px, Z - zc_, hw, hh, r_, e_, t=Y - py + 0 * Z, outside=outside) if st is not None else None
         if shape is None:
             shape = round_rect_xz(X - px, Z - zc_, hw, hh, r_)
         w = inter_round(shape, (py - fg.get("tunnel_back", TUNNEL_BACK) - 2.0) - Y + 0 * Z, R_EDGE)

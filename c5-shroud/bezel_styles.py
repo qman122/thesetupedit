@@ -98,9 +98,14 @@ WRAP = 46.0          # the bottom run carries on round the fender-side corner on
                      # further along the face than past the fender head (it bends the easy way there)
 KICK_OUT = (6.0, 44.0)  # ...and kicks up on the side, swept 6 mm back, up to z 44 (well short of the ear's
                         # screw boss, 40 mm further back)
+EYELID = 2.0         # P3J: the whole light face (pockets and line) sits this far back in a recess under the top
+                     # rail, so the rail overhangs it like an eyelid
+EYELID_BOTTOM, EYELID_TOP = -2.0, (5.0, 58.0)   # the recess: from just under the light line up to 5 mm under
+                                                # the rail's top (at most z 58); a 1 mm lip stays below it
+EYELID_CHIN = -3.0   # the bottom edge under it
 POCKET_TOP_R = (4.0, 8.0)   # the pockets' top corners: rounded 4 mm at the head (clear of the lens) to 8 at
                             # the face
-POCKET_CHAMFER = (4.0, 2.5, 0.0)   # P3J's pockets at the face: this much wider each side and deeper at
+POCKET_CHAMFER = (8.0, 2.5, 0.0)   # P3J's pockets at the face: this much wider each side and deeper at
                                    # the bottom than at the head, in flat chamfers; none at the top,
                                    # which stays a straight, sharp brow over the lenses
 BOLD_STYLES = ("P3J", "P4J", "P3C")   # the looks with the bold strip (and the lower bottom edge)
@@ -324,6 +329,8 @@ class Style:
         self.rake = RAKE if name in ("C7", "P3C") else 0.0
         self.win_edge = C7_EDGE if name in ("C7", "P3C") else None
         self.pocket = None     # (side, bottom, top) chamfers of the pockets at the face
+        self.tray_recess = TRAY_RECESS
+        self.block_extra = 0.0   # the tunnels' solid blocks reach this much further sideways
         L, path = sw.L, sw.path
         i0 = int(np.argmin(path[:, 0]))              # from the hood corner on, x only grows
         self._ax = (path[i0:, 0], L[i0:])
@@ -409,11 +416,17 @@ class Style:
             else:                        # round the corner, kicking up on the side
                 pts = head + [(a0 + WRAP, THIN_Z), (a0 + WRAP + KICK_OUT[0], KICK_OUT[1])]
             a_bend = max(p[0] for p in pts) - 8.0
-            self.channels.append(Channel(pts, THIN))
+            self.channels.append(Channel(pts, THIN, base=EYELID))
             self.wire = (a_start + 12.0, THIN_Z, 25.0)
-            self.chin = (a_start - 22.0, a_bend + 12.0)
-            self.chin_z = THIN_CHIN
+            hw_line = THIN.inner / 2 + THIN.wall
+            ea0 = min(p[0] for p in pts) - hw_line - 5.0
+            ea1 = max(p[0] for p in pts) + hw_line + 5.0
+            self.tray = dict(u0=ea0, u1=ea1, zb=EYELID_BOTTOM, zmid=self.fronts[0][2], r=4.0, top=EYELID_TOP)
+            self.tray_recess = EYELID
+            self.chin = (ea0 - 20.0, ea1 + 20.0)
+            self.chin_z = EYELID_CHIN
             self.pocket = POCKET_CHAMFER
+            self.block_extra = POCKET_CHAMFER[0]
             self.win_edge = 0.6
         if name == "P3C":
             # the C7 look round three projectors: a black housing (a recessed tray with raked ends and
@@ -505,14 +518,19 @@ class Style:
         a = np.interp(sc, np.arange(self.sw.n), self.sw.L)[:, None]
         return dict(a=a, nn=nn, Z=Z, X=X, Y=self._Y, d=[ch.profile(a, nn, Z) for ch in self.channels])
 
-    def window(self, x, z, hw, hh, r_, e_):
+    def window(self, x, z, hw, hh, r_, e_, t=None, outside=None):
         """The tunnel's cross-section: cut corners for B and BC, from nothing at the pod to CH at
         the front; for C7 leaning back, from upright at the pod to RAKE at the front."""
         if self.chamfer:
             return chamfer_rect(x, z, hw, hh, CH * e_)
         if self.pocket is not None:          # flat chamfers, from nothing at the head to full at the face
             cs, cb, ct = self.pocket
-            t = np.sqrt(np.clip(e_, 0, 1))   # e_ is the square of the depth fraction
+            if t is not None and self.tray is not None:
+                # the chamfers run from nothing at the head to full at the recess's floor (not the face):
+                # the fraction of the way from the tunnel's back to the floor
+                t = np.clip(np.where(t > 0, t / np.maximum(t - (outside + self.tray_recess), 1e-3), 0.0), 0, 1)
+            else:
+                t = np.sqrt(np.clip(e_, 0, 1))   # e_ is the square of the depth fraction
             zt, zb = hh + ct * t, -hh - cb * t
             rt = POCKET_TOP_R[0] + (POCKET_TOP_R[1] - POCKET_TOP_R[0]) * t
             hx = hw + cs * t
@@ -530,7 +548,7 @@ class Style:
         a, nn, Z, X = c["a"], c["nn"], c["Z"], c["X"]
         if self.tray is not None:
             t2 = self.tray2d(a, Z)
-            backing = iround(iround(t2 - 2.5, slab(nn, -(TRAY_RECESS + 2.5), -0.5), 1.0),
+            backing = iround(iround(t2 - 2.5, slab(nn, -(self.tray_recess + 2.5), -0.5), 1.0),
                              np.maximum(self.chin_z + 0.5 - Z, Z - (self.T_of_a(a) - 2.0)), 1.0)   # up into the rail
             F = o.union_round(F, backing, 1.0)
         if self.chamfer:
@@ -556,7 +574,7 @@ class Style:
         o = self.ops
         a, nn, Z = c["a"], c["nn"], c["Z"]
         t2 = self.tray2d(a, Z)
-        F = o.diff_round(F, iround(t2, slab(nn, -TRAY_RECESS, 3.0), 0.8), 0.8 if not self.rake else 0.5)
+        F = o.diff_round(F, iround(t2, slab(nn, -self.tray_recess, 3.0), 0.8), 0.8 if not self.rake else 0.5)
         for ch, d in zip(self.channels, c["d"]):
             if ch.base > 0:
                 F = o.diff_round(F, ch.inner(d, nn), 0.5)
@@ -593,7 +611,7 @@ class Style:
         if self.wire is not None:
             # straight in along the face's normal, from the channel's back out underneath
             aw, zw, wl = self.wire
-            dep = self.channels[0].s.depth
+            dep = self.channels[0].back      # the channel's back (its depth, plus any recess it sits in)
             hole = iround(np.hypot(a - aw, Z - zw) - WIRE_R, slab(nn, -(dep + wl), -(dep - 1.0)), 0.3)
             F = o.diff_round(F, hole, 0.4)
         if self.chamfer:
