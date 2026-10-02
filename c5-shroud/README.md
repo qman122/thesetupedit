@@ -80,34 +80,36 @@ end sweeps up round the curved corner (`V_HOOD`).
 
 ![W](preview/bezel_p3v.png)
 
-**Look.** Three projectors in a line, spread as far apart as the car allows. The whole light
-face (pockets and light line) sits 2 mm back in a recess under the top rail, so the rail, just
-under the door's front edge, overhangs it like an eyelid (`EYELID`). Each projector sits in a
-shallow, stepped pocket: flat bevels from the recess's floor down to the head, 8 mm on the sides
-and 1.5 mm at the bottom, which leaves slim posts (about 8 mm) between the pockets and makes the
-lenses read bigger; no bevel at the top, which stays a straight, sharp brow; the corners rounded
-(4 mm at the head, 8 at the floor). The light line (8 mm, behind a frosted diffuser) runs the
-face's full length under them, from the hood-side corner, where it curves up (10 mm radius), to
-the outer pocket, where it wraps round the pocket's bottom corner on the same centre, 1.2 mm of
-plastic away, and runs straight up beside it (`POCKET_CHAMFER`, `POCKET_R`, `DIFF`, `HOOK_GAP`,
-`KICK_IN`, `KICK_IN_R` in `bezel_styles.py`; `P3J_END` picks the other end shapes that were
-tried). The heads' faces are flat and the bezel's face curves in plan, so each pocket is
-shallower on its fender side than on its hood side.
+**Look.** Three projectors in a line, spread as far apart as the car allows, standing forward of
+the bezel: each head comes up to 0.5 mm behind the bezel's original face line (at its tightest
+edge), and the light face round them is recessed 5 mm under the top rail (`EYELID_J`), so the
+heads stand out of it (up to 4.5 mm; less on each head's hood side, as the face curves in plan
+and the heads are flat). Nothing goes past the original face line: it sits at the door's
+outline, and the whole assembly swings down into the body when the lights close. Each head
+stands in its own opening with an even gap round it (2 mm each side, 0.75 mm top and bottom,
+`J_LIP`), the same as its clearance behind, so a little misalignment between the bezel (on the
+door) and the bracket (on the arm) can't make them rub. The light line (8 mm, behind a frosted
+diffuser) is one swoosh, as the owner sketched it: it starts on the fender-side side panel,
+curls down and forward in an S, wraps round the fender corner low, runs under the projectors and
+rises toward the hood end, ending a third of the way up (`P3J_END` "swoosh", `SW_SIDE`,
+`SW_HOOD`). On the side it starts as high and as far back as it can: from there back, the door's
+side flange sits about 4 mm behind the panel, and the line's channel is 9.5 mm deep. It steps out
+of the recess onto the corner just past the fender-side opening. `P3J_END` picks the other
+shapes that were tried.
 
 **Finish.** Satin black is the easy finish: it hides layer lines. Gloss black looks best but
 shows every flaw: sand, filler-primer, sand again (repeat until smooth), then gloss paint or
 clear. The side ears' screw holes stay where the door's stock flange holes are (there's as
 little as 2 mm of plastic there, too thin to recess a screw head); use black screws.
 
-**Bezel.** The same top rail, bead, clip tongue, ears and fit to the door as the C7 bezel. Each
-pocket's back is a little smaller than the head's face (1.5 mm each side, 1 mm top and bottom),
-so the bezel frames the face, the lens stays clear, and no gap round the head shows from the
-front; the head sits just behind it. Behind each head's front the bezel keeps 2 mm clear of it
-side to side and 0.75 mm up and down, so a little misalignment between the bezel (on the door)
-and the bracket (on the arm) can't make them rub. The heads only just fit under the door: at the
+**Bezel.** The same top rail, bead, clip tongue, ears and fit to the door as the C7 bezel. (W
+keeps J's earlier pockets, a little smaller than the head's face so the bezel frames it.) Behind
+each head's front the bezel keeps 2 mm clear of it side to side and 0.75 mm up and down. The
+heads only just fit under the door: at the
 fender end there's about 1 mm between the head and the rail, which is why they sit 2.9 mm higher
 than the pods did (the line runs under them). The print split runs through the post between the
-first two heads, with the dowel pin in a small boss under the post.
+first two heads, with the dowel pin in a small boss (J: half way up the post, behind the recess;
+W: under the post).
 
 **Light line.** A channel 8 mm wide and 8 mm deep, closed behind by a 1.5 mm wall tied into the
 bezel's floor; the bezel's bottom edge comes down 3.7 mm below the bracket's floor to carry it,
@@ -138,7 +140,10 @@ wire; run them back with the strip's wires to the headlight harness through a re
 **Still to check on the car:** what's behind the mounting tabs (their back face, against the arm
 and the pad). Take the projectors' mounting stems off (4 screws on the back of each; keep the
 screws in the fan's holes). Then the bodies end (hood side first) 23 and 13 mm in front of it and
-3 mm behind. Leave a few mm of air behind each fan.
+3 mm behind (W); J's heads are 3.5 mm further forward, so its bodies end 26.5, 16.5 and 0.5 mm
+in front of it. Leave a few mm of air behind each fan. On J, also cycle the lights slowly by hand
+and check the projectors' fronts clear the body as the lights go down: they stay behind the
+bezel's original face line, but stand further forward than before.
 
 **Print:** the bracket stands on the back of its mounting tabs, like the pod bracket (turn it
 45 degrees on the bed); the straps print flat. Use ASA if you can, or PCTG: the projectors get

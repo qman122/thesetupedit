@@ -78,8 +78,18 @@ PROJ4 = ((-101.0, 24.3), (-41.67, 18.5), (17.67, 9.7), (77.0, -3.6))
 # (the hood one's body clears the pad's square adjuster, the fender one's the arm's tab), each
 # front 4 mm behind the face across its width (the face as PROJ4 found it)
 PROJ3J = ((-75.0, 21.8), (0.75, 12.2), (76.5, -3.5))
-# P3C (C7 look): the heads where P3J's are
+# P3C (C7 look): the heads where P3J's were
 PROJ3C = PROJ3J
+# J now brings its heads forward, so they stand proud of the light face: each front 0.5 mm behind the
+# bezel's original face line at its tightest edge (the face sits at the door's outline, and the whole
+# assembly swings down into the body when the lights close, so nothing goes past that line); the
+# light face is recessed deeper (EYELID_J) to leave them standing forward of it
+J_FWD = 3.5
+PROJ3J_FWD = tuple((x, y + J_FWD) for x, y in PROJ3J)
+J_LIP = (-2.0, -0.75)   # J's openings: an even gap round each head (2 mm each side, 0.75 top and bottom,
+                        # the same as its clearance behind), so it can stand through them
+EYELID_J = 5.0
+J_OPEN_R = 3.0          # the openings' corners
 P3C_STRIP_Z = 2.5    # P3C: the bold strip's bottom run, its walls from -3.5 to 8.5, just under the housing
 P3C_CHIN = -4.0      # ...and the bottom edge under it
 P3C_TRAY_BOTTOM = 9.0   # the housing's bottom edge: the windows' bottoms
@@ -91,6 +101,11 @@ THIN = Spec(slot=5.0, inner=5.0, wall=1.0, skin=0.0, depth=7.0, insert=6.0, fron
 # ...now 8 mm, behind a frosted diffuser pressed in flush (printed, drl_diffusers_*.stl): the strip
 # (a flat COB strip or a side-bend neon, up to 5 mm thick) sits behind it, and its joins don't show
 DIFF = Spec(slot=8.0, inner=8.0, wall=1.0, skin=0.0, depth=8.0, insert=2.5, front=True, closed=1.5)
+SW_HOOD = (-139.0, 21.0)   # the swoosh's hood end: on the face where it turns into the corner, a third of the way up
+SW_SIDE = ((508.0, 2.5), (522.0, 3.5), (533.0, 7.0), (540.0, 13.0), (545.0, 19.0), (549.0, 24.0), (554.0, 26.5), (561.0, 27.0))
+                           # ...and its fender end, (arc position, z): round the corner low, then up the side
+                           # panel; the door's side flange sits ~4 mm behind the panel above z ~30 from
+                           # here back, so the line (9.5 mm deep) can't go higher or further back
 HOOK_GAP = 1.2       # the light line's hook wraps the outer pocket's bottom corner on the same centre,
                      # with this much plastic between the channel's wall and the pocket
 THIN_Z = 3.0         # its bottom run: walls from -0.5 to 6.5 (the pockets' chamfered bottoms end at 8)
@@ -129,12 +144,19 @@ def is_proj(style):
     return style.startswith("P3") or style.startswith("P4")
 
 
+def proj_lip(style):
+    """(side, top/bottom) of how much smaller each opening is than the head's face (negative: a gap)."""
+    return J_LIP if style == "P3J" else PROJ_LIP
+
+
 def proj_layout(style, pod_ys):
     """(x, y of the head's front) per projector: P4 from PROJ4; P3 at PROJ_X, 1 mm behind the
     pods' faces (pod_ys)."""
     if style.startswith("P4"):
         return list(PROJ4)
-    if style in ("P3J", "P3V"):
+    if style == "P3J":
+        return list(PROJ3J_FWD)
+    if style == "P3V":
         return list(PROJ3J)
     if style == "P3C":
         return list(PROJ3C)
@@ -229,13 +251,21 @@ def filleted(pts, r):
 class Channel:
     """A light along a centre line: a slot (tapered to taper[1] of its height over the first
     taper[0] mm, if given) and a channel behind it, both rounded at the ends."""
-    def __init__(self, pts, spec, base=0.0, taper=None):
-        self.path, self.s, self.base, self.taper = Path2D(pts), spec, base, taper
+    def __init__(self, pts, spec, base=0.0, taper=None, base_fn=None):
+        self.path, self.s, self.base0, self.taper = Path2D(pts), spec, base, taper
+        self.base_fn = base_fn     # the recess it sits in, by arc position (where it runs out of one)
+        self.base = base
         self.back = base + spec.skin + spec.depth      # depth of the channel's back
         self.lo, self.hi = self.path.lo, self.path.hi
 
+    def _set_base(self, a):
+        if self.base_fn is not None:
+            self.base = self.base_fn(a)
+            self.back = self.base + self.s.skin + self.s.depth
+
     def profile(self, a, nn, Z):
         """(inside of the channel, visible slot) as 2D distances in the face, 99 when far."""
+        self._set_base(a)
         s = self.s
         reach = s.inner / 2 + s.wall + 3.0
         near = (nn > -self.back - 3.0) & (nn < 4.0)
@@ -284,6 +314,7 @@ class Ladder(Channel):
     diffuser and the strip to slide in and the wires to come out."""
     def __init__(self, a_mid, z0, n, pitch, rung_len, spec, base, rake, sw=None, y_back=None):
         self.s, self.base, self.taper, self.rake = spec, base, None, rake
+        self.base0, self.base_fn = base, None
         self.back = base + spec.skin + spec.depth
         self.a_mid, self.zs = a_mid, z0 + pitch * np.arange(n)
         self.zm, self.rung_len = self.zs.mean(), rung_len
@@ -344,6 +375,7 @@ class Style:
         self.win_edge = C7_EDGE if name in ("C7", "P3C") else None
         self.pocket = None     # (side, bottom, top) chamfers of the pockets at the face
         self.tray_recess = TRAY_RECESS
+        self.pocket_r = POCKET_R
         self.block_extra = 0.0   # the tunnels' solid blocks reach this much further sideways
         L, path = sw.L, sw.path
         i0 = int(np.argmin(path[:, 0]))              # from the hood corner on, x only grows
@@ -468,8 +500,28 @@ class Style:
             half = PROJ_W / 2 + 1.0
             a_start, a0 = ax(STRIP_HOOD_X), ax(pxs[-1] + half + 12.0)
             head = [(a_start - KICK_IN[0], KICK_IN[1]), (a_start, THIN_Z)]
-            end = os.environ.get("P3J_END", "wrap_pocket")   # the fender end's shape (others: options tried)
-            if end == "wrap_pocket":     # a J round the outer pocket's bottom corner, on the same centre
+            end = os.environ.get("P3J_END", "swoosh")   # the line's shape (the others were options tried)
+            if end == "swoosh":
+                # the owner's sketch: from the fender-side side panel (as high and as far back as the
+                # door's side flange behind it allows), an S down and forward, round the fender corner
+                # low, under the projectors, then rising toward the hood end
+                lip = proj_lip(name)
+                hwo = PROJ_W / 2 - lip[0]                                        # the openings
+                zlow = self.fronts[0][2] - PROJ_H / 2 + lip[1] - HOOK_GAP - DIFF.inner / 2 - DIFF.wall
+                x_rise = pxs[0] - hwo - HOOK_GAP - DIFF.inner / 2 - DIFF.wall   # past the hood-side opening
+                ctrl = [(ax(SW_HOOD[0]), SW_HOOD[1]), (ax(SW_HOOD[0] + 9.0), SW_HOOD[1] - 7.0),
+                        (ax(x_rise - 6.0), zlow + 2.5), (ax(x_rise + 4.0), zlow)]
+                ctrl += [(ax(x), zlow) for x in np.linspace(x_rise + 12.0, 100.0, 12)]
+                ctrl += [(a, z if z > zlow else zlow) for a, z in SW_SIDE]
+                arr = np.array(ctrl, float)
+                for _ in range(4):                      # one flowing line (Chaikin)
+                    q = [arr[0]]
+                    for p0, p1 in zip(arr[:-1], arr[1:]):
+                        q += [0.75 * p0 + 0.25 * p1, 0.25 * p0 + 0.75 * p1]
+                    arr = np.array(q + [arr[-1]])
+                pts = [tuple(p) for p in arr]
+                a_start = pts[0][0]
+            elif end == "wrap_pocket":     # a J round the outer pocket's bottom corner, on the same centre
                 xe = pxs[-1] + PROJ_W / 2 - PROJ_LIP[0] + POCKET_CHAMFER[0]          # the pocket's outer edge
                 zbot = self.fronts[-1][2] - (PROJ_H / 2 - PROJ_LIP[1]) - POCKET_CHAMFER[1]
                 rp = POCKET_R[1]
@@ -495,18 +547,31 @@ class Style:
                 pts = list(filleted(head + [(a0 + 10.0, THIN_Z), (a0 + 14.0, 46.0)], 6.0))
             else:                        # round the corner, kicking up on the side
                 pts = head + [(a0 + WRAP, THIN_Z), (a0 + WRAP + KICK_OUT[0], KICK_OUT[1])]
-            a_bend = max(p[0] for p in pts) - 8.0
-            self.channels.append(Channel(pts, DIFF, base=EYELID))
-            self.wire = (a_start + 12.0, min(p[1] for p in pts), 25.0)
             hw_line = DIFF.inner / 2 + DIFF.wall
             ea0 = min(p[0] for p in pts) - hw_line - 5.0
-            ea1 = max(p[0] for p in pts) + hw_line + 5.0
+            if end == "swoosh":
+                # the recess covers the face only, to just past the fender-side opening; the line's
+                # channel steps out of it there, onto the corner and the side panel
+                ea1 = ax(pxs[-1] + PROJ_W / 2 - proj_lip(name)[0] + 6.0)
+                b0, b1 = ea1 - 10.0, ea1 + 4.0
+                base_fn = lambda a, b0=b0, b1=b1: EYELID_J * (1.0 - np.clip((a - b0) / (b1 - b0), 0, 1) ** 2 * (3 - 2 * np.clip((a - b0) / (b1 - b0), 0, 1)))
+                self.channels.append(Channel(pts, DIFF, base=EYELID_J, base_fn=base_fn))
+                low = [p[0] for p in pts if p[1] < 8.0]
+                self.chin = (ea0 - 20.0, max(low) + 12.0)
+                self.tray_recess = EYELID_J
+                self.pocket = (0.0, 0.0, 0.0)          # straight-through openings, an even gap round each head
+                self.pocket_r = (J_OPEN_R, J_OPEN_R)
+                self.block_extra = 0.0
+            else:
+                ea1 = max(p[0] for p in pts) + hw_line + 5.0
+                self.channels.append(Channel(pts, DIFF, base=EYELID))
+                self.chin = (ea0 - 20.0, ea1 + 20.0)
+                self.tray_recess = EYELID
+                self.pocket = POCKET_CHAMFER
+                self.block_extra = POCKET_CHAMFER[0]
+            self.wire = (a_start + 12.0, min(p[1] for p in pts), 25.0)
             self.tray = dict(u0=ea0, u1=ea1, zb=EYELID_BOTTOM, zmid=self.fronts[0][2], r=4.0, top=EYELID_TOP)
-            self.tray_recess = EYELID
-            self.chin = (ea0 - 20.0, ea1 + 20.0)
             self.chin_z = EYELID_CHIN
-            self.pocket = POCKET_CHAMFER
-            self.block_extra = POCKET_CHAMFER[0]
             self.win_edge = 0.6
         if name == "P3C":
             # the C7 look round three projectors: a black housing (a recessed tray with raked ends and
@@ -612,7 +677,7 @@ class Style:
             else:
                 t = np.sqrt(np.clip(e_, 0, 1))   # e_ is the square of the depth fraction
             zt, zb = hh + ct * t, -hh - cb * t
-            rc = POCKET_R[0] + (POCKET_R[1] - POCKET_R[0]) * t     # all four corners
+            rc = self.pocket_r[0] + (self.pocket_r[1] - self.pocket_r[0]) * t     # all four corners
             hx = hw + cs * t
             return self.ops.round_box2(x, z, -hx, hx, zb, zt, rc, rc, rc, rc)
         if self.rake:
@@ -656,7 +721,7 @@ class Style:
         t2 = self.tray2d(a, Z)
         F = o.diff_round(F, iround(t2, slab(nn, -self.tray_recess, 3.0), 0.8), 0.8 if not self.rake else 0.5)
         for ch, d in zip(self.channels, c["d"]):
-            if ch.base > 0:
+            if ch.base0 > 0:      # in a recess (its depth can vary along it)
                 F = o.diff_round(F, ch.inner(d, nn), 0.5)
                 F = o.diff_round(F, ch.slot(d, nn), 0.3)
         k = (2.15 - FIN_EDGE) / (TRAY_RECESS - FIN_FRONT)   # wider than the post at the floor: the windows trim them to it
@@ -682,7 +747,7 @@ class Style:
         o = self.ops
         a, nn, Z, X = c["a"], c["nn"], c["Z"], c["X"]
         for ch, d in zip(self.channels, c["d"]):
-            if ch.base == 0:
+            if ch.base0 == 0:
                 F = o.diff_round(F, ch.inner(d, nn), 0.5)
                 F = o.diff_round(F, ch.slot(d, nn), 0.4)
             acc = ch.access(X, c["Y"], Z, nn)

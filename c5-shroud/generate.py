@@ -511,7 +511,8 @@ def carrier_projectors(p):
     # the beam stops this far behind the heads' fronts: 3 mm, or 11 under the light line, whose
     # channel brings the bezel's bottom edge down to -3.7 (P3J), over the beam's front
     import bezel_styles as bs
-    gap = 11.0 if os.environ.get("BEZEL_STYLE", "P3J") in bs.BOLD_STYLES else 3.0
+    st_ = os.environ.get("BEZEL_STYLE", "P3J")
+    gap = 16.0 if st_ == "P3J" else 11.0 if st_ in bs.BOLD_STYLES else 3.0   # J: heads forward, recess deeper
     feet, spans = [], []
     for (x, yf, zc) in proj_poses(p):
         y0, y1 = proj_cradle_span(p, yf, x)
@@ -557,8 +558,9 @@ def carrier_projectors(p):
     # and pairs of zip-tie slots under the others and by the hood end, where the strip's wires
     # come back from the bezel
     x2, yf2 = spans[1][0], spans[1][1]
-    parts.append(box(x2 - 9.0, x2 + 9.0, yf2 - 37.0, yf2 - 7.0, -1.0, 2.0))
-    for dy in (-34.0, -10.0):
+    pf = max(7.0, gap - 4.0)              # the pad's front: back as far as the beam's front needs
+    parts.append(box(x2 - 9.0, x2 + 9.0, yf2 - pf - 30.0, yf2 - pf, -1.0, 2.0))
+    for dy in (-pf - 27.0, -pf - 3.0):
         cuts.append(cyl_z(2.6, -p.floor_t - 1, 3.0, x2, yf2 + dy))
     ties = [(sp[0], sp[1] - 12.0) for i, sp in enumerate(spans) if i != 1]
     ties.append((spans[0][0] - ow - 1.5, spans[0][1] - 24.0))
@@ -1684,6 +1686,10 @@ def dowel_spot(p):
     a little lower, in a boss the bezel builds round it (bezel_sdf), under the heads' clearance."""
     us = split_plane_u(p)
     n_c = float(bow(p, us)) - p.post_depth / 2 - p.post_setback
+    if os.environ.get("BEZEL_STYLE", "") == "P3J":
+        # J: its floor is taken by the deeper recess and the light line's channel, so the pin goes up
+        # in the post between the first two openings, half way up, just behind the recessed face
+        return us, n_c + 1.5, (33.5,)
     if proj_lights(p):
         return us, n_c - 5.0, (4.5,)
     return us, n_c, dowel_levels(p)

@@ -278,7 +278,8 @@ def feature_geometry(sw):
     if bs.is_proj(STYLE):              # small projectors instead of the pods (bezel_styles.PROJ...)
         # the openings are a little smaller than the heads (PROJ_LIP), so the bezel frames each
         # head's face and no gap round it shows from the front, even a little out of line
-        ww, wh = bs.PROJ_W - 2 * bs.PROJ_LIP[0], bs.PROJ_H - 2 * bs.PROJ_LIP[1]
+        lip = bs.proj_lip(STYLE)
+        ww, wh = bs.PROJ_W - 2 * lip[0], bs.PROJ_H - 2 * lip[1]
         zc = zc + bs.PROJ_LIFT
         # each tunnel ends 0.5 mm in front of where its head's front goes (1 mm behind this)
         poses = [(x, yf + 1.0) for x, yf in bs.proj_layout(STYLE, [py for _, py in poses])]
@@ -286,7 +287,7 @@ def feature_geometry(sw):
     z_bot = floor_top - T_WALL + RL_MAX + 1.0      # the sill sits 1 mm above the rolled lip's top, so the
                                                    # lip under it is solid (not a thin upturned edge)
     if bs.is_proj(STYLE):              # the sill just under the projector, with the light strip below it
-        z_bot = zc - bs.PROJ_H / 2 + bs.PROJ_LIP[1]
+        z_bot = zc - bs.PROJ_H / 2 + bs.proj_lip(STYLE)[1]
     z_topw = zc + wh / 2
     wins = [(px, py, (z_bot + z_topw) / 2, ww / 2, (z_topw - z_bot) / 2) for (px, py) in poses]
     # the tunnels: behind each pod's face they hug the pod's body (TUNNEL_CLEAR all round, small
@@ -297,8 +298,9 @@ def feature_geometry(sw):
         zb0, zb1 = P.pod_lift - TUNNEL_CLEAR, g.pod_top(P) + TUNNEL_CLEAR
         back = (P.pod_body_w / 2 + TUNNEL_CLEAR, (zb1 - zb0) / 2, (zb0 + zb1) / 2, 3.0)
         if bs.is_proj(STYLE):
-            zb0, zb1 = zc - bs.PROJ_H / 2 + bs.PROJ_LIP[1], zc + bs.PROJ_H / 2 - bs.PROJ_LIP[1]
-            back = (bs.PROJ_W / 2 - bs.PROJ_LIP[0], (zb1 - zb0) / 2, (zb0 + zb1) / 2, 1.0)   # near-square heads
+            lip = bs.proj_lip(STYLE)
+            zb0, zb1 = zc - bs.PROJ_H / 2 + lip[1], zc + bs.PROJ_H / 2 - lip[1]
+            back = (bs.PROJ_W / 2 - lip[0], (zb1 - zb0) / 2, (zb0 + zb1) / 2, 1.0)   # near-square heads
         on = np.abs(sw.path[:, 0] - px) < ww / 2 + 4
         rail_under = float(np.min(sw.T[on & (sw.path[:, 1] > -60)])) - T_WALL
         flare = 0.0 if STYLE in ("B", "C", "BC", "C7") or bs.is_proj(STYLE) else FLARE_TOP     # even windows for the frames and the tray
