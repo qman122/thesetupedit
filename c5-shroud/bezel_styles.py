@@ -25,6 +25,7 @@ Room for the lights (measured from the model):
 """
 from functools import reduce
 
+import os
 import numpy as np
 from scipy.spatial import cKDTree
 
@@ -385,9 +386,22 @@ class Style:
             # runs the face's full width under them and kicks up at both ends at crisp corners
             pxs = [t[0] for t in fg["tunnels"]]
             half = PROJ_W / 2 + 1.0
-            a_start, a_bend = ax(STRIP_HOOD_X), ax(pxs[-1] + half + 12.0) + WRAP
-            pts = [(a_start - KICK_IN[0], KICK_IN[1]), (a_start, THIN_Z), (a_bend, THIN_Z),
-                   (a_bend + KICK_OUT[0], KICK_OUT[1])]
+            a_start, a0 = ax(STRIP_HOOD_X), ax(pxs[-1] + half + 12.0)
+            head = [(a_start - KICK_IN[0], KICK_IN[1]), (a_start, THIN_Z)]
+            end = os.environ.get("P3J_END", "wrap_kick")   # the fender end's shape (options being tried)
+            if end == "hook":            # a smooth hook up the face
+                pts = list(filleted(head + [(a0, THIN_Z), (a0 + 8.0, 46.0)], 14.0))
+            elif end == "crisp":         # a crisp kick-up on the face
+                pts = head + [(a0, THIN_Z), (a0 + 8.0, 46.0)]
+            elif end == "wrap":          # round the corner onto the side, and ends there
+                pts = head + [(a0 + 60.0, THIN_Z)]
+            elif end == "sweep":         # round the corner, then a long sweep up and back along the side
+                pts = list(filleted(head + [(a0 + 20.0, THIN_Z), (a0 + 75.0, 30.0)], 20.0))
+            elif end == "corner":        # kicks up on the rounded corner itself, seen from front and side
+                pts = list(filleted(head + [(a0 + 10.0, THIN_Z), (a0 + 14.0, 46.0)], 6.0))
+            else:                        # round the corner, kicking up on the side
+                pts = head + [(a0 + WRAP, THIN_Z), (a0 + WRAP + KICK_OUT[0], KICK_OUT[1])]
+            a_bend = max(p[0] for p in pts) - 8.0
             self.channels.append(Channel(pts, THIN))
             self.wire = (a_start + 12.0, THIN_Z, 25.0)
             self.chin = (a_start - 22.0, a_bend + 12.0)
