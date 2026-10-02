@@ -311,6 +311,7 @@ class Style:
             # bottom rounds; the fillet is only where there's a floor behind it to fillet into.
             chin = o.round_box2(nn, Z, -3.0, 0.0, zb, B + 0.5, 0.0, np.maximum(Rl, 1.0), 0.0, o.R_OUT)
             floor = np.clip((Df - 4.0) / 3.0, 0, 1)
+            chin = np.where(f > 1e-6, chin, 99.0)          # none at all where it has faded out
             F = o.union_round(F, chin, np.clip((-nn - 1.0) / 1.5, 0, 1) * f * floor)
         if self.tray is not None:
             t2 = self.tray2d(a, Z)
