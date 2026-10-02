@@ -587,7 +587,7 @@ def untangle(verts, faces, sw, fg, rounds=8):
     nb = trimesh.Trimesh(verts, faces, process=False).vertex_neighbors
     for _ in range(rounds):
         bad = self_hits(verts, faces)
-        print(f"  untangle: {len(bad)} crossing triangles", flush=True)
+        print(f"  untangle: {len(bad)} crossing triangles of {len(faces)}, {time.strftime('%H:%M:%S')}", flush=True)
         if not len(bad):
             break
         vs = set(faces[bad].ravel())

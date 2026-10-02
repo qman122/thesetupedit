@@ -35,6 +35,13 @@ def slab(nn, lo, hi):
     return np.maximum(lo - nn, nn - hi)
 
 
+def iround(a, b, r):
+    """Intersection of two fields with the edge between them rounded by r (no sharp creases:
+    the mesher and its clean-up passes need every edge round)."""
+    u, v = np.maximum(r + a, 0), np.maximum(r + b, 0)
+    return np.minimum(-r, np.maximum(a, b)) + np.hypot(u, v)
+
+
 class Spec:
     """One size of light channel. slot: visible slot height; inner: channel height (the diffuser
     insert's height); wall: channel walls; skin: the face in front of the diffuser; depth: the
@@ -131,21 +138,21 @@ class Channel:
         return d - s.inner / 2, d - half
 
     def walls(self, pr, nn):
-        return np.maximum(pr[0] - self.s.wall, slab(nn, -self.back, -(self.base + 0.5)))
+        return iround(pr[0] - self.s.wall, slab(nn, -self.back, -(self.base + 0.5)), 0.8)
 
     def keep(self, pr, nn):
-        return np.maximum(pr[0] - self.s.wall, slab(nn, -self.back, 1.0))
+        return iround(pr[0] - self.s.wall, slab(nn, -self.back, 1.0), 0.8)
 
     def inner(self, pr, nn):
-        return np.maximum(pr[0], slab(nn, -self.back - 1.0, -(self.base + self.s.skin)))
+        return iround(pr[0], slab(nn, -self.back - 1.0, -(self.base + self.s.skin)), 0.4)
 
     def slot(self, pr, nn):
-        return np.maximum(pr[1], slab(nn, -(self.base + self.s.skin + 0.5), 3.0))
+        return iround(pr[1], slab(nn, -(self.base + self.s.skin + 0.5), 3.0), 0.3)
 
     def insert(self, pr, nn):
         s = self.s
-        return np.maximum(pr[0] + INSERT_CLEAR,
-                          slab(nn, -(self.base + s.skin + s.insert), -(self.base + s.skin + 0.05)))
+        return iround(pr[0] + INSERT_CLEAR,
+                      slab(nn, -(self.base + s.skin + s.insert), -(self.base + s.skin + 0.05)), 0.3)
 
 
 class Ladder(Channel):
@@ -243,7 +250,7 @@ class Style:
             lad = Ladder(a_lad, LADDER_Z0, LADDER_N, LADDER_PITCH, LADDER_RUNG, LADDER, 0.0, RAKE)
             self.tray = dict(u0=ta0, u1=ta1, zb=C7_TRAY_BOTTOM, zmid=zmid, r=C7_TRAY_R, top=(4.5, 61.5))
             a0, a1 = ax(x_out_h) + 3.0, ax(x_out_f) - 3.0
-            self.channels.append(Channel([(a0, LOW_Z), (a1, LOW_Z)], LOW, taper=(45.0, 0.3)))
+            self.channels.append(Channel([(a0, LOW_Z), (a1, LOW_Z)], LOW, taper=(45.0, 0.45)))
             self.channels.append(lad)
             self.chin = (a0 - 22.0, a1 + 22.0)
         if name in ("C", "C7"):
@@ -296,12 +303,15 @@ class Style:
             sc_ = np.interp(a, self.sw.L, np.arange(self.sw.n))
             T, B, Dr, Df, rb, Rl = self.sw.params(sc_)
             zb = B - np.maximum(B - CHIN_Z, 0) * f
-            chin = o.round_box2(nn, Z, -3.0, 0.0, zb, B + 6.0, 0.0, np.maximum(Rl, 1.0), 0.0, 1.0)
-            F = np.minimum(F, chin)
+            # the front wall carried down: its top ends inside the floor, and it's filleted 1 mm
+            # into the floor's underside behind (not at the front, where its face carries on the
+            # wall's own face; nor where it fades out, where the two bottoms meet)
+            chin = o.round_box2(nn, Z, -3.0, 0.0, zb, B + 0.5, 0.0, np.maximum(Rl, 1.0), 0.0, 1.0)
+            F = o.union_round(F, chin, np.clip((-nn - 1.0) / 1.5, 0, 1) * f)
         if self.tray is not None:
             t2 = self.tray2d(a, Z)
-            backing = reduce(np.maximum, [t2 - 2.5, slab(nn, -(TRAY_RECESS + 2.5), -0.5), CHIN_Z + 0.5 - Z,
-                                          Z - (self.T_of_a(a) - 3.5)])
+            backing = iround(iround(t2 - 2.5, slab(nn, -(TRAY_RECESS + 2.5), -0.5), 1.0),
+                             np.maximum(CHIN_Z + 0.5 - Z, Z - (self.T_of_a(a) - 3.5)), 1.0)
             F = o.union_round(F, backing, 1.0)
         if self.chamfer:
             for (px, hw, zc, hh) in self.fronts:
@@ -326,7 +336,7 @@ class Style:
         o = self.ops
         a, nn, Z = c["a"], c["nn"], c["Z"]
         t2 = self.tray2d(a, Z)
-        F = o.diff_round(F, np.maximum(t2, slab(nn, -TRAY_RECESS, 3.0)), 0.8 if not self.rake else 0.5)
+        F = o.diff_round(F, iround(t2, slab(nn, -TRAY_RECESS, 3.0), 0.8), 0.8 if not self.rake else 0.5)
         for ch, d in zip(self.channels, c["d"]):
             if ch.base > 0:
                 F = o.diff_round(F, ch.inner(d, nn), 0.5)
@@ -336,7 +346,7 @@ class Style:
             depth = np.maximum(-nn - FIN_FRONT, 0)
             side = (np.abs(a - af - (Z - self.tray["zmid"]) * self.rake) - FIN_EDGE - k * depth) / np.sqrt(1 + k * k)
             fin = o.inter_round(side, nn + FIN_FRONT, 0.5)
-            fin = reduce(np.maximum, [fin, -(nn + TRAY_RECESS + 1.0), t2 - 1.0])
+            fin = iround(fin, np.maximum(-(nn + TRAY_RECESS + 1.0), t2 - 1.0), 0.4)
             F = o.union_round(F, fin, 0.8)
         return F
 
