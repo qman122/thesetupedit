@@ -69,6 +69,11 @@ PROJ_X = (-75.0, 0.75, 76.5)  # head centres: the fender one 8 mm in from the po
 # four heads (P4 looks): evenly spaced from the hood corner to where the fender-side body just
 # clears the arm's tab (0.8 mm), each front 4 mm behind the bezel's face across its width
 PROJ4 = ((-101.0, 24.3), (-41.67, 18.5), (17.67, 9.7), (77.0, -3.6))
+# P3J (the owner's reference render: three in a tight line, the bold strip under them wrapping up
+# round the outer end): 6 mm between the heads, the row in the middle of the bezel, each front
+# 4 mm behind the face across its width (the face as PROJ4 found it)
+PROJ3J = ((-66.0, 20.9), (-5.0, 13.1), (56.0, 1.1))
+BOLD_STYLES = ("P3J", "P4J")   # the looks with the bold strip (and the lower bottom edge)
 
 
 def is_proj(style):
@@ -80,6 +85,8 @@ def proj_layout(style, pod_ys):
     pods' faces (pod_ys)."""
     if style.startswith("P4"):
         return list(PROJ4)
+    if style == "P3J":
+        return list(PROJ3J)
     return [(x, py - 1.0) for x, py in zip(PROJ_X, pod_ys)]
 PROJ_LIFT = 2.9      # P3: the heads sit this much higher than the pods did: z 9.5 to 57.5, between the thick strip
                      # (its walls end at 8.95) and the rail (its underside is at 59.0 over the fender head)
@@ -343,29 +350,36 @@ class Style:
             self.wire = (a1 - 6.0, 3.0, 6.0)   # the blade's wire hole: arc position, height, length behind the channel
             self.channels.append(lad)
             self.chin = (a0 - 22.0, a1 + 22.0)
-        if name in ("P3J", "P3W"):
-            # three small projectors at the pods' places; one light strip under them that sweeps up
-            # past the fender-side one: straight (J) or dipping under each and peaking between (W)
+        if name == "P3J":
+            # three projectors in a tight line; the bold strip runs under them and wraps up round
+            # the fender end in a wide curve, toward the corner's top
             pxs = [t[0] for t in fg["tunnels"]]
             half = PROJ_W / 2 + 1.0
-            if name == "P3J":
-                pts = rounded_l((ax(pxs[0] - half + 4.0), THICK_Z), (ax(pxs[-1] + half + 10.0), THICK_Z),
-                                (ax(pxs[-1] + half + 10.0), 46.0), 9.0)[::-1]
-            else:
-                xs = [pxs[0] - half + 4.0, pxs[0] - half + 9.0]
-                zs = [THICK_Z + 6.0, THICK_Z]
-                for xa, xb in zip(pxs, pxs[1:]):         # flat under each window, peaking in the gaps
-                    xm = (xa + xb) / 2
-                    xs += [xa + half + 3.5, xm - 2.0, xm, xm + 2.0, xb - half - 3.5]
-                    zs += [THICK_Z, 22.0, 24.0, 22.0, THICK_Z]
-                xs += [pxs[-1] + half + 4.0, pxs[-1] + half + 10.0, pxs[-1] + half + 10.0]
-                zs += [THICK_Z, THICK_Z + 8.0, 46.0]
-                pts = np.c_[[ax(x) for x in xs], zs]
-                for _ in range(3):                       # round the corners a little (Chaikin)
-                    q = [pts[0]]
-                    for p0, p1 in zip(pts[:-1], pts[1:]):
-                        q += [0.85 * p0 + 0.15 * p1, 0.15 * p0 + 0.85 * p1]
-                    pts = np.array(q + [pts[-1]])
+            a_start, a_bend = ax(pxs[0] - half + 3.5), ax(pxs[-1] + half + 14.0)
+            pts = filleted([(a_start, BOLD_Z), (a_bend, BOLD_Z), (a_bend + 10.0, 46.0)], 16.0)
+            self.channels.append(Channel(pts, BOLD))
+            self.wire = (a_start + 12.0, 0.5, 25.0)
+            self.chin = (a_start - 22.0, a_bend + 12.0)
+            self.chin_z = BOLD_CHIN
+        if name == "P3W":
+            # three small projectors at the pods' places; one light strip that dips under each one,
+            # peaks between them and sweeps up past the fender-side one
+            pxs = [t[0] for t in fg["tunnels"]]
+            half = PROJ_W / 2 + 1.0
+            xs = [pxs[0] - half + 4.0, pxs[0] - half + 9.0]
+            zs = [THICK_Z + 6.0, THICK_Z]
+            for xa, xb in zip(pxs, pxs[1:]):         # flat under each window, peaking in the gaps
+                xm = (xa + xb) / 2
+                xs += [xa + half + 3.5, xm - 2.0, xm, xm + 2.0, xb - half - 3.5]
+                zs += [THICK_Z, 22.0, 24.0, 22.0, THICK_Z]
+            xs += [pxs[-1] + half + 4.0, pxs[-1] + half + 10.0, pxs[-1] + half + 10.0]
+            zs += [THICK_Z, THICK_Z + 8.0, 46.0]
+            pts = np.c_[[ax(x) for x in xs], zs]
+            for _ in range(3):                       # round the corners a little (Chaikin)
+                q = [pts[0]]
+                for p0, p1 in zip(pts[:-1], pts[1:]):
+                    q += [0.85 * p0 + 0.15 * p1, 0.15 * p0 + 0.85 * p1]
+                pts = np.array(q + [pts[-1]])
             self.channels.append(Channel(pts, THICK))
             # the strip's wires: out of the channel's back at the hood end, low, and straight back in
             # a groove under the bezel's floor to where the bracket's beam is (zip-tie slots there)

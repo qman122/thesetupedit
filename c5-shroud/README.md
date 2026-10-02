@@ -62,7 +62,7 @@ a lower bar under each pod) are still there: set `BEZEL_STYLE` and rerun `bezel_
 
 ## Projector version (v11): bi-LED projectors and a thick light strip
 
-![J: thick white strip](preview/bezel_p3j.png)
+![J: three in a line, bold white strip](preview/bezel_p3j.png)
 ![W: thick amber strip](preview/bezel_p3w.png)
 ![J bold: four projectors](preview/bezel_p4j.png)
 
@@ -70,14 +70,17 @@ A second set, for the owner's mini 2.0 in bi-LED projectors (from the eBay listi
 x 48 tall x 50 deep, a 41 mm square fan body 44 deep behind, and a threaded stem 37 mm long
 behind that) and a thick switchback strip (white DRL, amber turn signal). Three looks:
 
-- `stl/projectors_P3J/`: three projectors; a 6.5 mm strip runs under them and sweeps up past the
-  fender-side one.
-- `stl/projectors_P3W/`: three projectors; the strip dips under each one and peaks in the gaps
-  between them, then sweeps up at the end.
+- `stl/projectors_P3J/`: three projectors in a tight line (6 mm apart, in the middle of the
+  bezel, each 4 mm behind its face), like the owner's reference render; the bold 10 mm strip runs
+  under them and wraps up round the fender end in a wide curve.
+- `stl/projectors_P3W/`: three projectors spread out; a 6.5 mm strip dips under each one and peaks
+  in the gaps between them, then sweeps up at the end.
 - `stl/projectors_P4J/`: **four** projectors and a bold 10 mm strip, with an angled sweep up past
   the fender-side one. The heads are evenly spaced, each 4 mm behind the bezel's face (so they
-  step back toward the fender), with 4.3 mm posts between them. The bezel's bottom edge comes
-  down 3.5 mm below the bracket's floor to carry the wider strip.
+  step back toward the fender), with 4.3 mm posts between them.
+
+With the bold strip (P3J, P4J) the bezel's bottom edge comes down 3.5 mm below the bracket's floor
+to carry it.
 
 **Bezel.** The same top rail, bead, clip tongue, ears and fit to the door as the C7 bezel. The
 windows are the heads' size plus 0.5 mm; each head sits just behind its window (not inside
@@ -88,7 +91,7 @@ can't make them rub. The heads only just fit under the door: at the fender end t
 strip runs under them). The print split runs through the post between the first two heads,
 with the dowel pin in a small boss under the post.
 
-**Light strip.** A channel 6.5 mm wide (P3) or 10 mm wide (P4J), 7 mm deep, for a silicone
+**Light strip.** A channel 6.5 mm wide (P3W) or 10 mm wide (P3J, P4J), 7 mm deep, for a silicone
 switchback strip up to 6 mm thick (`THICK` and `BOLD` in `bezel_styles.py`: change them to the
 strip you buy). It presses in from the front, flush, and is its own diffuser; a few dots of
 clear silicone hold it. Its wires go out through a hole at the hood end, low down, and back in
@@ -102,7 +105,7 @@ fan's air), and a strap (`projector_straps_*.stl`) screws down across the top wi
 self-tapping screws (two each side, or one where the cradle is short). Put a strip of foam tape
 on the saddle. The cradles stop 1 mm in front of the mounting tabs' plane (the arm and the pad
 are behind it), and short of the flange nuts on the arm bolts and the pad's square aim
-adjuster; where that leaves a short cradle (the fender one on P3) there's a rest under the head
+adjuster; where that leaves a short cradle (the fender one on P3W) there's a rest under the head
 as well.
 
 **Wiring.** A raised pad with two M3 holes, 24 mm apart, under the second head from the hood end,
@@ -111,9 +114,10 @@ heads and by the hood end, where the strip's wires come back. Each projector nee
 ground and a high-beam wire; run them back with the strip's wires to the headlight harness
 through a relay, and fuse it.
 
-**Projector placement, three.** The fender-side head is 8 mm in from the pod's place so its body
-clears the arm's mounting tab; the hood-side one is 9.5 mm in so its body clears the pad's
-square aim adjuster; the middle one is halfway between.
+**Projector placement, three.** P3J's row sits between the two limits: the hood-side body clears
+the pad's square aim adjuster by 9.5 mm, the fender-side one the arm's mounting tab by 22 mm. On
+P3W the fender-side head is 8 mm in from the pod's place so its body clears the arm's mounting
+tab, the hood-side one 9.5 mm in so its body clears the adjuster, and the middle one halfway.
 
 **Projector placement, four (P4J): two things to know.**
 - The hood-end projector goes in **with its threaded stem taken off**. Its stem would land right
@@ -124,10 +128,10 @@ square aim adjuster; the middle one is halfway between.
   far (`check.py` flags it as the one P4J fail besides the lip gap).
 
 **Still to check on the car:** what's behind the mounting tabs (their back face, against the arm
-and the pad). Without stems, the projectors' bodies end 23, 4 and 15 mm in front of it (P3: hood
-side, middle) and 15 mm behind it (P3 fender side); P4J's end 25, 20 and 11 mm in front and
-3 mm behind. With the stems on, the P3 projectors reach 14, 33 and 52 mm behind it and P4J's
-(all but the hood one) 18, 26 and 40 mm. Measure the room there before printing.
+and the pad). Without stems, the projectors' bodies end (hood side first) 22, 14 and 2 mm in front
+of it on P3J; 23 and 4 mm in front and 15 mm behind on P3W; 25, 20 and 11 mm in front and 3 mm
+behind on P4J. With the stems on, they reach 15, 23 and 35 mm behind it (P3J), 14, 33 and 52 mm
+(P3W), and 18, 26 and 40 mm (P4J, all but the hood one). Measure the room there before printing.
 
 **Print:** the bracket stands on the back of its mounting tabs, like the pod bracket (turn it
 45 degrees on the bed); the straps print flat. Use ASA if you can, or PCTG: the projectors get

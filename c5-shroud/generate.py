@@ -507,10 +507,10 @@ def carrier_projectors(p):
     parts, cuts = [], []
     bw = p.proj_body_w / 2 + p.cradle_clear            # half the cradle's inside
     ow = bw + p.cradle_wall                             # ...and its outside
-    # the beam stops this far behind the heads' fronts: 3 mm, or 6.5 under P4's bold strip, whose
+    # the beam stops this far behind the heads' fronts: 3 mm, or 6.5 under the bold strip, whose
     # channel brings the bezel's bottom edge down to -3.5, over the beam's front
-    gap = 6.5 if os.environ.get("BEZEL_STYLE", "P3J").startswith("P4") else 3.0
     import bezel_styles as bs
+    gap = 6.5 if os.environ.get("BEZEL_STYLE", "P3J") in bs.BOLD_STYLES else 3.0
     feet, spans = [], []
     for (x, yf, zc) in proj_poses(p):
         y0, y1 = proj_cradle_span(p, yf, x)
