@@ -71,9 +71,11 @@ thin switchback strip (white DRL, amber turn signal). (`stl/projectors_P3C/` is 
 alternative: the same heads in a recessed housing with raked windows and fins, and a 10 mm strip.)
 
 **D (`stl/projectors_P3D/`), the owner's "dual straight DRL" concept.** The same projectors and
-bracket, with two light bars: one above the projectors, 3 mm under the top rail and following it,
-and one straight one below them. Both wrap 25 mm round onto the hood-side face (the door's side
-flange is close behind it further round) and stop before the tight fender corner. The bezel's
+bracket, with two light bars, one above the projectors and one below, shaped as squinting, mean eyes
+(`D_SQUINT`, `D_SQUINT_LOW`): both run level across the projectors (the top one as low as the
+rail at the fender end allows, so the dark band above it grows heavier toward the hood), then,
+past the hood-side projector, the top one angles down 35 degrees and the bottom one up 30, so
+the eye tapers to its inner corner. Both stop before the tight fender corner. The bezel's
 face covers each head, with a round hole for its lens (`LENS_D` 42 mm, plus a 2 mm gap round it:
 measure the real lens and set it). To fit a bar between the heads and the rail, the heads sit
 3 mm lower than J's (z 3.6 to 51.6, `D_LIFT`), and the bezel's bottom edge comes down to -5.7 for
