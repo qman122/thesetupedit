@@ -206,7 +206,7 @@ class Ladder(Channel):
         zz, lo, hi, y_back = self.chan
         xz = reduce(np.maximum, [np.interp(Z, zz, lo) - X, X - np.interp(Z, zz, hi),
                                  (zz[0] - 0.2) - Z, Z - (zz[-1] + 0.2)])
-        ch = iround(xz, nn + self.s.skin + 0.3, 0.4)            # behind the skin only
+        ch = iround(xz, nn + self.s.skin + self.s.insert + 0.5, 0.4)   # from behind the diffuser
         return iround(ch, np.maximum(y_back - Y, nn + 1.5), 0.4)   # to the fill's back; 1.5 mm inside the face
 
     def profile(self, a, nn, Z):
@@ -288,7 +288,7 @@ class Style:
             ta0 = ax(x_out_h) - C7_TRAY_MARGIN
             ta1 = ax(x_out_f) + C7_TRAY_MARGIN
             lad = Ladder(0.0, LADDER_Z0, LADDER_N, LADDER_PITCH, LADDER_RUNG, LADDER, 0.0, RAKE)
-            a_lad = ta1 + 5.5 + LADDER.wall + lad.ha        # far enough round the corner to clear the pod's tunnel
+            a_lad = ta1 + 9.5 + LADDER.wall + lad.ha        # far enough round the corner that its channel keeps 2.5 mm from the pod's tunnel
             fpod = fg["tunnels"][-1]
             lad = Ladder(a_lad, LADDER_Z0, LADDER_N, LADDER_PITCH, LADDER_RUNG, LADDER, 0.0, RAKE,
                          sw=sw, y_back=fpod[1] - 18.0 - 4.0)
@@ -354,7 +354,7 @@ class Style:
         if self.tray is not None:
             t2 = self.tray2d(a, Z)
             backing = iround(iround(t2 - 2.5, slab(nn, -(TRAY_RECESS + 2.5), -0.5), 1.0),
-                             np.maximum(CHIN_Z + 0.5 - Z, Z - (self.T_of_a(a) - 3.5)), 1.0)
+                             np.maximum(CHIN_Z + 0.5 - Z, Z - (self.T_of_a(a) - 2.0)), 1.0)   # up into the rail
             F = o.union_round(F, backing, 1.0)
         if self.chamfer:
             for (px, hw, zc, hh) in self.fronts:
@@ -384,7 +384,7 @@ class Style:
             if ch.base > 0:
                 F = o.diff_round(F, ch.inner(d, nn), 0.5)
                 F = o.diff_round(F, ch.slot(d, nn), 0.3)
-        k = (1.35 - FIN_EDGE) / (TRAY_RECESS - FIN_FRONT)   # 0.3 mm inside the post each side at the floor
+        k = (2.15 - FIN_EDGE) / (TRAY_RECESS - FIN_FRONT)   # wider than the post at the floor: the windows trim them to it
         for af in self.fins:
             depth = np.maximum(-nn - FIN_FRONT, 0)
             side = (np.abs(a - af - (Z - self.tray["zmid"]) * self.rake) - FIN_EDGE - k * depth) / np.sqrt(1 + k * k)
