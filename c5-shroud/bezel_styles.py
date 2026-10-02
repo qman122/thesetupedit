@@ -198,8 +198,8 @@ class Ladder(Channel):
                 p, d1 = sw.cs(aa), sw.cs(aa, 1)
                 nrm = np.c_[d1[:, 1], -d1[:, 0]] / np.hypot(d1[:, 0], d1[:, 1])[:, None] * sw.nsign
                 xs = np.concatenate([p[:, 0] - dd * nrm[:, 0] for dd in np.linspace(spec.skin, self.back, 5)])
-                lo.append(xs.min() - 0.3)
-                hi.append(xs.max() + 0.3)
+                lo.append(xs.min() - 1.0)          # 1 mm round the pocket: a real step, not a thin ledge
+                hi.append(xs.max() + 1.0)
             self.chan = (zz, np.array(lo), np.array(hi), y_back)
 
     def access(self, X, Y, Z, nn):

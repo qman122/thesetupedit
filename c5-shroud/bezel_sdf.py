@@ -608,6 +608,29 @@ def untangle(verts, faces, sw, fg, rounds=8):
     return verts
 
 
+def mend(verts, faces, rounds=4):
+    """Last resort for crossings untangle couldn't clear: delete the crossing triangles and a
+    ring round them, and close the holes flat (each patch well under a millimetre across)."""
+    import pymeshlab
+    for _ in range(rounds):
+        bad = self_hits(verts, faces)
+        print(f"  mend: {len(bad)} crossing triangles", flush=True)
+        if not len(bad):
+            break
+        ms = pymeshlab.MeshSet()
+        ms.add_mesh(pymeshlab.Mesh(verts.astype(np.float64), faces.astype(np.int32)))
+        ms.compute_selection_by_self_intersections_per_face()
+        ms.apply_selection_dilatation()
+        ms.meshing_remove_selected_vertices_and_faces()
+        ms.meshing_remove_connected_component_by_face_number(mincomponentsize=200)
+        ms.meshing_repair_non_manifold_edges()
+        ms.meshing_repair_non_manifold_vertices()
+        ms.meshing_close_holes(maxholesize=2000, newfaceselected=False, selfintersection=False)
+        m = ms.current_mesh()
+        verts, faces = np.asarray(m.vertex_matrix(), float), np.asarray(m.face_matrix(), np.int64)
+    return verts, faces
+
+
 def build(h=H, preview=False):
     t0 = time.time()
     sw = Sweep()
@@ -653,6 +676,15 @@ def build(h=H, preview=False):
     verts = snap(verts, sw, fg)
     print(f"snapped, {time.time() - t0:.0f} s", flush=True)
     if preview:                                 # a quick look: no refining
+        return verts, faces, sw, fg
+    if STYLE:
+        # The styled faces have tight rounds next to thin features (light slots, blades), where
+        # refining's new points snap across onto the wrong surface and fold the mesh. Their
+        # vertices are already on the surface (snapped); only the flat triangles across the
+        # tightest rounds sit off it, by less than a print's layer, so they're left as they are.
+        verts = untangle(verts, faces, sw, fg)
+        verts, faces = mend(verts, faces)
+        print(f"untangled, {time.time() - t0:.0f} s", flush=True)
         return verts, faces, sw, fg
     verts, faces = refine(verts, faces, sw, fg, rounds=6)
     for _ in range(4):                          # untangling can leave a triangle off; refine again
