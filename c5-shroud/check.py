@@ -103,7 +103,7 @@ if PODS:
           gap_min >= 5 and gap_nominal >= 15)
 else:
     check("the projectors sit in their cradles without touching them", worst < 1e-6)
-    spans = [g.proj_cradle_span(P, yf) for (_, yf, _) in g.proj_poses(P)]
+    spans = [g.proj_cradle_span(P, yf, x) for (x, yf, _) in g.proj_poses(P)]
     check("every cradle stops in front of the mounting tabs' plane", min(y0 for y0, _ in spans) >= y_back + t,
           ", ".join(f"{y1 - y0:.0f} mm long" for y0, y1 in spans))
 
@@ -242,12 +242,11 @@ fits = all(len(pc.decompose()) == 1 and max(np.ptp(np.asarray(g.print_orient_shr
 check("print pieces: each one solid and fits the 256 mm bed", fits,
       " / ".join("%.0f x %.0f" % tuple(np.ptp(np.asarray(g.print_orient_shroud(pc).to_mesh().vert_properties)[:, :2], 0)) for pc in pieces))
 F_ = g.front_frame(P)
-us_ = g.split_plane_u(P)
+us_, n_c, z_dw = g.dowel_spot(P)
 z_top_, z_bu_, z_wb_, _, _ = g.shell_levels(P)
-n_c = float(g.bow(P, us_)) - P.post_depth / 2 - P.post_setback
 dowels_ok = True
 walled = 1.0
-for z in g.dowel_levels(P):
+for z in z_dw:
     for du in (-P.dowel_depth + 1, P.dowel_depth - 1):
         probe = g.lift_top(P, g.box(us_ + du - 0.5, us_ + du + 0.5, n_c - 0.4, n_c + 0.4, z - 0.4, z + 0.4).transform(F_))
         dowels_ok &= all(overlap(pc, probe) < 1e-6 for pc in pieces)
@@ -267,6 +266,9 @@ check("nothing reaches the arm's pivot bolt, 20+ mm below hole 4", overlap(carri
 pu = pts["pad upper"]
 square_zone = g.box(pu[0] - 15, pu[0] + 15, y_back - 5, y_back + t + 30, pu[1] + 13, pu[1] + 45)
 check("nothing reaches the pad's square adjuster, 13+ mm above the upper hole", overlap(carrier, square_zone) < 1e-6)
+if not PODS:
+    check("the projectors clear the pad's square adjuster too", overlap(pods, square_zone) < 1e-6,
+          f"{overlap(pods, square_zone):.0f} mm^3 inside its space")
 mid = g.box(-60, 60, y_back - 5, y_back + t, 5, 80)
 check("the middle of the back is open (no wall between the tabs)", overlap(carrier, mid) < 1e-6)
 

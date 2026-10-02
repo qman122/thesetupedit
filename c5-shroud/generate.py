@@ -414,15 +414,47 @@ def slot_y(w, length, axis, y0, y1, x, z):
 def proj_poses(p):
     """(x, y of the head's front, z of its centre) for each projector."""
     import bezel_styles as bs
-    return [(x, py - 1.0, pod_zc(p) + bs.PROJ_LIFT) for x, (_, py, _) in zip(bs.PROJ_X, pod_poses(p))]
+    lay = bs.proj_layout(os.environ.get("BEZEL_STYLE", "P3J"), [py for (_, py, _) in pod_poses(p)])
+    return [(x, yf, pod_zc(p) + bs.PROJ_LIFT) for x, yf in lay]
 
 
-def proj_cradle_span(p, yf):
+def proj_keepouts(p):
+    """(x0, x1, y1, z0, z1) of the spaces in front of the mounting tabs the bracket must stay out
+    of (y1 is how far forward each reaches): a 15 mm flange nut at either end of each slot, and
+    the aiming pad's square adjuster, 13 mm and more above its upper hole (as check.py has them)."""
+    y_t = p.mount_wall_y + p.mount_wall_t
+    out = []
+    for (name, x, z, axis) in mount_points(p):
+        tr = ((p.arm_slot_len if axis == "x" else p.pad_slot_len) - p.mount_hole_d) / 2
+        rx, rz = p.nut_r + (tr if axis == "x" else 0.0), p.nut_r + (tr if axis == "z" else 0.0)
+        out.append((x - rx, x + rx, y_t + 8.0, z - rz, z + rz))
+        if name == "pad upper":
+            out.append((x - 15.0, x + 15.0, y_t + 30.0, z + 13.0, z + 45.0))
+    return out
+
+
+def proj_cradle_span(p, yf, x=None):
     """(y0, y1) of a projector's cradle: along its body, stopping 1 mm in front of the mounting
-    tabs' plane (the arm and the pad are behind it)."""
+    tabs' plane (the arm and the pad are behind it), and 1 mm in front of any nut or the pad's
+    adjuster that the cradle or its strap would otherwise reach (given the cradle's x)."""
     y1 = yf - p.proj_head_d
     y0 = max(yf - p.proj_head_d - p.proj_body_d, p.mount_wall_y + p.mount_wall_t + 1.0)
+    if x is not None:
+        hw = p.proj_body_w / 2 + p.cradle_clear + p.cradle_wall + 4.5 + 0.5
+        for (x0, x1, yk, _, _) in proj_keepouts(p):
+            if x0 < x + hw and x - hw < x1:
+                y0 = max(y0, yk + 1.0)
     return y0, y1
+
+
+def proj_stem_off(p, x, yf):
+    """True where a projector's threaded stem would run into a mounting tab (and the car's arm or
+    aiming pad, and its bolt, behind it): that projector goes in with its stem taken off (P4's
+    hood-end one, whose stem would land on the aiming pad's bolts)."""
+    if yf - p.proj_head_d - p.proj_body_d - p.proj_stem_len > p.mount_wall_y + p.mount_wall_t + 1.0:
+        return False
+    r = p.proj_stem_d / 2 + 0.8
+    return any(x0 - p.wall_t < x + r and x - r < x1 + p.wall_t for (x0, x1, _, _) in ears(p))
 
 
 def projector_dummy(p, dy=0.0):
@@ -432,9 +464,10 @@ def projector_dummy(p, dy=0.0):
     for (x, yf, zc) in proj_poses(p):
         bw = p.proj_body_w / 2
         out += [box(x - bs.PROJ_W / 2, x + bs.PROJ_W / 2, yf - p.proj_head_d, yf, zc - bs.PROJ_H / 2, zc + bs.PROJ_H / 2),
-                box(x - bw, x + bw, yf - p.proj_head_d - p.proj_body_d, yf - p.proj_head_d + 0.5, zc - bw, zc + bw),
-                M.cylinder(p.proj_stem_len + 0.5, p.proj_stem_d / 2, p.proj_stem_d / 2 - 2, 48).rotate([90, 0, 0])
-                 .translate([x, yf - p.proj_head_d - p.proj_body_d + 0.5, zc])]
+                box(x - bw, x + bw, yf - p.proj_head_d - p.proj_body_d, yf - p.proj_head_d + 0.5, zc - bw, zc + bw)]
+        if not proj_stem_off(p, x, yf):
+            out.append(M.cylinder(p.proj_stem_len + 0.5, p.proj_stem_d / 2, p.proj_stem_d / 2 - 2, 48).rotate([90, 0, 0])
+                       .translate([x, yf - p.proj_head_d - p.proj_body_d + 0.5, zc]))
     return M.batch_boolean(out, m3d.OpType.Add).translate([0, dy, 0])
 
 
@@ -447,13 +480,13 @@ def projector_straps(p):
     screws down into the cradle's bosses (M4)."""
     out = []
     for i, (x, yf, zc) in enumerate(proj_poses(p)):
-        y0, y1 = proj_cradle_span(p, yf)
+        y0, y1 = proj_cradle_span(p, yf, x)
         hw = p.proj_body_w / 2 + p.cradle_clear + p.cradle_wall + 4.5
         L = y1 - y0
         strap = M.extrude(CS.square([2 * hw, L], center=True), p.strap_t)
         for hx, hy in _strap_holes(p, L):
             strap = strap - cyl_z(4.5, -1, p.strap_t + 1, hx, hy)
-        out.append(strap.translate([i * (2 * hw + 8), 0, 0]))
+        out.append(strap.translate([(i % 3) * (2 * hw + 8), (i // 3) * 60.0, 0]))   # 3 to a row
     return M.batch_boolean(out, m3d.OpType.Add)
 
 
@@ -474,13 +507,17 @@ def carrier_projectors(p):
     parts, cuts = [], []
     bw = p.proj_body_w / 2 + p.cradle_clear            # half the cradle's inside
     ow = bw + p.cradle_wall                             # ...and its outside
+    # the beam stops this far behind the heads' fronts: 3 mm, or 6.5 under P4's bold strip, whose
+    # channel brings the bezel's bottom edge down to -3.5, over the beam's front
+    gap = 6.5 if os.environ.get("BEZEL_STYLE", "P3J").startswith("P4") else 3.0
+    import bezel_styles as bs
     feet, spans = [], []
     for (x, yf, zc) in proj_poses(p):
-        y0, y1 = proj_cradle_span(p, yf)
+        y0, y1 = proj_cradle_span(p, yf, x)
         spans.append((x, yf, zc, y0, y1))
-        feet.append(CS.square([2 * (ow + 4.5), yf - 3.0 - y0]).translate([x - ow - 4.5, y0]))
+        feet.append(CS.square([2 * (ow + 4.5), yf - gap - y0]).translate([x - ow - 4.5, y0]))
     ys_lo = max(sp[3] for sp in spans)
-    ys_hi = min(sp[1] - 3.0 for sp in spans)
+    ys_hi = min(sp[1] - gap for sp in spans)
     x_lo = min(sp[0] for sp in spans) - ow - 4.5
     x_hi = max(sp[0] for sp in spans) + ow + 4.5
     spine = CS.square([x_hi - x_lo, ys_hi - ys_lo]).translate([x_lo, ys_lo])
@@ -498,6 +535,8 @@ def carrier_projectors(p):
             cuts.append(cyl_z(p.strap_screw_d, zt - 13.0, zt + 1.0, x + hx, (y0 + y1) / 2 + hy))
         # air for the body's fan: two windows in each wall
         L = y1 - y0
+        if L < 25.0:            # a short cradle (kept off a nut): a rest under the head as well
+            parts.append(box(x - 12.0, x + 12.0, y1 + 2.0, yf - 18.0, -1.0, zc - bs.PROJ_H / 2 - 0.4))
         for sx in (-1, 1):
             for (wa, wb) in ((y0 + 4.0, y0 + L / 2 - 2.0), (y0 + L / 2 + 2.0, y1 - 4.0)):
                 if wb - wa > 4.0:
@@ -508,19 +547,20 @@ def carrier_projectors(p):
         tx0, tx1 = x0 - p.wall_t, x1 + p.wall_t
         ty1 = y_back + p.mount_wall_t + 22
         x, yf, zc, y0, y1 = sp
-        knee = CS.hull_points([[x - ow - 4.5, y0], [x + ow + 4.5, y0], [x - ow - 4.5, yf - 3.0], [x + ow + 4.5, yf - 3.0],
+        knee = CS.hull_points([[x - ow - 4.5, y0], [x + ow + 4.5, y0], [x - ow - 4.5, yf - gap], [x + ow + 4.5, yf - gap],
                                [tx0, y_back], [tx1, y_back], [tx0, ty1], [tx1, ty1]]).offset(0.6, m3d.JoinType.Round)
         parts.append(M.extrude(knee, p.floor_t).translate([0, 0, -p.floor_t]))
     parts += _tab_parts(p)
-    # wiring: a raised pad for a connector or the DRL module (two M3 holes, 24 mm apart) between
-    # the middle and fender-side cradles, and pairs of zip-tie slots along the beam
-    xm = (spans[1][0] + spans[2][0]) / 2
-    ypad = (ys_lo + ys_hi) / 2
-    parts.append(box(xm - 9.0, xm + 9.0, ypad - 16.0, ypad + 16.0, -1.0, 2.0))
-    for dy in (-12.0, 12.0):
-        cuts.append(cyl_z(2.6, -p.floor_t - 1, 3.0, xm, ypad + dy))
-    xh = (spans[0][0] + spans[1][0]) / 2
-    ties = [(xh, ys_lo + 8.0), (xh, ys_hi - 8.0), (xm, ys_lo + 5.0), (spans[0][0] - ow - 1.5, spans[0][1] - 12.0)]
+    # wiring, on the beam under the front of the heads (9.5 mm of room there): a raised pad with
+    # two M3 holes 24 mm apart for a connector block, under the second head from the hood end,
+    # and pairs of zip-tie slots under the others and by the hood end, where the strip's wires
+    # come back from the bezel
+    x2, yf2 = spans[1][0], spans[1][1]
+    parts.append(box(x2 - 9.0, x2 + 9.0, yf2 - 37.0, yf2 - 7.0, -1.0, 2.0))
+    for dy in (-34.0, -10.0):
+        cuts.append(cyl_z(2.6, -p.floor_t - 1, 3.0, x2, yf2 + dy))
+    ties = [(sp[0], sp[1] - 12.0) for i, sp in enumerate(spans) if i != 1]
+    ties.append((spans[0][0] - ow - 1.5, spans[0][1] - 24.0))
     for (tx, ty) in ties:
         for dx in (-5.0, 5.0):
             cuts.append(box(tx + dx - 1.25, tx + dx + 1.25, ty - 2.5, ty + 2.5, -p.floor_t - 1, 1.0))
@@ -1601,8 +1641,9 @@ def shroud_mesh(p):
 
 
 def split_plane_u(p):
-    """Where the shell is split for printing: through the middle of the hood-side post."""
-    poses = pod_poses(p)
+    """Where the shell is split for printing: through the middle of the hood-side post (between
+    the first two lights)."""
+    poses = proj_poses(p) if proj_lights(p) else pod_poses(p)
     us = [float(front_uv(p, x, y)) for (x, y, _) in poses]
     return (us[0] + us[1]) / 2
 
@@ -1630,14 +1671,30 @@ def dowel_levels(p):
     return (shell_levels(p)[2] - 0.2,)
 
 
+def proj_lights(p):
+    """The projector set (LIGHTS=projectors, or a projector bezel style being built)."""
+    import bezel_styles as bs
+    return p.lights == "projectors" or bs.is_proj(os.environ.get("BEZEL_STYLE", ""))
+
+
+def dowel_spot(p):
+    """(u, n, heights) of the dowel pins across the print split, in the front frame. With the
+    projectors the floor under the post is only 3 mm thick, so the pin goes 5 mm further back and
+    a little lower, in a boss the bezel builds round it (bezel_sdf), under the heads' clearance."""
+    us = split_plane_u(p)
+    n_c = float(bow(p, us)) - p.post_depth / 2 - p.post_setback
+    if proj_lights(p):
+        return us, n_c - 5.0, (4.5,)
+    return us, n_c, dowel_levels(p)
+
+
 def split_shell(p, man):
     """The two print pieces: cut through the middle of the hood-side post, with a dowel hole
     across the cut in the floor under the post (dowel_levels)."""
     F = front_frame(p)
-    us = split_plane_u(p)
-    n_c = float(bow(p, us)) - p.post_depth / 2 - p.post_setback
+    us, n_c, zs = dowel_spot(p)
     pins = []
-    for z in dowel_levels(p):
+    for z in zs:
         pin = M.cylinder(2 * p.dowel_depth, p.dowel_d / 2, p.dowel_d / 2, 24, True)
         pins.append(pin.transform([[0, 0, 1, us], [1, 0, 0, n_c], [0, 1, 0, z]]))
     pins = lift_top(p, M.batch_boolean(pins, m3d.OpType.Add).transform(F))
@@ -1813,7 +1870,7 @@ def write_projector_set(here):
     P3W), in stl/projectors_<J|W>/, with a fit-check assembly. The fit tests, spacers and the
     rest stay in stl/ (they don't change)."""
     st = os.environ.get("BEZEL_STYLE", "P3J")
-    out = os.path.join(here, "stl", "projectors_" + st[-1])
+    out = os.path.join(here, "stl", "projectors_" + st)
     os.makedirs(os.path.join(out, "assembled"), exist_ok=True)
     c, s = carrier(P), shroud(P)
     for side, f in (("passenger", lambda m: m), ("driver", mirror_x)):

@@ -60,17 +60,38 @@ LOW = Spec(slot=3.0, inner=4.2, wall=1.0, skin=1.6, depth=4.0, insert=1.5)
 BLADE = Spec(slot=4.2, inner=4.2, wall=1.0, skin=0.0, depth=3.8, insert=1.5, front=True)
 BLADE_FLUSH = 0.3    # the diffuser's face sits this far behind the bezel's
 WIRE_R = 1.3         # wire hole from the blade's channel out underneath
-LOW_Z = 3.6          # the lower lights' centre line
+LOW_Z = 3.6          # the lower lights' centre line: walls from 0.5 (bracket floor at 0) to 6.7 (pods at 7.6)
 PROJ_W, PROJ_H = 55.0, 48.0   # P3: the owner's mini 2.0 in bi-LED projector, head face on (eBay listing's size drawing)
 PROJ_CLEAR = 0.5     # round the head, in its tunnel (the head only just fits under the rail at the fender end)
-PROJ_X = (-84.5, -4.0, 76.5)  # head centres: the fender one 8 mm in from the pod's place, so its body clears the
-                              # arm's mounting tab; the middle one halfway, for even gaps
+PROJ_X = (-75.0, 0.75, 76.5)  # head centres: the fender one 8 mm in from the pod's place, so its body clears the
+                              # arm's mounting tab; the hood one far enough in that its body clears the aiming
+                              # pad's square adjuster; the middle one halfway, for even gaps
+# four heads (P4 looks): evenly spaced from the hood corner to where the fender-side body just
+# clears the arm's tab (0.8 mm), each front 4 mm behind the bezel's face across its width
+PROJ4 = ((-101.0, 24.3), (-41.67, 18.5), (17.67, 9.7), (77.0, -3.6))
+
+
+def is_proj(style):
+    return style.startswith("P3") or style.startswith("P4")
+
+
+def proj_layout(style, pod_ys):
+    """(x, y of the head's front) per projector: P4 from PROJ4; P3 at PROJ_X, 1 mm behind the
+    pods' faces (pod_ys)."""
+    if style.startswith("P4"):
+        return list(PROJ4)
+    return [(x, py - 1.0) for x, py in zip(PROJ_X, pod_ys)]
 PROJ_LIFT = 2.9      # P3: the heads sit this much higher than the pods did: z 9.5 to 57.5, between the thick strip
                      # (its walls end at 8.95) and the rail (its underside is at 59.0 over the fender head)
 # P3's thick light strip: a silicone switchback (white DRL / amber signal) strip, about 6.5 mm wide
 # and 6 mm thick, pressed into the channel from the front, flush; it is its own diffuser
 THICK = Spec(slot=6.5, inner=6.5, wall=1.0, skin=0.0, depth=7.0, insert=6.0, front=True)
-THICK_Z = 4.7        # its bottom run: walls from 0.45 (just above the bracket) to 8.95 (under the windows): walls from 0.5 (bracket floor at 0) to 6.7 (pods at 7.6)
+THICK_Z = 4.7        # its bottom run: walls from 0.45 (just above the bracket) to 8.95 (under the windows)
+# P4J's bold strip: 10 mm (a wide high-output switchback strip, up to 6.5 mm thick); the bezel's
+# bottom comes down to -3.5 to carry it (the owner first marked the bottom as low as -18)
+BOLD = Spec(slot=10.0, inner=10.0, wall=1.0, skin=0.0, depth=7.0, insert=6.0, front=True)
+BOLD_Z = 3.0         # its bottom run: walls from -3 to 9 (the windows start at 9)
+BOLD_CHIN = -3.5    # the bottom edge under the bold strip
 CHIN_Z = 0.4         # the bottom edge comes down to here wherever there's a lower light
 INSERT_CLEAR = 0.15  # the diffuser insert is this much smaller than its channel all round
 
@@ -130,6 +151,19 @@ def rounded_l(p0, corner, p1, r, step=0.5):
     da = (a1 - a0 + np.pi) % (2 * np.pi) - np.pi
     arc = centre + r * np.c_[np.cos(a0 + da * np.linspace(0, 1, 24)), np.sin(a0 + da * np.linspace(0, 1, 24))]
     return np.vstack([p0, t0, arc, t1, p1])
+
+
+def filleted(pts, r):
+    """Polyline with each inner corner rounded (a quadratic curve from r before it to r after)."""
+    pts = [np.asarray(p, float) for p in pts]
+    out = [pts[0]]
+    for p0, c, p1 in zip(pts[:-2], pts[1:-1], pts[2:]):
+        u0, u1 = (p0 - c) / np.linalg.norm(p0 - c), (p1 - c) / np.linalg.norm(p1 - c)
+        a, b = c + u0 * r, c + u1 * r
+        t = np.linspace(0, 1, 20)[:, None]
+        out += list((1 - t) ** 2 * a + 2 * t * (1 - t) * c + t ** 2 * b)
+    out.append(pts[-1])
+    return np.array(out)
 
 
 class Channel:
@@ -245,6 +279,7 @@ class Style:
         self.name, self.sw, self.ops = name, sw, ops
         self.chamfer = name in ("B", "BC")
         self.wire = None
+        self.chin_z = CHIN_Z
         self.rake = RAKE if name == "C7" else 0.0
         self.win_edge = C7_EDGE if name == "C7" else None
         L, path = sw.L, sw.path
@@ -336,13 +371,24 @@ class Style:
             # a groove under the bezel's floor to where the bracket's beam is (zip-tie slots there)
             self.wire = (ax(pxs[0] - half + 12.0), 3.0, 25.0)
             self.chin = (ax(pxs[0] - half) - 22.0, ax(pxs[-1] + half + 12.0) + 12.0)
+        if name == "P4J":
+            # four projectors; a bold strip under them that turns up at the fender end in an
+            # angled stroke toward the corner's top
+            pxs = [t[0] for t in fg["tunnels"]]
+            half = PROJ_W / 2 + 1.0
+            a_start, a_bend = ax(pxs[0] - half + 3.5), ax(pxs[-1] + half + 9.0)
+            pts = filleted([(a_start, BOLD_Z), (a_bend, BOLD_Z), (a_bend + 20.0, 44.0)], 9.0)
+            self.channels.append(Channel(pts, BOLD))
+            self.wire = (a_start + 12.0, 0.5, 25.0)
+            self.chin = (a_start - 22.0, a_bend + 12.0)
+            self.chin_z = BOLD_CHIN
         if self.chin is not None:
             # the front wall comes down to CHIN_Z between the chin's ends, fading out over 20 mm;
             # the sweep builds it into its own section (Sweep.Bw), so it can't leave a lip
             ca, cb = self.chin
             f = np.clip(np.minimum(L - ca, cb - L) / 20.0, 0, 1)
             f = f * f * (3 - 2 * f)
-            sw.Bw = sw.B - np.maximum(sw.B - CHIN_Z, 0) * f
+            sw.Bw = sw.B - np.maximum(sw.B - self.chin_z, 0) * f
             if hasattr(sw, "_pcs"):
                 del sw._pcs
         if name in ("C", "C7"):
@@ -392,7 +438,7 @@ class Style:
         if self.tray is not None:
             t2 = self.tray2d(a, Z)
             backing = iround(iround(t2 - 2.5, slab(nn, -(TRAY_RECESS + 2.5), -0.5), 1.0),
-                             np.maximum(CHIN_Z + 0.5 - Z, Z - (self.T_of_a(a) - 2.0)), 1.0)   # up into the rail
+                             np.maximum(self.chin_z + 0.5 - Z, Z - (self.T_of_a(a) - 2.0)), 1.0)   # up into the rail
             F = o.union_round(F, backing, 1.0)
         if self.chamfer:
             for (px, hw, zc, hh) in self.fronts:

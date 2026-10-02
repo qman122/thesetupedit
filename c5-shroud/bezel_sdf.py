@@ -275,14 +275,15 @@ def feature_geometry(sw):
     zc = g.pod_zc(P)
     ww, wh = P.pod_face_w + 2 * P.window_clear_x, P.pod_face_h + 2 * P.window_clear_y
     poses = [(px, py) for (px, py, _) in g.pod_poses(P)]
-    if STYLE.startswith("P3"):          # three small projectors instead of the pods (bezel_styles.PROJ)
+    if bs.is_proj(STYLE):              # small projectors instead of the pods (bezel_styles.PROJ...)
         ww, wh = bs.PROJ_W + 2 * bs.PROJ_CLEAR, bs.PROJ_H + 2 * bs.PROJ_CLEAR
         zc = zc + bs.PROJ_LIFT
-        poses = [(x, py) for x, (_, py) in zip(bs.PROJ_X, poses)]
+        # each tunnel ends 0.5 mm in front of where its head's front goes (1 mm behind this)
+        poses = [(x, yf + 1.0) for x, yf in bs.proj_layout(STYLE, [py for _, py in poses])]
     floor_top = g.shell_levels(P)[2] - 0.15
     z_bot = floor_top - T_WALL + RL_MAX + 1.0      # the sill sits 1 mm above the rolled lip's top, so the
                                                    # lip under it is solid (not a thin upturned edge)
-    if STYLE.startswith("P3"):          # the sill just under the projector, with the light strip below it
+    if bs.is_proj(STYLE):              # the sill just under the projector, with the light strip below it
         z_bot = zc - bs.PROJ_H / 2 - bs.PROJ_CLEAR
     z_topw = zc + wh / 2
     wins = [(px, py, (z_bot + z_topw) / 2, ww / 2, (z_topw - z_bot) / 2) for (px, py) in poses]
@@ -293,14 +294,14 @@ def feature_geometry(sw):
     for (px, py) in poses:
         zb0, zb1 = P.pod_lift - TUNNEL_CLEAR, g.pod_top(P) + TUNNEL_CLEAR
         back = (P.pod_body_w / 2 + TUNNEL_CLEAR, (zb1 - zb0) / 2, (zb0 + zb1) / 2, 3.0)
-        if STYLE.startswith("P3"):
+        if bs.is_proj(STYLE):
             zb0, zb1 = zc - bs.PROJ_H / 2 - bs.PROJ_CLEAR, zc + bs.PROJ_H / 2 + bs.PROJ_CLEAR
             back = (bs.PROJ_W / 2 + bs.PROJ_CLEAR, (zb1 - zb0) / 2, (zb0 + zb1) / 2, 1.0)   # near-square heads
         on = np.abs(sw.path[:, 0] - px) < ww / 2 + 4
         rail_under = float(np.min(sw.T[on & (sw.path[:, 1] > -60)])) - T_WALL
-        flare = 0.0 if STYLE in ("B", "C", "BC", "C7") or STYLE.startswith("P3") else FLARE_TOP     # even windows for the frames and the tray
+        flare = 0.0 if STYLE in ("B", "C", "BC", "C7") or bs.is_proj(STYLE) else FLARE_TOP     # even windows for the frames and the tray
         top = max(z_topw, min(z_topw + flare, rail_under - T_WALL - 2.0))
-        front = (ww / 2 + FLARE_SIDE, (top - z_bot) / 2, (top + z_bot) / 2, 3.0 if STYLE in ("B", "BC") else 2.5 if STYLE == "C7" else 5.0 if STYLE.startswith("P3") else WIN_R)
+        front = (ww / 2 + FLARE_SIDE, (top - z_bot) / 2, (top + z_bot) / 2, 3.0 if STYLE in ("B", "BC") else 2.5 if STYLE == "C7" else 5.0 if bs.is_proj(STYLE) else WIN_R)
         tunnels.append((px, py, back, front))
 
     F = g.front_frame(P)
@@ -333,7 +334,7 @@ def feature_geometry(sw):
               holes=holes, door=door_lookup())
     # projectors sit just behind their tunnels, not inside them, so a little misalignment between
     # the bezel (on the door) and the bracket (on the arm) can't make them rub
-    fg["tunnel_back"] = 0.5 if STYLE.startswith("P3") else TUNNEL_BACK
+    fg["tunnel_back"] = 0.5 if bs.is_proj(STYLE) else TUNNEL_BACK
     fg["style"] = bs.Style(STYLE, sw, fg, sys.modules[__name__]) if STYLE else None
     return fg
 
@@ -452,6 +453,18 @@ def apply_features(F, x, y, z, fg, pointwise=False, outside=None, door=None, sc=
     # the blend is 2 mm, shrinking to 0.5 mm near the floor's underside, which the tunnels' bottoms
     # run just above (a bigger blend there would bulge it)
     F = union_round(F, blocks, 0.5 + 1.5 * np.clip((Z - FLOOR_B - 1.5) / 1.5, 0, 1))
+    if bs.is_proj(STYLE):
+        # a boss round the print split's dowel pin (generate.dowel_spot), where the floor is thin
+        us_, n_d, zs_d = g.dowel_spot(P)
+        Fm = np.asarray(g.front_frame(P))
+        ax_ = Fm[:, 0]
+        for z_d in zs_d:
+            c_ = Fm[:, :3] @ np.array([us_, n_d, z_d]) + Fm[:, 3]
+            vx, vy, vz = X - c_[0], Y - c_[1], Z - c_[2]
+            along = vx * ax_[0] + vy * ax_[1] + vz * ax_[2]
+            rad = np.sqrt(np.maximum((vx - along * ax_[0]) ** 2 + (vy - along * ax_[1]) ** 2 + (vz - along * ax_[2]) ** 2, 0))
+            boss = np.maximum(rad - (P.dowel_d / 2 + 2.0), np.abs(along) - (P.dowel_depth + 2.0))
+            F = union_round(F, boss, 1.0)
     keep = None
     if st is not None:
         F = st.solids(F, sctx)            # chin, tray backing, pod frames, light channels' walls
@@ -466,6 +479,21 @@ def apply_features(F, x, y, z, fg, pointwise=False, outside=None, door=None, sc=
         if keep is not None:
             w = diff_round(w, keep, 1.0)
         F = diff_round(F, w, R_WIN_EDGE if st is None or st.win_edge is None else st.win_edge)
+    if bs.is_proj(STYLE):
+        # behind each head's front the bezel keeps clear of it, 2 mm side to side and 0.75 up and
+        # down: the heads are staggered, so a neighbour's tunnel wall runs alongside a head's sides,
+        # and the bezel (on the door) and the bracket (on the arm) won't line up exactly. Where two
+        # heads are too close for a wall between their clearances, each one's runs to the midpoint.
+        hw_, side = bs.PROJ_W / 2, 2.0
+        pxs = [t[0] for t in fg["tunnels"]]
+        for k, (px, py, back, front) in enumerate(fg["tunnels"]):
+            lo, hi = px - hw_ - side, px + hw_ + side
+            if k > 0 and (px - hw_) - (pxs[k - 1] + hw_) < 2 * side + 1.5:
+                lo = (px - hw_ + pxs[k - 1] + hw_) / 2
+            if k < len(pxs) - 1 and (pxs[k + 1] - hw_) - (px + hw_) < 2 * side + 1.5:
+                hi = (px + hw_ + pxs[k + 1] - hw_) / 2
+            env = round_rect_xz(X - (lo + hi) / 2, Z - back[2], (hi - lo) / 2, bs.PROJ_H / 2 + 0.75, 1.0)
+            F = diff_round(F, np.maximum(env, Y - (py - 1.0)), 0.5)
     if st is not None:
         F = st.post_cuts(F, sctx)         # the light slots and channels, the frames' bevels
     # a round boss on each of the door's flange holes, from the flange out to the ear, blended in
