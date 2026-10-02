@@ -728,6 +728,12 @@ if __name__ == "__main__":
         make_door_sdf(os.environ["DOOR_MODEL"])
     verts, faces, sw, fg = build()
     tm = trimesh.Trimesh(verts, faces, process=True)
+    parts = tm.split(only_watertight=False)
+    if len(parts) > 1:                         # specks a cut can leave behind (well under 1 mm^3)
+        print("dropping", len(parts) - 1, "specks of", [round(p.volume, 3) for p in parts if p is not max(parts, key=lambda q: abs(q.volume))], "mm^3", flush=True)
+        tm = max(parts, key=lambda q: abs(q.volume))
+        v_, f_ = mend(np.asarray(tm.vertices, float), np.asarray(tm.faces))
+        tm = trimesh.Trimesh(v_, f_, process=True)
     if tm.volume < 0:
         tm.invert()
     out = os.path.join(HERE, "stl", "cad", "bezel_cad_passenger.stl")

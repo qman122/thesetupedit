@@ -276,6 +276,7 @@ for f in sorted(glob.glob(os.path.join(here, "stl", "**", "*.stl"), recursive=Tr
                                                   & (tm.triangles_center[:, 2] < 0.01)].sum() > 50
     parts = len(M(m3d.Mesh(tm.vertices.astype("float32"), tm.faces.astype("uint32"))).decompose())
     multi = ("spacer" in name or "fit_test_mount" in name or "fit_test_window" in name      # printed as separate pieces on purpose
+             or "drl_diffusers" in name
              or "assembled" in name)                                                            # (and the fit-check assemblies)
     curved = "bezel_" in name or "fit_test_blade" in name or "assembled" in name   # the top follows the door: supports under it
     ok = tm.is_watertight and tm.volume > 0 and tm.bounds[0][2] == 0 and (flat or curved) and (parts == 1 or multi)
