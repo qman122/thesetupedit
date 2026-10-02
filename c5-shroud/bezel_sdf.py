@@ -493,7 +493,7 @@ def apply_features(F, x, y, z, fg, pointwise=False, outside=None, door=None, sc=
             if k < len(pxs) - 1 and (pxs[k + 1] - hw_) - (px + hw_) < 2 * side + 1.5:
                 hi = (px + hw_ + pxs[k + 1] - hw_) / 2
             env = round_rect_xz(X - (lo + hi) / 2, Z - back[2], (hi - lo) / 2, bs.PROJ_H / 2 + 0.75, 1.0)
-            F = diff_round(F, np.maximum(env, Y - (py - 1.0)), 0.5)
+            F = diff_round(F, np.maximum(env, Y - (py - 0.7)), 0.5)      # from 0.3 mm in front of it
     if st is not None:
         F = st.post_cuts(F, sctx)         # the light slots and channels, the frames' bevels
     # a round boss on each of the door's flange holes, from the flange out to the ear, blended in

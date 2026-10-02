@@ -386,12 +386,12 @@ class Style:
             self.wire = (ax(pxs[0] - half + 12.0), 3.0, 25.0)
             self.chin = (ax(pxs[0] - half) - 22.0, ax(pxs[-1] + half + 12.0) + 12.0)
         if name == "P4J":
-            # four projectors; a bold strip under them that turns up at the fender end in an
-            # angled stroke toward the corner's top
+            # four projectors in a tight line; the bold strip under them wraps up round the fender
+            # end in a wide curve, as on P3J (a little further out, past the fourth head's corner)
             pxs = [t[0] for t in fg["tunnels"]]
             half = PROJ_W / 2 + 1.0
-            a_start, a_bend = ax(pxs[0] - half + 3.5), ax(pxs[-1] + half + 9.0)
-            pts = filleted([(a_start, BOLD_Z), (a_bend, BOLD_Z), (a_bend + 20.0, 44.0)], 9.0)
+            a_start, a_bend = ax(pxs[0] - half + 3.5), ax(pxs[-1] + half + 12.0)
+            pts = filleted([(a_start, BOLD_Z), (a_bend, BOLD_Z), (a_bend + 11.0, 46.0)], 14.0)
             self.channels.append(Channel(pts, BOLD))
             self.wire = (a_start + 12.0, 0.5, 25.0)
             self.chin = (a_start - 22.0, a_bend + 12.0)

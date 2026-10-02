@@ -75,9 +75,9 @@ behind that) and a thick switchback strip (white DRL, amber turn signal). Three 
   under them and wraps up round the fender end in a wide curve.
 - `stl/projectors_P3W/`: three projectors spread out; a 6.5 mm strip dips under each one and peaks
   in the gaps between them, then sweeps up at the end.
-- `stl/projectors_P4J/`: **four** projectors and a bold 10 mm strip, with an angled sweep up past
-  the fender-side one. The heads are evenly spaced, each 4 mm behind the bezel's face (so they
-  step back toward the fender), with 4.3 mm posts between them.
+- `stl/projectors_P4J/`: **four** projectors in a line and the bold 10 mm strip, wrapping up past
+  the fender-side one in the same wide curve as P3J. The heads are evenly spaced, each 4 mm
+  behind the bezel's face (so they step back toward the fender), with 4.3 mm posts between them.
 
 With the bold strip (P3J, P4J) the bezel's bottom edge comes down 3.5 mm below the bracket's floor
 to carry it.

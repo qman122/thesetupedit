@@ -440,7 +440,7 @@ def proj_cradle_span(p, yf, x=None):
     y1 = yf - p.proj_head_d
     y0 = max(yf - p.proj_head_d - p.proj_body_d, p.mount_wall_y + p.mount_wall_t + 1.0)
     if x is not None:
-        hw = p.proj_body_w / 2 + p.cradle_clear + p.cradle_wall + 4.5 + 0.5
+        hw = p.proj_body_w / 2 + p.cradle_clear + p.cradle_wall + 5.5 + 0.5    # to the bosses' outside
         for (x0, x1, yk, _, _) in proj_keepouts(p):
             if x0 < x + hw and x - hw < x1:
                 y0 = max(y0, yk + 1.0)
