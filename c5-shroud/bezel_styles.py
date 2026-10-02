@@ -91,7 +91,12 @@ THIN_Z = 3.0         # its bottom run: walls from -0.5 to 6.5 (the pockets' cham
 THIN_CHIN = -1.2     # the bottom edge under it
 STRIP_HOOD_X = -137.0   # the inner kick-up, where the face starts turning into the hood-side corner
 KICK_IN = (3.0, 24.0)   # ...leaning 3 mm toward the corner, up to z 24
-KICK_OUT = (8.0, 46.0)  # the fender kick-up: leaning 8 mm toward the fender, up to z 46
+WRAP = 46.0          # the bottom run carries on round the fender-side corner onto the side, this much
+                     # further along the face than past the fender head (it bends the easy way there)
+KICK_OUT = (6.0, 44.0)  # ...and kicks up on the side, swept 6 mm back, up to z 44 (well short of the ear's
+                        # screw boss, 40 mm further back)
+POCKET_TOP_R = (4.0, 8.0)   # the pockets' top corners: rounded 4 mm at the head (clear of the lens) to 8 at
+                            # the face
 POCKET_CHAMFER = (4.0, 2.5, 0.0)   # P3J's pockets at the face: this much wider each side and deeper at
                                    # the bottom than at the head, in flat chamfers; none at the top,
                                    # which stays a straight, sharp brow over the lenses
@@ -380,7 +385,7 @@ class Style:
             # runs the face's full width under them and kicks up at both ends at crisp corners
             pxs = [t[0] for t in fg["tunnels"]]
             half = PROJ_W / 2 + 1.0
-            a_start, a_bend = ax(STRIP_HOOD_X), ax(pxs[-1] + half + 12.0)
+            a_start, a_bend = ax(STRIP_HOOD_X), ax(pxs[-1] + half + 12.0) + WRAP
             pts = [(a_start - KICK_IN[0], KICK_IN[1]), (a_start, THIN_Z), (a_bend, THIN_Z),
                    (a_bend + KICK_OUT[0], KICK_OUT[1])]
             self.channels.append(Channel(pts, THIN))
@@ -488,7 +493,9 @@ class Style:
             cs, cb, ct = self.pocket
             t = np.sqrt(np.clip(e_, 0, 1))   # e_ is the square of the depth fraction
             zt, zb = hh + ct * t, -hh - cb * t
-            return self.ops.round_rect_xz(x, z - (zt + zb) / 2, hw + cs * t, (zt - zb) / 2, r_)
+            rt = POCKET_TOP_R[0] + (POCKET_TOP_R[1] - POCKET_TOP_R[0]) * t
+            hx = hw + cs * t
+            return self.ops.round_box2(x, z, -hx, hx, zb, zt, rt, r_, rt, r_)
         if self.rake:
             return self.ops.round_rect_xz(x - self.shear(z, e_), z, hw, hh, r_)
         return None

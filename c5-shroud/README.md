@@ -73,9 +73,10 @@ alternative: the same heads in a recessed housing with raked windows and fins, a
 **Look.** Three projectors in a line, spread as far apart as the car allows, each in a stepped
 pocket: flat chamfers on the sides (4 mm) and bottom (2.5 mm), narrowing from the face to the
 head, so the lenses look set deep, and no chamfer at the top, which stays a straight, sharp brow
-over them. A thin light line runs the face's full width under them and kicks up at both ends at
-crisp corners: a short one at the hood end, a tall one up the fender end
-(`POCKET_CHAMFER`, `THIN`, `KICK_IN`, `KICK_OUT` in `bezel_styles.py`).
+over them; the pockets' top corners are rounded (4 mm at the head, 8 at the face). A thin light
+line runs the face's full width under them, kicks up at a crisp corner at the hood end, and at
+the fender end carries on round the corner onto the side, where it kicks up again
+(`POCKET_CHAMFER`, `POCKET_TOP_R`, `THIN`, `KICK_IN`, `WRAP`, `KICK_OUT` in `bezel_styles.py`).
 
 **Bezel.** The same top rail, bead, clip tongue, ears and fit to the door as the C7 bezel. Each
 pocket's back is a little smaller than the head's face (1.5 mm each side, 1 mm top and bottom),
@@ -91,9 +92,10 @@ the post.
 **Light line.** A channel 5 mm wide and 7 mm deep for a strip up to 6 mm thick (`THIN`: change it
 to the strip you buy), closed behind by a 1.5 mm wall tied into the bezel's floor; the bezel's
 bottom edge comes down 1.2 mm below the bracket's floor to carry it. The strip presses in from
-the front, flush, and is its own diffuser; a few dots of clear silicone hold it. The corners are
-crisp, so either use three pieces (the bottom run and the two kick-ups, butted at the corners)
-or a strip that bends that tight edgeways; for an even line use a dense or COB/neon-type strip
+the front, flush, and is its own diffuser; a few dots of clear silicone hold it. The kick-ups'
+corners are crisp, so either use three pieces (the bottom run and the two kick-ups, butted at
+the corners) or a strip that bends that tight edgeways; round the fender corner it bends flat,
+the easy way, so the bottom run goes round it in one piece; for an even line use a dense or COB/neon-type strip
 with no visible dots. Its wires go out through a hole at the hood end, low down, and back in a
 groove under the bezel's floor to the bracket.
 
