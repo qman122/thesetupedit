@@ -65,11 +65,18 @@ a lower bar under each pod) are still there: set `BEZEL_STYLE` and rerun `bezel_
 ![J: three in a line, bold white strip](preview/bezel_p3j.png)
 ![W: thick amber strip](preview/bezel_p3w.png)
 ![J bold: four projectors](preview/bezel_p4j.png)
+![C: the C7 look](preview/bezel_p3c.png)
 
 A second set, for the owner's mini 2.0 in bi-LED projectors (from the eBay listing: heads 55 wide
 x 48 tall x 50 deep, a 41 mm square fan body 44 deep behind, and a threaded stem 37 mm long
 behind that) and a thick switchback strip (white DRL, amber turn signal). Three looks:
 
+- `stl/projectors_P3C/`: **the C7 look.** Three projectors spread as far apart as the car allows
+  (the hood-side body just clears the pad's square adjuster, the fender-side one the arm's tab),
+  in a black housing: a tray recessed 3 mm with crisp corners and raked ends, running on past
+  the hood-side head to fill the bezel, the windows leaning back 10 degrees like the C7's, and a
+  raked fin between each pair. The bold 10 mm strip runs just under the housing and kicks up
+  past its fender end, parallel to it.
 - `stl/projectors_P3J/`: three projectors in a tight line (6 mm apart, in the middle of the
   bezel, each 4 mm behind its face), like the owner's reference render; the bold 10 mm strip runs
   under them and wraps up round the fender end in a wide curve.
@@ -79,19 +86,20 @@ behind that) and a thick switchback strip (white DRL, amber turn signal). Three 
   the fender-side one in the same wide curve as P3J. The heads are evenly spaced, each 4 mm
   behind the bezel's face (so they step back toward the fender), with 4.3 mm posts between them.
 
-With the bold strip (P3J, P4J) the bezel's bottom edge comes down 3.5 mm below the bracket's floor
+With the bold strip (P3C, P3J, P4J) the bezel's bottom edge comes down 3.5 mm below the bracket's floor
 to carry it.
 
-**Bezel.** The same top rail, bead, clip tongue, ears and fit to the door as the C7 bezel. The
-windows are the heads' size plus 0.5 mm; each head sits just behind its window (not inside
-it). Behind each head's front the bezel keeps 2 mm clear of it side to side and 0.75 mm up and
+**Bezel.** The same top rail, bead, clip tongue, ears and fit to the door as the C7 bezel. Each
+opening is a little smaller than the head's face (1.5 mm each side, 1 mm top and bottom), so
+the bezel frames the face, the lens stays clear, and no gap round the head shows from the
+front; the head sits just behind it. Behind each head's front the bezel keeps 2 mm clear of it side to side and 0.75 mm up and
 down, so a little misalignment between the bezel (on the door) and the bracket (on the arm)
 can't make them rub. The heads only just fit under the door: at the fender end there's about
 1 mm between the head and the rail, which is why they sit 2.9 mm higher than the pods did (the
 strip runs under them). The print split runs through the post between the first two heads,
 with the dowel pin in a small boss under the post.
 
-**Light strip.** A channel 6.5 mm wide (P3W) or 10 mm wide (P3J, P4J), 7 mm deep, for a silicone
+**Light strip.** A channel 6.5 mm wide (P3W) or 10 mm wide (P3C, P3J, P4J), 7 mm deep, for a silicone
 switchback strip up to 6 mm thick (`THICK` and `BOLD` in `bezel_styles.py`: change them to the
 strip you buy). It presses in from the front, flush, and is its own diffuser; a few dots of
 clear silicone hold it. Its wires go out through a hole at the hood end, low down, and back in
@@ -114,7 +122,8 @@ heads and by the hood end, where the strip's wires come back. Each projector nee
 ground and a high-beam wire; run them back with the strip's wires to the headlight harness
 through a relay, and fuse it.
 
-**Projector placement, three.** P3J's row sits between the two limits: the hood-side body clears
+**Projector placement, three.** P3C's heads stand where P3W's do, spread as far as they go.
+P3J's row sits between the two limits: the hood-side body clears
 the pad's square aim adjuster by 9.5 mm, the fender-side one the arm's mounting tab by 22 mm. On
 P3W the fender-side head is 8 mm in from the pod's place so its body clears the arm's mounting
 tab, the hood-side one 9.5 mm in so its body clears the adjuster, and the middle one halfway.
@@ -129,16 +138,17 @@ tab, the hood-side one 9.5 mm in so its body clears the adjuster, and the middle
 
 **Still to check on the car:** what's behind the mounting tabs (their back face, against the arm
 and the pad). Without stems, the projectors' bodies end (hood side first) 22, 14 and 2 mm in front
-of it on P3J; 23 and 4 mm in front and 15 mm behind on P3W; 25, 20 and 11 mm in front and 3 mm
-behind on P4J. With the stems on, they reach 15, 23 and 35 mm behind it (P3J), 14, 33 and 52 mm
-(P3W), and 18, 26 and 40 mm (P4J, all but the hood one). Measure the room there before printing.
+of it on P3J; 23 and 13 mm in front and 3 mm behind on P3C; 23 and 4 mm in front and 15 mm
+behind on P3W; 25, 20 and 11 mm in front and 3 mm behind on P4J. With the stems on, they reach
+15, 23 and 35 mm behind it (P3J), 14, 24 and 40 mm (P3C), 14, 33 and 52 mm (P3W), and 18, 26
+and 40 mm (P4J, all but the hood one). Measure the room there before printing.
 
 **Print:** the bracket stands on the back of its mounting tabs, like the pod bracket (turn it
 45 degrees on the bed); the straps print flat. Use ASA if you can, or PCTG: the projectors get
 warm.
 
 Build: `BEZEL_STYLE=P3J python3 bezel_sdf.py`, then `LIGHTS=projectors BEZEL_STYLE=P3J python3
-generate.py` (and the same with P3W and P4J); check with `LIGHTS=projectors BEZEL_STYLE=P3J
+generate.py` (and the same with P3C, P3W and P4J); check with `LIGHTS=projectors BEZEL_STYLE=P3J
 python3 check.py`.
 
 ## Measurements used

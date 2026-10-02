@@ -62,7 +62,8 @@ BLADE_FLUSH = 0.3    # the diffuser's face sits this far behind the bezel's
 WIRE_R = 1.3         # wire hole from the blade's channel out underneath
 LOW_Z = 3.6          # the lower lights' centre line: walls from 0.5 (bracket floor at 0) to 6.7 (pods at 7.6)
 PROJ_W, PROJ_H = 55.0, 48.0   # P3: the owner's mini 2.0 in bi-LED projector, head face on (eBay listing's size drawing)
-PROJ_CLEAR = 0.5     # round the head, in its tunnel (the head only just fits under the rail at the fender end)
+PROJ_LIP = (1.5, 1.0)  # the bezel's opening is this much smaller than the head's face (side, top and bottom):
+                       # it frames the face (the lens, about 44 mm, stays clear) and hides the gap round it
 PROJ_X = (-75.0, 0.75, 76.5)  # head centres: the fender one 8 mm in from the pod's place, so its body clears the
                               # arm's mounting tab; the hood one far enough in that its body clears the aiming
                               # pad's square adjuster; the middle one halfway, for even gaps
@@ -73,7 +74,15 @@ PROJ4 = ((-101.0, 24.3), (-41.67, 18.5), (17.67, 9.7), (77.0, -3.6))
 # round the outer end): 6 mm between the heads, the row in the middle of the bezel, each front
 # 4 mm behind the face across its width (the face as PROJ4 found it)
 PROJ3J = ((-66.0, 20.9), (-5.0, 13.1), (56.0, 1.1))
-BOLD_STYLES = ("P3J", "P4J")   # the looks with the bold strip (and the lower bottom edge)
+# P3C (C7 look): the three spread as far as the car allows (the hood one's body clears the pad's
+# square adjuster, the fender one's the arm's tab), each front 4 mm behind the face
+PROJ3C = ((-75.0, 21.8), (0.75, 12.2), (76.5, -3.5))
+P3C_STRIP_Z = 2.5    # P3C: the bold strip's bottom run, its walls from -3.5 to 8.5, just under the housing
+P3C_CHIN = -4.0      # ...and the bottom edge under it
+P3C_TRAY_BOTTOM = 9.0   # the housing's bottom edge: the windows' bottoms
+P3C_TRAY_HOOD_X = -129.0  # ...its hood end, where P4's first window ends (the hood-side head can't go further
+                          # that way: its body would reach the pad's square adjuster)
+BOLD_STYLES = ("P3J", "P4J", "P3C")   # the looks with the bold strip (and the lower bottom edge)
 
 
 def is_proj(style):
@@ -87,6 +96,8 @@ def proj_layout(style, pod_ys):
         return list(PROJ4)
     if style == "P3J":
         return list(PROJ3J)
+    if style == "P3C":
+        return list(PROJ3C)
     return [(x, py - 1.0) for x, py in zip(PROJ_X, pod_ys)]
 PROJ_LIFT = 2.9      # P3: the heads sit this much higher than the pods did: z 9.5 to 57.5, between the thick strip
                      # (its walls end at 8.95) and the rail (its underside is at 59.0 over the fender head)
@@ -287,8 +298,8 @@ class Style:
         self.chamfer = name in ("B", "BC")
         self.wire = None
         self.chin_z = CHIN_Z
-        self.rake = RAKE if name == "C7" else 0.0
-        self.win_edge = C7_EDGE if name == "C7" else None
+        self.rake = RAKE if name in ("C7", "P3C") else 0.0
+        self.win_edge = C7_EDGE if name in ("C7", "P3C") else None
         L, path = sw.L, sw.path
         i0 = int(np.argmin(path[:, 0]))              # from the hood corner on, x only grows
         self._ax = (path[i0:, 0], L[i0:])
@@ -361,6 +372,24 @@ class Style:
             self.wire = (a_start + 12.0, 0.5, 25.0)
             self.chin = (a_start - 22.0, a_bend + 12.0)
             self.chin_z = BOLD_CHIN
+        if name == "P3C":
+            # the C7 look round three projectors: a black housing (a recessed tray with raked ends and
+            # crisp corners) round the windows, which lean back like the C7's, with a raked fin
+            # between each pair; the bold strip runs just under the housing and kicks up past its
+            # fender end, parallel to it
+            pxs = [t[0] for t in fg["tunnels"]]
+            half = PROJ_W / 2 + 1.0
+            ta0 = ax(P3C_TRAY_HOOD_X) - C7_TRAY_MARGIN    # on past the hood-side head, to fill the room
+            ta1 = ax(x_out_f) + C7_TRAY_MARGIN
+            self.tray = dict(u0=ta0, u1=ta1, zb=P3C_TRAY_BOTTOM, zmid=zmid, r=C7_TRAY_R, top=(4.5, 61.5))
+            a_leg = ta1 + BOLD.inner / 2 + BOLD.wall + 2.0          # the up-stroke's centre line at zmid
+            z0, z1 = P3C_STRIP_Z, 48.0
+            a_start = ta0 + 4.0
+            pts = filleted([(a_start, z0), (a_leg + (z0 - zmid) * RAKE, z0), (a_leg + (z1 - zmid) * RAKE, z1)], 7.0)
+            self.channels.append(Channel(pts, BOLD))
+            self.wire = (a_start + 12.0, 0.5, 25.0)
+            self.chin = (a_start - 22.0, a_leg + 12.0)
+            self.chin_z = P3C_CHIN
         if name == "P3W":
             # three small projectors at the pods' places; one light strip that dips under each one,
             # peaks between them and sweeps up past the fender-side one
@@ -405,7 +434,7 @@ class Style:
             sw.Bw = sw.B - np.maximum(sw.B - self.chin_z, 0) * f
             if hasattr(sw, "_pcs"):
                 del sw._pcs
-        if name in ("C", "C7"):
+        if name in ("C", "C7", "P3C"):
             for (pa, pb) in zip(self.fronts, self.fronts[1:]):
                 self.fins.append(ax((pa[0] + pa[1] + pb[0] - pb[1]) / 2))
 
