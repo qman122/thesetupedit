@@ -331,6 +331,9 @@ def feature_geometry(sw):
             holes.append((np.asarray(h["at"], float), np.asarray(h["normal"], float) / np.linalg.norm(h["normal"])))
     fg = dict(wins=wins, tunnels=tunnels, tongue=tongue, slot=slot, tooth=tooth, lip_c=lip_c,
               holes=holes, door=door_lookup())
+    # projectors sit just behind their tunnels, not inside them, so a little misalignment between
+    # the bezel (on the door) and the bracket (on the arm) can't make them rub
+    fg["tunnel_back"] = 0.5 if STYLE.startswith("P3") else TUNNEL_BACK
     fg["style"] = bs.Style(STYLE, sw, fg, sys.modules[__name__]) if STYLE else None
     return fg
 
@@ -443,7 +446,7 @@ def apply_features(F, x, y, z, fg, pointwise=False, outside=None, door=None, sc=
         lean = st.shear(Z - zc_, e_) if st is not None else 0.0
         blk = round_box2(X - px - lean, Z, x0, x1, z_lo, zc_ + hh + TUNNEL_T,
                          r_ + TUNNEL_T, r_lo, r_ + TUNNEL_T, r_lo)
-        blk = inter_round(blk, (py - TUNNEL_BACK) - Y + 0 * Z, R_EDGE)        # rounded back rim
+        blk = inter_round(blk, (py - fg.get("tunnel_back", TUNNEL_BACK)) - Y + 0 * Z, R_EDGE)        # rounded back rim
         blk = inter_round(blk, outside + 1.5 + 0 * Z, R_EDGE)                 # ends inside the front wall
         blocks = blk if blocks is None else smin(blocks, blk, 2.0)
     # the blend is 2 mm, shrinking to 0.5 mm near the floor's underside, which the tunnels' bottoms
@@ -459,7 +462,7 @@ def apply_features(F, x, y, z, fg, pointwise=False, outside=None, door=None, sc=
         shape = st.window(X - px, Z - zc_, hw, hh, r_, e_) if st is not None else None
         if shape is None:
             shape = round_rect_xz(X - px, Z - zc_, hw, hh, r_)
-        w = inter_round(shape, (py - TUNNEL_BACK - 2.0) - Y + 0 * Z, R_EDGE)
+        w = inter_round(shape, (py - fg.get("tunnel_back", TUNNEL_BACK) - 2.0) - Y + 0 * Z, R_EDGE)
         if keep is not None:
             w = diff_round(w, keep, 1.0)
         F = diff_round(F, w, R_WIN_EDGE if st is None or st.win_edge is None else st.win_edge)
@@ -746,7 +749,7 @@ if __name__ == "__main__":
         tm = trimesh.Trimesh(v_, f_, process=True)
     if tm.volume < 0:
         tm.invert()
-    out = os.path.join(HERE, "stl", "cad", "bezel_cad_passenger.stl")
+    out = os.path.join(HERE, "stl", "cad", g.bezel_cad_name())
     os.makedirs(os.path.dirname(out), exist_ok=True)
     tm.export(out)
     import pymeshlab
@@ -758,7 +761,7 @@ if __name__ == "__main__":
           ms.current_mesh().selected_face_number(), "->", out, flush=True)
     # the diffuser inserts for the light slots (model frame); generate.py lays them out for printing
     ins = build_inserts(sw, fg)
-    out_i = os.path.join(HERE, "stl", "cad", "drl_inserts_passenger.stl")
+    out_i = os.path.join(HERE, "stl", "cad", g.bezel_cad_name("inserts"))
     if ins is not None:
         ti = trimesh.Trimesh(*ins, process=True)
         if ti.volume < 0:

@@ -1,4 +1,4 @@
-# C5 sleepy-eye pod carrier and bezel (v10: C7 look)
+# C5 sleepy-eye pod carrier and bezel (v10: C7 look; v11: projector version)
 
 For a 2000 C5 Corvette with the headlight door stops already fitted, holding three
 3.0 × 1.8 in dual-lens LED pods per side. Like the KnightDriveTV kit, each side is one
@@ -59,6 +59,63 @@ The other looks from the design brief (A: a light blade along the top; B: cut-co
 frames with an L-shaped light at each end; C: tray, fins and a lower bar; BC: B's frames with
 a lower bar under each pod) are still there: set `BEZEL_STYLE` and rerun `bezel_sdf.py`.
 `preview/bezel_concepts.png` compares them, and `BEZEL_STYLE=plain` gives the v9 bezel.
+
+## Projector version (v11): three bi-LED projectors and a thick light strip
+
+![J: thick white strip](preview/bezel_p3j.png)
+![W: thick amber strip](preview/bezel_p3w.png)
+
+A second set, for three mini 2.0 in bi-LED projectors per side (the owner's eBay listing:
+heads 55 wide x 48 tall x 50 deep, a 41 mm square fan body 44 deep behind, and a threaded stem
+37 mm long behind that) and a thick switchback strip (white DRL, amber turn signal). Two
+looks, the same bracket:
+
+- `stl/projectors_J/`: the strip runs under the three projectors and sweeps up past the
+  fender-side one.
+- `stl/projectors_W/`: the strip dips under each projector and peaks in the gaps between them,
+  then sweeps up at the end.
+
+**Bezel.** The same top rail, bead, clip tongue, ears and fit to the door as the C7 bezel. The
+three windows are the heads' size plus 0.5 mm; each head sits just behind its window (not
+inside it), so a little misalignment between the bezel (on the door) and the bracket (on the
+arm) can't make them rub. The heads only just fit under the door: at the fender end there's
+about 1 mm between the head and the rail, which is why they sit 2.9 mm higher than the pods did
+(the strip runs under them). The fender-side head is 8 mm in from the pod's place so its body
+clears the arm's mounting tab, and the middle one is halfway between, for even gaps.
+
+**Light strip.** A channel 6.5 mm wide and 7 mm deep for a silicone switchback strip about
+6.5 mm wide and 6 mm thick (`THICK` in `bezel_styles.py`: change it to the strip you buy). It
+presses in from the front, flush, and is its own diffuser; a few dots of clear silicone hold
+it. Its wires go out through a hole at the hood end, low down, and back in a groove under the
+bezel's floor to the bracket.
+
+**Bracket** (`carrier_*.stl` in the same folders). The same mounting tabs, slots, knees and
+gussets as the pod bracket, so it bolts to the arm and the aiming pad the same way. Under each
+projector a cradle holds the body from below and both sides (4 mm walls, with windows for the
+fan's air), and a strap (`projector_straps_*.stl`) screws down across the top with four M4
+self-tapping screws (two where the cradle is short). Put a strip of foam tape on the saddle.
+The cradles stop 1 mm in front of the mounting tabs' plane: the arm and the pad are behind it,
+which shortens the fender-side cradle to 22 mm. The threaded stem hangs free behind the body;
+if it unscrews, take it off.
+
+**Wiring.** Zip-tie slots in pairs along the beam (between the cradles and by the hood end,
+where the strip's wires come back), and a raised pad with two M3 holes, 24 mm apart, between
+the middle and fender-side cradles for a connector block or the DRL/switchback module. Each
+projector needs power, ground and a high-beam wire; run them back with the strip's wires to
+the headlight harness through a relay, and fuse it.
+
+**Still to check on the car:** what's behind the mounting tabs (their back face, against the
+arm and the pad). With the stem on, the projectors reach 14, 33 and 52 mm behind it (hood side,
+middle, fender side), into the headlight bucket; without it the hood-side and middle ones end
+23 and 4 mm in front of it and the fender-side one 15 mm behind it. Measure the room there
+before printing.
+
+**Print:** the bracket stands on the back of its mounting tabs, like the pod bracket (turn it
+45 degrees on the bed); the straps print flat. Use ASA if you can, or PCTG: the projectors get
+warm.
+
+Build: `BEZEL_STYLE=P3J python3 bezel_sdf.py`, then `LIGHTS=projectors BEZEL_STYLE=P3J python3
+generate.py` (and the same with P3W); check with `LIGHTS=projectors BEZEL_STYLE=P3J python3 check.py`.
 
 ## Measurements used
 

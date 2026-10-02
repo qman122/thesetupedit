@@ -305,7 +305,7 @@ class Style:
             self.tray = dict(u0=ta0, u1=ta1, zb=C7_TRAY_BOTTOM, zmid=zmid, r=C7_TRAY_R, top=(4.5, 61.5))
             a0, a1 = ax(x_out_h) + 3.0, ax(x_out_f) - 3.0
             self.channels.append(Channel([(a0, LOW_Z), (a1, LOW_Z)], BLADE, taper=(45.0, 0.45)))
-            self.wire = (a1 - 6.0, 3.0)        # the blade's wire hole: arc position and height
+            self.wire = (a1 - 6.0, 3.0, 6.0)   # the blade's wire hole: arc position, height, length behind the channel
             self.channels.append(lad)
             self.chin = (a0 - 22.0, a1 + 22.0)
         if name in ("P3J", "P3W"):
@@ -332,6 +332,9 @@ class Style:
                         q += [0.85 * p0 + 0.15 * p1, 0.15 * p0 + 0.85 * p1]
                     pts = np.array(q + [pts[-1]])
             self.channels.append(Channel(pts, THICK))
+            # the strip's wires: out of the channel's back at the hood end, low, and straight back in
+            # a groove under the bezel's floor to where the bracket's beam is (zip-tie slots there)
+            self.wire = (ax(pxs[0] - half + 12.0), 3.0, 25.0)
             self.chin = (ax(pxs[0] - half) - 22.0, ax(pxs[-1] + half + 12.0) + 12.0)
         if self.chin is not None:
             # the front wall comes down to CHIN_Z between the chin's ends, fading out over 20 mm;
@@ -450,8 +453,9 @@ class Style:
                 F = o.diff_round(F, acc, 0.5)
         if self.wire is not None:
             # straight in along the face's normal, from the channel's back out underneath
-            aw, zw = self.wire
-            hole = iround(np.hypot(a - aw, Z - zw) - WIRE_R, slab(nn, -(BLADE.depth + 6.0), -(BLADE.depth - 1.0)), 0.3)
+            aw, zw, wl = self.wire
+            dep = self.channels[0].s.depth
+            hole = iround(np.hypot(a - aw, Z - zw) - WIRE_R, slab(nn, -(dep + wl), -(dep - 1.0)), 0.3)
             F = o.diff_round(F, hole, 0.4)
         if self.chamfer:
             for (px, hw, zc, hh) in self.fronts:

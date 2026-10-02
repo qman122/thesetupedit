@@ -68,6 +68,18 @@ class Params:
     floor_t: float = 5.0          # floor thickness
     cup_wall: float = 3.5         # walls of the pocket each pod's bracket foot sits in (neighbours' walls fuse)
     cup_h: float = 2.6            # pocket depth (stays under the bezel's floor, which the pods now sit over)
+    lights: str = os.environ.get("LIGHTS", "pods")   # "pods" (3 x 3 in pods) or "projectors" (3 mini bi-LED projectors)
+    # the owner's mini 2.0 in bi-LED projectors (eBay listing's size drawing); the head's size and
+    # height are in bezel_styles (PROJ_W, PROJ_H, PROJ_LIFT, PROJ_X), shared with the bezel
+    proj_head_d: float = 50.0     # head, front to back
+    proj_body_w: float = 41.0     # fan / heatsink body behind the head, square (confirm with calipers)
+    proj_body_d: float = 44.0
+    proj_stem_d: float = 24.0     # threaded stem behind the body (removable on some), 37 mm long
+    proj_stem_len: float = 37.0
+    cradle_wall: float = 4.0      # cradle walls round the body
+    cradle_clear: float = 0.4     # body to cradle (add a strip of foam tape)
+    strap_t: float = 3.5          # the strap across the top of each body
+    strap_screw_d: float = 3.4    # pilot holes for M4 self-tapping screws (or 5.6 for M4 heat-set inserts)
     pocket_front_open: bool = True  # pockets are open at the front (the stud slot is the forward stop), clear of the bezel's light blade
     wall_t: float = 4.0           # end cheeks and dividers
     divider_h: float = 14.0       # height of the locating ribs between pods
@@ -399,7 +411,146 @@ def slot_y(w, length, axis, y0, y1, x, z):
 
 # ---------- parts ----------
 
+def proj_poses(p):
+    """(x, y of the head's front, z of its centre) for each projector."""
+    import bezel_styles as bs
+    return [(x, py - 1.0, pod_zc(p) + bs.PROJ_LIFT) for x, (_, py, _) in zip(bs.PROJ_X, pod_poses(p))]
+
+
+def proj_cradle_span(p, yf):
+    """(y0, y1) of a projector's cradle: along its body, stopping 1 mm in front of the mounting
+    tabs' plane (the arm and the pad are behind it)."""
+    y1 = yf - p.proj_head_d
+    y0 = max(yf - p.proj_head_d - p.proj_body_d, p.mount_wall_y + p.mount_wall_t + 1.0)
+    return y0, y1
+
+
+def projector_dummy(p, dy=0.0):
+    """Stand-ins for the projectors: head, lens trim, body and stem."""
+    import bezel_styles as bs
+    out = []
+    for (x, yf, zc) in proj_poses(p):
+        bw = p.proj_body_w / 2
+        out += [box(x - bs.PROJ_W / 2, x + bs.PROJ_W / 2, yf - p.proj_head_d, yf, zc - bs.PROJ_H / 2, zc + bs.PROJ_H / 2),
+                box(x - bw, x + bw, yf - p.proj_head_d - p.proj_body_d, yf - p.proj_head_d + 0.5, zc - bw, zc + bw),
+                M.cylinder(p.proj_stem_len + 0.5, p.proj_stem_d / 2, p.proj_stem_d / 2 - 2, 48).rotate([90, 0, 0])
+                 .translate([x, yf - p.proj_head_d - p.proj_body_d + 0.5, zc])]
+    return M.batch_boolean(out, m3d.OpType.Add).translate([0, dy, 0])
+
+
+def lights_dummy(p, dy=0.0):
+    return projector_dummy(p, dy) if p.lights == "projectors" else pod_dummy(p, dy)
+
+
+def projector_straps(p):
+    """One strap per projector, laid flat side by side for printing: it spans the body's top and
+    screws down into the cradle's bosses (M4)."""
+    out = []
+    for i, (x, yf, zc) in enumerate(proj_poses(p)):
+        y0, y1 = proj_cradle_span(p, yf)
+        hw = p.proj_body_w / 2 + p.cradle_clear + p.cradle_wall + 4.5
+        L = y1 - y0
+        strap = M.extrude(CS.square([2 * hw, L], center=True), p.strap_t)
+        for hx, hy in _strap_holes(p, L):
+            strap = strap - cyl_z(4.5, -1, p.strap_t + 1, hx, hy)
+        out.append(strap.translate([i * (2 * hw + 8), 0, 0]))
+    return M.batch_boolean(out, m3d.OpType.Add)
+
+
+def _strap_holes(p, L):
+    """Screw positions relative to the strap's centre: two each side when it's long enough."""
+    hx = p.proj_body_w / 2 + p.cradle_clear + p.cradle_wall + 1.0
+    ys = (-L / 2 + 6.0, L / 2 - 6.0) if L > 30 else (0.0,)
+    return [(sx * hx, y) for sx in (-1, 1) for y in ys]
+
+
+def carrier_projectors(p):
+    """The bracket for three projectors: the same mounting tabs, knees and gussets as the pod
+    bracket, a beam under the projectors, a cradle round each one's body (with a strap across
+    the top, screwed down), and room for the wiring: zip-tie slots, and a pad for a connector
+    or the DRL module."""
+    y_back = p.mount_wall_y
+    arm_ear, pad_ear = ears(p)
+    parts, cuts = [], []
+    bw = p.proj_body_w / 2 + p.cradle_clear            # half the cradle's inside
+    ow = bw + p.cradle_wall                             # ...and its outside
+    feet, spans = [], []
+    for (x, yf, zc) in proj_poses(p):
+        y0, y1 = proj_cradle_span(p, yf)
+        spans.append((x, yf, zc, y0, y1))
+        feet.append(CS.square([2 * (ow + 4.5), yf - 3.0 - y0]).translate([x - ow - 4.5, y0]))
+    ys_lo = max(sp[3] for sp in spans)
+    ys_hi = min(sp[1] - 3.0 for sp in spans)
+    x_lo = min(sp[0] for sp in spans) - ow - 4.5
+    x_hi = max(sp[0] for sp in spans) + ow + 4.5
+    spine = CS.square([x_hi - x_lo, ys_hi - ys_lo]).translate([x_lo, ys_lo])
+    beam = CS.batch_boolean(feet + [spine], m3d.OpType.Add).offset(1.0, m3d.JoinType.Round)
+    parts.append(M.extrude(beam, p.floor_t).translate([0, 0, -p.floor_t]))
+    ring = (beam.offset(-0.3, m3d.JoinType.Miter) - beam.offset(-p.wall_t - 0.3, m3d.JoinType.Miter)) ^ CS.square([170, 400], center=True)
+    parts.append(M.extrude(ring, p.lip_h + 1).translate([0, 0, -p.floor_t - p.lip_h]))
+    # the cradles: a saddle under the body, walls up its sides to its top, a boss at each screw
+    for (x, yf, zc, y0, y1) in spans:
+        zb, zt = zc - p.proj_body_w / 2 - p.cradle_clear, zc + p.proj_body_w / 2 + p.cradle_clear
+        parts.append(box(x - ow, x + ow, y0, y1, -1.0, zb))
+        parts += [box(x + bw, x + ow, y0, y1, -1.0, zt), box(x - ow, x - bw, y0, y1, -1.0, zt)]
+        for hx, hy in _strap_holes(p, y1 - y0):
+            parts.append(cyl_z(9.0, zt - 14.0, zt, x + hx, (y0 + y1) / 2 + hy))
+            cuts.append(cyl_z(p.strap_screw_d, zt - 13.0, zt + 1.0, x + hx, (y0 + y1) / 2 + hy))
+        # air for the body's fan: two windows in each wall
+        L = y1 - y0
+        for sx in (-1, 1):
+            for (wa, wb) in ((y0 + 4.0, y0 + L / 2 - 2.0), (y0 + L / 2 + 2.0, y1 - 4.0)):
+                if wb - wa > 4.0:
+                    xa, xb = (x + bw - 1.0, x + ow + 1.0) if sx > 0 else (x - ow - 1.0, x - bw + 1.0)
+                    cuts.append(box(xa, xb, wa, wb, zb + 6.0, zt - 16.0))
+    # knees from the end cradles back to the mounting tabs
+    for (x0, x1, _, _), sp in ((arm_ear, spans[-1]), (pad_ear, spans[0])):
+        tx0, tx1 = x0 - p.wall_t, x1 + p.wall_t
+        ty1 = y_back + p.mount_wall_t + 22
+        x, yf, zc, y0, y1 = sp
+        knee = CS.hull_points([[x - ow - 4.5, y0], [x + ow + 4.5, y0], [x - ow - 4.5, yf - 3.0], [x + ow + 4.5, yf - 3.0],
+                               [tx0, y_back], [tx1, y_back], [tx0, ty1], [tx1, ty1]]).offset(0.6, m3d.JoinType.Round)
+        parts.append(M.extrude(knee, p.floor_t).translate([0, 0, -p.floor_t]))
+    parts += _tab_parts(p)
+    # wiring: a raised pad for a connector or the DRL module (two M3 holes, 24 mm apart) between
+    # the middle and fender-side cradles, and pairs of zip-tie slots along the beam
+    xm = (spans[1][0] + spans[2][0]) / 2
+    ypad = (ys_lo + ys_hi) / 2
+    parts.append(box(xm - 9.0, xm + 9.0, ypad - 16.0, ypad + 16.0, -1.0, 2.0))
+    for dy in (-12.0, 12.0):
+        cuts.append(cyl_z(2.6, -p.floor_t - 1, 3.0, xm, ypad + dy))
+    xh = (spans[0][0] + spans[1][0]) / 2
+    ties = [(xh, ys_lo + 8.0), (xh, ys_hi - 8.0), (xm, ys_lo + 5.0), (spans[0][0] - ow - 1.5, spans[0][1] - 12.0)]
+    for (tx, ty) in ties:
+        for dx in (-5.0, 5.0):
+            cuts.append(box(tx + dx - 1.25, tx + dx + 1.25, ty - 2.5, ty + 2.5, -p.floor_t - 1, 1.0))
+    body = M.batch_boolean(parts, m3d.OpType.Add)
+    for (_, hx, hz, axis) in mount_points(p):
+        ln = p.arm_slot_len if axis == "x" else p.pad_slot_len
+        cuts.append(slot_y(p.mount_hole_d, ln, axis, y_back - 1, y_back + p.mount_wall_t + 1, hx, hz))
+    return M.batch_boolean([body] + cuts, m3d.OpType.Subtract)
+
+
+def _tab_parts(p):
+    """The mounting tabs (arm and pad), the floor under each, and a gusset on each one's outboard
+    edge, as on the pod bracket; and the floor out beside the outer lights."""
+    y_back = p.mount_wall_y
+    arm_ear, pad_ear = ears(p)
+    parts = []
+    for (x0, x1, z0, z1) in (arm_ear, pad_ear):
+        parts.append(plate_xz(ear_section(x0, x1, z0, z1), y_back + p.mount_wall_t, p.mount_wall_t))
+        parts.append(box(x0 - p.wall_t, x1 + p.wall_t, y_back, y_back + p.mount_wall_t + 22, -p.floor_t, 0))
+    cheek_len = 20.0
+    for (x0, x1, _, z1) in (arm_ear, pad_ear):
+        tri = CS([[[0, 0], [cheek_len, 0], [3.0, z1 - 8], [0, z1 - 8]]])
+        xc = x1 - 1 if x1 > 0 else x0 - p.wall_t + 1
+        parts.append(M.extrude(tri, p.wall_t).transform([[0, 0, 1, xc], [1, 0, 0, y_back + p.mount_wall_t], [0, 1, 0, 0]]))
+    return parts
+
+
 def carrier(p):
+    if p.lights == "projectors":
+        return carrier_projectors(p)
     half = row_w(p) / 2 + p.wall_t
     y_front = -p.floor_front_setback
     y_back = p.mount_wall_y
@@ -1397,10 +1548,17 @@ def door_clearance(p):
     return blk.warp_batch(f)
 
 
+def bezel_cad_name(kind="bezel"):
+    """The bezel_sdf.py output for BEZEL_STYLE: C7 (the default) keeps the plain names."""
+    st = os.environ.get("BEZEL_STYLE", "C7")
+    suffix = "" if st == "C7" else "_" + st
+    return f"{'bezel_cad' if kind == 'bezel' else 'drl_inserts'}_passenger{suffix}.stl"
+
+
 def shroud(p):
     """The bezel as one piece (passenger side as modelled): the CAD build (bezel_cad.py) when
     it's there, otherwise the older mesh build below."""
-    cad = os.path.join(os.path.dirname(os.path.abspath(__file__)), "stl", "cad", "bezel_cad_passenger.stl")
+    cad = os.path.join(os.path.dirname(os.path.abspath(__file__)), "stl", "cad", bezel_cad_name())
     if os.path.exists(cad) and not os.environ.get("OLD_BEZEL"):
         import trimesh
         tm = trimesh.load(cad)                          # merges the STL's repeated vertices
@@ -1412,7 +1570,7 @@ def diffusers(p):
     """The frosted diffuser inserts for the bezel's light slots (bezel_sdf.py writes them in the
     model frame), each standing on its flat bottom edge, laid side by side for one print. None
     if the bezel has no lights."""
-    path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "stl", "cad", "drl_inserts_passenger.stl")
+    path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "stl", "cad", bezel_cad_name("inserts"))
     if not os.path.exists(path):
         return None
     import trimesh
@@ -1650,7 +1808,26 @@ def preview(p, out):
     print("preview ->", out)
 
 
-if __name__ == "__main__":
+def write_projector_set(here):
+    """LIGHTS=projectors: the projector bracket, its straps, and the bezel for BEZEL_STYLE (P3J or
+    P3W), in stl/projectors_<J|W>/, with a fit-check assembly. The fit tests, spacers and the
+    rest stay in stl/ (they don't change)."""
+    st = os.environ.get("BEZEL_STYLE", "P3J")
+    out = os.path.join(here, "stl", "projectors_" + st[-1])
+    os.makedirs(os.path.join(out, "assembled"), exist_ok=True)
+    c, s = carrier(P), shroud(P)
+    for side, f in (("passenger", lambda m: m), ("driver", mirror_x)):
+        save(print_orient_carrier(f(c)), os.path.join(out, f"carrier_{side}.stl"))
+        save(f(print_orient_shroud(s)), os.path.join(out, f"bezel_{side}_one_piece.stl"))
+        for tag, piece in zip(("hood_piece", "fender_piece"), split_shell(P, s)):
+            save(f(print_orient_shroud(piece)), os.path.join(out, f"bezel_{side}_{tag}.stl"))
+        save(f(projector_straps(P)), os.path.join(out, f"projector_straps_{side}.stl"))
+        save(M.compose([f(c), f(s), f(projector_dummy(P))]), os.path.join(out, "assembled", f"assembly_{side}.stl"))
+
+
+if __name__ == "__main__" and P.lights == "projectors":
+    write_projector_set(os.path.dirname(os.path.abspath(__file__)))
+elif __name__ == "__main__":
     here = os.path.dirname(os.path.abspath(__file__))
     out = os.path.join(here, "stl")
     os.makedirs(out, exist_ok=True)
