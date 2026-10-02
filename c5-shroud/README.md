@@ -22,6 +22,8 @@ rendered with the door on: `diagrams/with_door.png`.
 
 ![the C7-style bezel](preview/bezel_c7.png)
 
+Before and after, from the same angles: `preview/bezel_old_vs_c7.png`.
+
 The bezel's face is restyled after the C7 Corvette's headlamp. GM describes it as a black
 housing round the projectors, a thin white "daytime styling blade" underneath that follows the
 body lines, and a ladder of small LEDs up the outboard edge (white, amber as the turn
