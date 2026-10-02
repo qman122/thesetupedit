@@ -154,6 +154,7 @@ class Sweep:
         # their full depth across the front
         self.Dr = T_WALL + (Dr - 3.6) * (P.blade_depth - T_WALL) / (P.blade_depth - 3.6)
         self.Df = T_WALL + (Df - 3.6) * (P.floor_depth - T_WALL) / (P.floor_depth - 3.6)
+        self.Bw = self.B.copy()        # the front wall's bottom: the style can bring it lower (a chin)
         self.tree = cKDTree(path)
         from scipy.interpolate import CubicSpline
         self.cs = CubicSpline(self.L, path)
@@ -212,18 +213,26 @@ class Sweep:
     def params(self, sc):
         if not hasattr(self, "_pcs"):
             from scipy.interpolate import CubicSpline
-            self._pcs = CubicSpline(np.arange(self.n), np.c_[self.T, self.B, self.Dr, self.Df, self.rb, self.Rl])
+            self._pcs = CubicSpline(np.arange(self.n), np.c_[self.T, self.B, self.Dr, self.Df, self.rb, self.Rl, self.Bw])
         v = self._pcs(sc)
-        return [v[..., k] for k in range(6)]
+        return [v[..., k] for k in range(7)]
 
-    def section(self, nn, z, T, B, Dr, Df, rb, Rl):
+    def section(self, nn, z, T, B, Dr, Df, rb, Rl, Bw=None):
         """The C section at (n, z): outside minus the channel, both with rounded corners, so
-        every corner of the section is exactly round; the bead added with a smooth union."""
+        every corner of the section is exactly round; the bead added with a smooth union.
+        Bw, where it's below B, carries the front wall down below the floor (the chin)."""
         t = T_WALL
         zm = (T + B) / 2
         rail = round_box2(nn, z, -Dr, 0.0, zm - 1.0, T, R_OUT, 0.0, R_OUT, 0.0)
         floor = round_box2(nn, z, -Df, 0.0, B, zm + 1.0, 0.0, Rl, 0.0, R_OUT)
         outer = np.minimum(rail, floor)
+        if Bw is not None and np.any(Bw < B - 1e-3):
+            # the wall's own box, with the same rounds the floor has where the floor is just
+            # the wall (so they coincide where the chin fades out); filleted into the floor's
+            # underside where the floor runs back behind it
+            wall = round_box2(nn, z, -t, 0.0, Bw, B + t, 0.0, Rl, 0.0, R_OUT)
+            r = np.clip((-nn - 1.5) / 1.0, 0, 1) * np.clip((Df - 4.0) / 3.0, 0, 1) * np.clip((B - Bw) / 0.5, 0, 1)
+            outer = union_round(outer, wall, r)
         h_ch = (T - t) - (B + t)
         # where the rail (or floor) runs out to a short stub, its inside fillet and its end's round
         # share what depth there is, so the stub's underside stays one smooth S-curve
@@ -254,8 +263,8 @@ class Sweep:
     def body(self, x, y, z):
         """SDF of the swept shell with rounded ear tips. x, y: (N,), z: (M,) -> (N, M)."""
         sc, nn, e = self.project(x, y)
-        T, B, Dr, Df, rb, Rl = [a[:, None] for a in self.params(sc)]
-        sec = self.section(nn[:, None], z[None, :], T, B, Dr, Df, rb, Rl)
+        T, B, Dr, Df, rb, Rl, Bw = [a[:, None] for a in self.params(sc)]
+        sec = self.section(nn[:, None], z[None, :], T, B, Dr, Df, rb, Rl, Bw)
         return inter_round(sec, e[:, None] + 0.0 * z[None, :], R_EDGE)
 
 
@@ -375,7 +384,7 @@ def apply_features(F, x, y, z, fg, pointwise=False, outside=None, door=None, sc=
     X, Y = x[:, None], y[:, None]
     Z = z[:, None] if pointwise else z[None, :]
     st = fg.get("style")
-    sctx = st.ctx(X, Z, outside, sc) if st is not None else None
+    sctx = st.ctx(X, Z, outside, sc, Y) if st is not None else None
     # the tongue: a thin tapered plate, top at the door's lip, blended into the rail
     lip_c = fg["lip_c"]
     plan = round_poly_sdf(x, y, fg["tongue"], 2.0)[:, None]
@@ -472,8 +481,8 @@ def sdf_points(sw, fg, pts):
     for a in range(0, len(pts), 200000):
         q = pts[a:a + 200000]
         sc, nn, e = sw.project(q[:, 0], q[:, 1])
-        T, B, Dr, Df, rb, Rl = sw.params(sc)
-        F = inter_round(sw.section(nn, q[:, 2], T, B, Dr, Df, rb, Rl), e, R_EDGE)
+        T, B, Dr, Df, rb, Rl, Bw = sw.params(sc)
+        F = inter_round(sw.section(nn, q[:, 2], T, B, Dr, Df, rb, Rl, Bw), e, R_EDGE)
         out[a:a + len(q)] = apply_features(F[:, None], q[:, 0], q[:, 1], q[:, 2], fg, pointwise=True,
                                            outside=nn[:, None], door=fg["door"], sc=sc)[:, 0]
     return out

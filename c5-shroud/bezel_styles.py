@@ -46,14 +46,20 @@ class Spec:
     """One size of light channel. slot: visible slot height; inner: channel height (the diffuser
     insert's height); wall: channel walls; skin: the face in front of the diffuser; depth: the
     channel behind the skin (diffuser plus LED strip); insert: diffuser thickness."""
-    def __init__(self, slot, inner, wall, skin, depth, insert):
+    def __init__(self, slot, inner, wall, skin, depth, insert, front=False):
         self.slot, self.inner, self.wall, self.skin, self.depth, self.insert = slot, inner, wall, skin, depth, insert
+        self.front = front     # front-loading: no lip, the diffuser presses in flush with the face
 
 
 # top blade: a 3.5 mm slot, 6 mm diffuser 2 mm thick, room for a 5 mm COB strip behind it
 TOP = Spec(slot=3.5, inner=6.0, wall=1.5, skin=2.0, depth=5.0, insert=2.0)
 # lower lights: a 3 mm slot, 4.2 mm diffuser 1.5 mm thick, for a 4 mm COB strip
 LOW = Spec(slot=3.0, inner=4.2, wall=1.0, skin=1.6, depth=4.0, insert=1.5)
+# C7's light blade, front-loading: its channel is closed at the back by the bezel's floor, so
+# the 4 mm LED strip sticks to the channel's back and the diffuser presses in flush from the front
+BLADE = Spec(slot=4.2, inner=4.2, wall=1.0, skin=0.0, depth=3.8, insert=1.5, front=True)
+BLADE_FLUSH = 0.3    # the diffuser's face sits this far behind the bezel's
+WIRE_R = 1.3         # wire hole from the blade's channel out underneath
 LOW_Z = 3.6          # the lower lights' centre line: walls from 0.5 (bracket floor at 0) to 6.7 (pods at 7.6)
 CHIN_Z = 0.4         # the bottom edge comes down to here wherever there's a lower light
 INSERT_CLEAR = 0.15  # the diffuser insert is this much smaller than its channel all round
@@ -135,6 +141,8 @@ class Channel:
         if self.taper is not None:
             t = np.clip(along / self.taper[0], 0, 1)
             half = half * (self.taper[1] + (1 - self.taper[1]) * t * t * (3 - 2 * t))
+        if s.front:                       # the opening is the channel, tapered and all
+            return d - half, d - half
         return d - s.inner / 2, d - half
 
     def walls(self, pr, nn):
@@ -144,21 +152,33 @@ class Channel:
         return iround(pr[0] - self.s.wall, slab(nn, -self.back, 1.0), 0.8)
 
     def inner(self, pr, nn):
+        if self.s.front:                  # closed at the back, open through the face
+            return iround(pr[0], slab(nn, -self.back, 3.0), 0.4)
         return iround(pr[0], slab(nn, -self.back - 1.0, -(self.base + self.s.skin)), 0.4)
 
     def slot(self, pr, nn):
+        if self.s.front:
+            return 99.0 + 0 * pr[1]
         return iround(pr[1], slab(nn, -(self.base + self.s.skin + 0.5), 3.0), 0.3)
 
     def insert(self, pr, nn):
         s = self.s
+        if s.front:
+            return iround(pr[0] + INSERT_CLEAR, slab(nn, -(self.base + BLADE_FLUSH + s.insert),
+                                                     -(self.base + BLADE_FLUSH)), 0.3)
         return iround(pr[0] + INSERT_CLEAR,
                       slab(nn, -(self.base + s.skin + s.insert), -(self.base + s.skin + 0.05)), 0.3)
+
+    def access(self, X, Y, Z, nn):
+        return None
 
 
 class Ladder(Channel):
     """C7: a ladder of short rungs up the outer end, raked like the blades, all lit from one
-    pocket behind them (one short piece of LED strip standing upright)."""
-    def __init__(self, a_mid, z0, n, pitch, rung_len, spec, base, rake):
+    pocket behind them (one short piece of LED strip standing upright). The corner behind it
+    is solid, so a channel runs straight back from the pocket to the back of the fill, for the
+    diffuser and the strip to slide in and the wires to come out."""
+    def __init__(self, a_mid, z0, n, pitch, rung_len, spec, base, rake, sw=None, y_back=None):
         self.s, self.base, self.taper, self.rake = spec, base, None, rake
         self.back = base + spec.skin + spec.depth
         self.a_mid, self.zs = a_mid, z0 + pitch * np.arange(n)
@@ -167,6 +187,27 @@ class Ladder(Channel):
         self.ha = rung_len / 2 + 1.2                                      # ...and half width
         r = max(self.ha, self.hz) + spec.wall + 4.0
         self.lo, self.hi = np.array([a_mid - r, self.zm - r]), np.array([a_mid + r, self.zm + r])
+        self.chan = None
+        if sw is not None:
+            # the pocket's footprint seen from the front (along y), from just behind the skin to
+            # its back, at each height: the channel behind must clear all of it
+            zz = np.linspace(self.zm - self.hz, self.zm + self.hz, 33)
+            lo, hi = [], []
+            for z in zz:
+                aa = a_mid + (z - self.zm) * rake + np.linspace(-self.ha, self.ha, 9)
+                p, d1 = sw.cs(aa), sw.cs(aa, 1)
+                nrm = np.c_[d1[:, 1], -d1[:, 0]] / np.hypot(d1[:, 0], d1[:, 1])[:, None] * sw.nsign
+                xs = np.concatenate([p[:, 0] - dd * nrm[:, 0] for dd in np.linspace(spec.skin, self.back, 5)])
+                lo.append(xs.min() - 0.3)
+                hi.append(xs.max() + 0.3)
+            self.chan = (zz, np.array(lo), np.array(hi), y_back)
+
+    def access(self, X, Y, Z, nn):
+        zz, lo, hi, y_back = self.chan
+        xz = reduce(np.maximum, [np.interp(Z, zz, lo) - X, X - np.interp(Z, zz, hi),
+                                 (zz[0] - 0.2) - Z, Z - (zz[-1] + 0.2)])
+        ch = iround(xz, nn + self.s.skin + 0.3, 0.4)            # behind the skin only
+        return iround(ch, np.maximum(y_back - Y, nn + 1.5), 0.4)   # to the fill's back; 1.5 mm inside the face
 
     def profile(self, a, nn, Z):
         s = self.s
@@ -193,6 +234,7 @@ class Style:
     def __init__(self, name, sw, fg, ops):
         self.name, self.sw, self.ops = name, sw, ops
         self.chamfer = name in ("B", "BC")
+        self.wire = None
         self.rake = RAKE if name == "C7" else 0.0
         self.win_edge = C7_EDGE if name == "C7" else None
         L, path = sw.L, sw.path
@@ -246,13 +288,25 @@ class Style:
             ta0 = ax(x_out_h) - C7_TRAY_MARGIN
             ta1 = ax(x_out_f) + C7_TRAY_MARGIN
             lad = Ladder(0.0, LADDER_Z0, LADDER_N, LADDER_PITCH, LADDER_RUNG, LADDER, 0.0, RAKE)
-            a_lad = ta1 + 1.5 + LADDER.wall + lad.ha
-            lad = Ladder(a_lad, LADDER_Z0, LADDER_N, LADDER_PITCH, LADDER_RUNG, LADDER, 0.0, RAKE)
+            a_lad = ta1 + 5.5 + LADDER.wall + lad.ha        # far enough round the corner to clear the pod's tunnel
+            fpod = fg["tunnels"][-1]
+            lad = Ladder(a_lad, LADDER_Z0, LADDER_N, LADDER_PITCH, LADDER_RUNG, LADDER, 0.0, RAKE,
+                         sw=sw, y_back=fpod[1] - 18.0 - 4.0)
             self.tray = dict(u0=ta0, u1=ta1, zb=C7_TRAY_BOTTOM, zmid=zmid, r=C7_TRAY_R, top=(4.5, 61.5))
             a0, a1 = ax(x_out_h) + 3.0, ax(x_out_f) - 3.0
-            self.channels.append(Channel([(a0, LOW_Z), (a1, LOW_Z)], LOW, taper=(45.0, 0.45)))
+            self.channels.append(Channel([(a0, LOW_Z), (a1, LOW_Z)], BLADE, taper=(45.0, 0.45)))
+            self.wire = (a1 - 6.0, 3.0)        # the blade's wire hole: arc position and height
             self.channels.append(lad)
             self.chin = (a0 - 22.0, a1 + 22.0)
+        if self.chin is not None:
+            # the front wall comes down to CHIN_Z between the chin's ends, fading out over 20 mm;
+            # the sweep builds it into its own section (Sweep.Bw), so it can't leave a lip
+            ca, cb = self.chin
+            f = np.clip(np.minimum(L - ca, cb - L) / 20.0, 0, 1)
+            f = f * f * (3 - 2 * f)
+            sw.Bw = sw.B - np.maximum(sw.B - CHIN_Z, 0) * f
+            if hasattr(sw, "_pcs"):
+                del sw._pcs
         if name in ("C", "C7"):
             for (pa, pb) in zip(self.fronts, self.fronts[1:]):
                 self.fins.append(ax((pa[0] + pa[1] + pb[0] - pb[1]) / 2))
@@ -276,9 +330,10 @@ class Style:
 
     # ---- the steps apply_features calls ----
 
-    def ctx(self, X, Z, nn, sc):
+    def ctx(self, X, Z, nn, sc, Y=None):
+        self._Y = Y
         a = np.interp(sc, np.arange(self.sw.n), self.sw.L)[:, None]
-        return dict(a=a, nn=nn, Z=Z, X=X, d=[ch.profile(a, nn, Z) for ch in self.channels])
+        return dict(a=a, nn=nn, Z=Z, X=X, Y=self._Y, d=[ch.profile(a, nn, Z) for ch in self.channels])
 
     def window(self, x, z, hw, hh, r_, e_):
         """The tunnel's cross-section: cut corners for B and BC, from nothing at the pod to CH at
@@ -296,23 +351,6 @@ class Style:
     def solids(self, F, c):
         o = self.ops
         a, nn, Z, X = c["a"], c["nn"], c["Z"], c["X"]
-        if self.chin is not None:
-            ca, cb = self.chin
-            f = np.clip(np.minimum(a - ca, cb - a) / 20.0, 0, 1)
-            f = f * f * (3 - 2 * f)
-            sc_ = np.interp(a, self.sw.L, np.arange(self.sw.n))
-            T, B, Dr, Df, rb, Rl = self.sw.params(sc_)
-            zb = B - np.maximum(B - CHIN_Z, 0) * f
-            # the front wall carried down: its top ends inside the floor, and it's filleted 1 mm
-            # into the floor's underside behind (not at the front, where its face carries on the
-            # wall's own face; nor where it fades out, where the two bottoms meet)
-            # Round the ears (and wherever the floor is no deeper than the wall) the chin's
-            # faces lie on the wall's own faces, so there it's a plain union with the wall's own
-            # bottom rounds; the fillet is only where there's a floor behind it to fillet into.
-            chin = o.round_box2(nn, Z, -3.0, 0.0, zb, B + 0.5, 0.0, np.maximum(Rl, 1.0), 0.0, o.R_OUT)
-            floor = np.clip((Df - 4.0) / 3.0, 0, 1)
-            chin = np.where(f > 1e-6, chin, 99.0)          # none at all where it has faded out
-            F = o.union_round(F, chin, np.clip((-nn - 1.0) / 1.5, 0, 1) * f * floor)
         if self.tray is not None:
             t2 = self.tray2d(a, Z)
             backing = iround(iround(t2 - 2.5, slab(nn, -(TRAY_RECESS + 2.5), -0.5), 1.0),
@@ -346,7 +384,7 @@ class Style:
             if ch.base > 0:
                 F = o.diff_round(F, ch.inner(d, nn), 0.5)
                 F = o.diff_round(F, ch.slot(d, nn), 0.3)
-        k = (1.65 - FIN_EDGE) / (TRAY_RECESS - FIN_FRONT)
+        k = (1.35 - FIN_EDGE) / (TRAY_RECESS - FIN_FRONT)   # 0.3 mm inside the post each side at the floor
         for af in self.fins:
             depth = np.maximum(-nn - FIN_FRONT, 0)
             side = (np.abs(a - af - (Z - self.tray["zmid"]) * self.rake) - FIN_EDGE - k * depth) / np.sqrt(1 + k * k)
@@ -372,6 +410,14 @@ class Style:
             if ch.base == 0:
                 F = o.diff_round(F, ch.inner(d, nn), 0.5)
                 F = o.diff_round(F, ch.slot(d, nn), 0.4)
+            acc = ch.access(X, c["Y"], Z, nn)
+            if acc is not None:
+                F = o.diff_round(F, acc, 0.5)
+        if self.wire is not None:
+            # straight in along the face's normal, from the channel's back out underneath
+            aw, zw = self.wire
+            hole = iround(np.hypot(a - aw, Z - zw) - WIRE_R, slab(nn, -(BLADE.depth + 6.0), -(BLADE.depth - 1.0)), 0.3)
+            F = o.diff_round(F, hole, 0.4)
         if self.chamfer:
             for (px, hw, zc, hh) in self.fronts:
                 bev = chamfer_rect(X - px, Z - zc, hw, hh, CH) - np.clip(nn, 0, FRAME_BEVEL)
