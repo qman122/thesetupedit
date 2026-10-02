@@ -46,9 +46,11 @@ class Spec:
     """One size of light channel. slot: visible slot height; inner: channel height (the diffuser
     insert's height); wall: channel walls; skin: the face in front of the diffuser; depth: the
     channel behind the skin (diffuser plus LED strip); insert: diffuser thickness."""
-    def __init__(self, slot, inner, wall, skin, depth, insert, front=False):
+    def __init__(self, slot, inner, wall, skin, depth, insert, front=False, closed=0.0):
         self.slot, self.inner, self.wall, self.skin, self.depth, self.insert = slot, inner, wall, skin, depth, insert
         self.front = front     # front-loading: no lip, the diffuser presses in flush with the face
+        self.closed = closed   # a back wall this thick behind the channel (for strips below the floor,
+                               # which would otherwise have nothing behind them)
 
 
 # top blade: a 3.5 mm slot, 6 mm diffuser 2 mm thick, room for a 5 mm COB strip behind it
@@ -103,11 +105,11 @@ PROJ_LIFT = 2.9      # P3: the heads sit this much higher than the pods did: z 9
                      # (its walls end at 8.95) and the rail (its underside is at 59.0 over the fender head)
 # P3's thick light strip: a silicone switchback (white DRL / amber signal) strip, about 6.5 mm wide
 # and 6 mm thick, pressed into the channel from the front, flush; it is its own diffuser
-THICK = Spec(slot=6.5, inner=6.5, wall=1.0, skin=0.0, depth=7.0, insert=6.0, front=True)
+THICK = Spec(slot=6.5, inner=6.5, wall=1.0, skin=0.0, depth=7.0, insert=6.0, front=True, closed=1.5)
 THICK_Z = 4.7        # its bottom run: walls from 0.45 (just above the bracket) to 8.95 (under the windows)
 # P4J's bold strip: 10 mm (a wide high-output switchback strip, up to 6.5 mm thick); the bezel's
 # bottom comes down to -3.5 to carry it (the owner first marked the bottom as low as -18)
-BOLD = Spec(slot=10.0, inner=10.0, wall=1.0, skin=0.0, depth=7.0, insert=6.0, front=True)
+BOLD = Spec(slot=10.0, inner=10.0, wall=1.0, skin=0.0, depth=7.0, insert=6.0, front=True, closed=1.5)
 BOLD_Z = 3.0         # its bottom run: walls from -3 to 9 (the windows start at 9)
 BOLD_CHIN = -3.5    # the bottom edge under the bold strip
 CHIN_Z = 0.4         # the bottom edge comes down to here wherever there's a lower light
@@ -208,7 +210,7 @@ class Channel:
         return d - s.inner / 2, d - half
 
     def walls(self, pr, nn):
-        return iround(pr[0] - self.s.wall, slab(nn, -self.back, -(self.base + 0.5)), 0.8)
+        return iround(pr[0] - self.s.wall, slab(nn, -self.back - self.s.closed, -(self.base + 0.5)), 0.8)
 
     def keep(self, pr, nn):
         return iround(pr[0] - self.s.wall, slab(nn, -self.back, 1.0), 0.8)

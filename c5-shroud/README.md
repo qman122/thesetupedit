@@ -101,7 +101,8 @@ with the dowel pin in a small boss under the post.
 
 **Light strip.** A channel 6.5 mm wide (P3W) or 10 mm wide (P3C, P3J, P4J), 7 mm deep, for a silicone
 switchback strip up to 6 mm thick (`THICK` and `BOLD` in `bezel_styles.py`: change them to the
-strip you buy). It presses in from the front, flush, and is its own diffuser; a few dots of
+strip you buy). The channel is closed behind by a 1.5 mm wall tied into the bezel's floor. The
+strip presses in from the front, flush, and is its own diffuser; a few dots of
 clear silicone hold it. Its wires go out through a hole at the hood end, low down, and back in
 a groove under the bezel's floor to the bracket. How bright it looks is down to the strip: a
 wide, high-output one (120+ LEDs/m) fills the 10 mm channel.
