@@ -17,8 +17,12 @@ The layout is the same as bezel_cad.py:
 - The clip tongue is a thin tapered plate blended into the rail.
 - Every edge is rounded, 1 mm or more.
 
-Writes stl/cad/bezel_cad_passenger.stl (model frame); generate.shroud() picks it up.
-Run: python3 bezel_sdf.py   (about 2-4 minutes)
+The face is styled by bezel_styles.py (BEZEL_STYLE, C7 by default: a recessed housing with
+raked windows and blades, a light blade under the pods and a ladder at the fender end).
+
+Writes stl/cad/bezel_cad_passenger.stl and stl/cad/drl_inserts_passenger.stl (model frame);
+generate.py picks them up.
+Run: python3 bezel_sdf.py   (about 20-30 minutes)
 """
 import os
 import sys
@@ -52,7 +56,8 @@ FLOOR_B = g.shell_levels(P)[2] - 0.15 - T_WALL   # the underside of the floor ac
 RL_MAX = 4.0        # the rolled bottom lip's radius across the front
 BEAD_N = P.cover_edge_n + 2.5   # the bead's centre behind the front: under the middle of the door's lip
 TARGET_FACES = 600_000   # after simplifying (the refine step adds back what the 0.05 mm needs)
-STYLE = os.environ.get("BEZEL_STYLE", "")    # "", "A", "B", "C" or "BC" (see bezel_styles.py)
+STYLE = os.environ.get("BEZEL_STYLE", "C7")  # "C7" (the default), "A", "B", "C", "BC", or "plain" (see bezel_styles.py)
+STYLE = "" if STYLE == "plain" else STYLE
 
 
 # ---------- SDF building blocks (all vectorised over numpy arrays) ----------
@@ -274,9 +279,9 @@ def feature_geometry(sw):
         back = (P.pod_body_w / 2 + TUNNEL_CLEAR, (zb1 - zb0) / 2, (zb0 + zb1) / 2, 3.0)
         on = np.abs(sw.path[:, 0] - px) < ww / 2 + 4
         rail_under = float(np.min(sw.T[on & (sw.path[:, 1] > -60)])) - T_WALL
-        flare = 0.0 if STYLE in ("B", "C", "BC") else FLARE_TOP     # even windows for the frames and the tray
+        flare = 0.0 if STYLE in ("B", "C", "BC", "C7") else FLARE_TOP     # even windows for the frames and the tray
         top = max(z_topw, min(z_topw + flare, rail_under - T_WALL - 2.0))
-        front = (ww / 2 + FLARE_SIDE, (top - z_bot) / 2, (top + z_bot) / 2, 3.0 if STYLE in ("B", "BC") else WIN_R)
+        front = (ww / 2 + FLARE_SIDE, (top - z_bot) / 2, (top + z_bot) / 2, 3.0 if STYLE in ("B", "BC") else 2.5 if STYLE == "C7" else WIN_R)
         tunnels.append((px, py, back, front))
 
     F = g.front_frame(P)
@@ -409,14 +414,15 @@ def apply_features(F, x, y, z, fg, pointwise=False, outside=None, door=None, sc=
     blocks = None
     n_t = len(fg["tunnels"])
     for k, (px, py, back, front) in enumerate(fg["tunnels"]):
-        hw, hh, zc_, r_, _ = section_at(py, back, front)
+        hw, hh, zc_, r_, e_ = section_at(py, back, front)
         # flat along the bottom (a 3 mm wall), so the posts between the tunnels stand on the floor;
         # the outer tunnels reach out to the corner walls, so there's no thin slit between them
         z_lo = zc_ - hh - T_WALL
         r_lo = 1.5 + 0 * r_
         x0 = -hw - TUNNEL_T - (OUTER_FILL if k == 0 else 0.0)
         x1 = hw + TUNNEL_T + (OUTER_FILL if k == n_t - 1 else 0.0)
-        blk = round_box2(X - px, Z, x0, x1, z_lo, zc_ + hh + TUNNEL_T,
+        lean = st.shear(Z - zc_, e_) if st is not None else 0.0
+        blk = round_box2(X - px - lean, Z, x0, x1, z_lo, zc_ + hh + TUNNEL_T,
                          r_ + TUNNEL_T, r_lo, r_ + TUNNEL_T, r_lo)
         blk = inter_round(blk, (py - TUNNEL_BACK) - Y + 0 * Z, R_EDGE)        # rounded back rim
         blk = inter_round(blk, outside + 1.5 + 0 * Z, R_EDGE)                 # ends inside the front wall
@@ -437,7 +443,7 @@ def apply_features(F, x, y, z, fg, pointwise=False, outside=None, door=None, sc=
         w = inter_round(shape, (py - TUNNEL_BACK - 2.0) - Y + 0 * Z, R_EDGE)
         if keep is not None:
             w = diff_round(w, keep, 1.0)
-        F = diff_round(F, w, R_WIN_EDGE)
+        F = diff_round(F, w, R_WIN_EDGE if st is None or st.win_edge is None else st.win_edge)
     if st is not None:
         F = st.post_cuts(F, sctx)         # the light slots and channels, the frames' bevels
     # a round boss on each of the door's flange holes, from the flange out to the ear, blended in
@@ -656,11 +662,12 @@ def build_inserts(sw, fg, h=0.2):
     if st is None or not st.channels:
         return None
     from skimage.measure import marching_cubes
-    pts = np.vstack([ch.path.pts for ch in st.channels])
-    xy = sw.cs(np.clip(pts[:, 0], 0, sw.L[-1]))
+    lo = np.min([ch.lo for ch in st.channels], axis=0)
+    hi = np.max([ch.hi for ch in st.channels], axis=0)
+    xy = sw.cs(np.clip(np.linspace(lo[0], hi[0], 200), 0, sw.L[-1]))
     x0, x1 = xy[:, 0].min() - 15, xy[:, 0].max() + 15
     y0, y1 = xy[:, 1].min() - 15, xy[:, 1].max() + 15
-    z0, z1 = pts[:, 1].min() - 6, pts[:, 1].max() + 6
+    z0, z1 = lo[1] - 6, hi[1] + 6
     xs, ys, zs = np.arange(x0, x1, h), np.arange(y0, y1, h), np.arange(z0, z1, h)
     X, Y = np.meshgrid(xs, ys, indexing="ij")
     sc, nn, e = sw.project(X.ravel(), Y.ravel())
@@ -692,3 +699,14 @@ if __name__ == "__main__":
     ms.compute_selection_by_self_intersections_per_face()
     print("watertight", saved.is_watertight, "volume", round(saved.volume), "self-intersecting faces",
           ms.current_mesh().selected_face_number(), "->", out, flush=True)
+    # the diffuser inserts for the light slots (model frame); generate.py lays them out for printing
+    ins = build_inserts(sw, fg)
+    out_i = os.path.join(HERE, "stl", "cad", "drl_inserts_passenger.stl")
+    if ins is not None:
+        ti = trimesh.Trimesh(*ins, process=True)
+        if ti.volume < 0:
+            ti.invert()
+        ti.export(out_i)
+        print("inserts", len(ti.split(only_watertight=False)), "pieces ->", out_i, flush=True)
+    elif os.path.exists(out_i):
+        os.remove(out_i)

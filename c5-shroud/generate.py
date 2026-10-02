@@ -68,6 +68,7 @@ class Params:
     floor_t: float = 5.0          # floor thickness
     cup_wall: float = 3.5         # walls of the pocket each pod's bracket foot sits in (neighbours' walls fuse)
     cup_h: float = 2.6            # pocket depth (stays under the bezel's floor, which the pods now sit over)
+    pocket_front_open: bool = True  # pockets are open at the front (the stud slot is the forward stop), clear of the bezel's light blade
     wall_t: float = 4.0           # end cheeks and dividers
     divider_h: float = 14.0       # height of the locating ribs between pods
     lip_h: float = 8.0            # stiffening lip under the front and rear floor edges
@@ -436,6 +437,11 @@ def carrier(p):
     parts.append(M.extrude(ring, p.lip_h + 1).translate([0, 0, -p.floor_t - p.lip_h]))   # 1 mm into the floor
     for pose in poses:
         cup = CS.hull_points(swept(pose, p.cup_wall)) - CS.hull_points(swept(pose, 0))
+        if p.pocket_front_open:
+            # no front wall: the side walls stop 0.5 mm past the foot's front at full forward
+            # travel, leaving room for the light blade along the bezel's bottom edge
+            y_cut = ly1 + fwd - 1.25
+            cup = cup - CS.hull_points([pose_pt(pose, lx, ly) for lx in (-80, 80) for ly in (y_cut, 60)])
         parts.append(M.extrude(cup, p.cup_h + 1).translate([0, 0, -1]))   # 1 mm into the floor
     # knees: an angled plate from each end of the beam back to its mounting tab
     for (x0, x1, _, _) in (arm_ear, pad_ear):
@@ -1402,6 +1408,26 @@ def shroud(p):
     return shroud_mesh(p)
 
 
+def diffusers(p):
+    """The frosted diffuser inserts for the bezel's light slots (bezel_sdf.py writes them in the
+    model frame), each standing on its flat bottom edge, laid side by side for one print. None
+    if the bezel has no lights."""
+    path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "stl", "cad", "drl_inserts_passenger.stl")
+    if not os.path.exists(path):
+        return None
+    import trimesh
+    tm = trimesh.load(path)
+    out, y = [], 0.0
+    for piece in sorted(tm.split(only_watertight=False), key=lambda q: -q.volume):
+        m = M(m3d.Mesh(np.asarray(piece.vertices, np.float32), np.asarray(piece.faces, np.uint32)))
+        b = m.bounding_box()
+        out.append(m.translate([-(b[0] + b[3]) / 2, y - b[1], -b[2]]))
+        y += b[4] - b[1] + 6.0
+    whole = M.batch_boolean(out, m3d.OpType.Add)
+    b = whole.bounding_box()
+    return whole.translate([0, -(b[1] + b[4]) / 2, 0])
+
+
 def shroud_mesh(p):
     """The older bezel, built from stacked meshes."""
     body = shell_parts(p)
@@ -1653,6 +1679,13 @@ if __name__ == "__main__":
     save(fit_test_mount(P), os.path.join(out, "fit_test_mount_passenger.stl"))
     save(mirror_x(fit_test_mount(P)), os.path.join(out, "fit_test_mount_driver.stl"))
     save(spacers(P), os.path.join(out, "spacer_washers.stl"))
+    dif = diffusers(P)
+    for side, f in (("passenger", lambda m: m), ("driver", mirror_x)):
+        name = os.path.join(out, f"drl_diffusers_{side}.stl")
+        if dif is not None:
+            save(f(dif), name)
+        elif os.path.exists(name):
+            os.remove(name)
     # everything together where it goes on the car, one per side, to check the fit (not for
     # printing): carrier, bezel, and stand-ins for the three pods and their lenses
     os.makedirs(os.path.join(out, "assembled"), exist_ok=True)

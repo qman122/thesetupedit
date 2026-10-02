@@ -1,4 +1,4 @@
-# C5 sleepy-eye pod carrier and bezel (v9)
+# C5 sleepy-eye pod carrier and bezel (v10: C7 look)
 
 For a 2000 C5 Corvette with the headlight door stops already fitted, holding three
 3.0 × 1.8 in dual-lens LED pods per side. Like the KnightDriveTV kit, each side is one
@@ -17,6 +17,46 @@ The bezel on its own, in matte black: `diagrams/shell.png`. How each ear fits th
 ear leaves on the door: `diagrams/ear_imprint.png` and `diagrams/ears_on_door.png`. On the door from six sides: `diagrams/on_door.png`.
 The bezel against the owner's model of the headlight doors: `diagrams/cover_fit.png`, and
 rendered with the door on: `diagrams/with_door.png`.
+
+## The C7 look (v10)
+
+![the C7-style bezel](preview/bezel_c7.png)
+
+The bezel's face is restyled after the C7 Corvette's headlamp. GM describes it as a black
+housing round the projectors, a thin white "daytime styling blade" underneath that follows the
+body lines, and a ladder of small LEDs up the outboard edge (white, amber as the turn
+signal). Here:
+
+- **Housing:** the three pods sit in one recessed tray, 3 mm back from the face, with crisp
+  edges and ends that lean back 10 degrees. Print the bezel in black and paint the tray
+  satin or matte black (and the face gloss) to get the darker housing.
+- **Raked windows and blades:** each window leans back 10 degrees (tops toward the fender),
+  and the posts between them are thin tapered blades, 1.6 mm at the front edge.
+- **Light blade:** a 3 mm slot under all three pods, tapering to a point at the hood (inboard)
+  end, with a 4.2 × 1.5 mm frosted diffuser behind it and an open-backed channel for a
+  4 mm COB LED strip. The bezel's bottom edge comes down 2.6 mm (to z = 0.4) to carry it.
+- **Ladder:** six short raked rungs just past the housing at the fender (outboard) end, all
+  lit from one pocket behind them: a 9 × 32 mm diffuser and a 25 mm piece of 8 mm COB strip
+  standing upright (white, or a white/amber switchback strip if you wire it as a turn signal).
+- Everything else is unchanged: the pods, their spacing and lenses, the top rail, bead and
+  clip tongue, the ears and screws, and the fit to the opening.
+
+Behind each slot there's a ledge for the diffuser and an open back, so the strip goes in
+from behind and its wires run back with the pods' wiring. The diffusers print in natural
+(clear) PCTG or PETG: `stl/drl_diffusers_*.stl`.
+
+Room for the lights is tight, measured from the model: there are 7.5 mm between the
+bracket's floor and the bottom of the pods, so the light blade's channel fits between them
+with about 0.5 mm to spare each way. The fender pod's outer corner is only about 3 mm behind
+the face, which is why the ladder stands just past the housing rather than inside it. To
+fit the light blade, the bracket's pod pockets are now **open at the front**
+(`pocket_front_open`): their front walls sat right where the channel runs. The stud slots
+were already the forward stop, so nothing changes in use.
+
+The other looks from the design brief (A: a light blade along the top; B: cut-corner pod
+frames with an L-shaped light at each end; C: tray, fins and a lower bar; BC: B's frames with
+a lower bar under each pod) are still there: set `BEZEL_STYLE` and rerun `bezel_sdf.py`.
+`preview/bezel_concepts.png` compares them, and `BEZEL_STYLE=plain` gives the v9 bezel.
 
 ## Measurements used
 
@@ -73,7 +113,8 @@ At 18 mm it hits the arm's nuts.
 
 - **Carrier:** a stepped beam under the pods with a pocket for each pod's bracket foot. The
   pockets are 77.7 mm (3 in plus 0.75 mm each side) wide, for the pods' 3 in wide feet, and
-  neighbouring pockets share one 7 mm wall. Each pod still slides straight fore and aft in its slot (16 mm forward, 10 mm back). Knees at
+  neighbouring pockets share one 7 mm wall. They're open at the front (clear of the
+  bezel's light blade); the stud slots stop the pods going too far forward. Each pod still slides straight fore and aft in its slot (16 mm forward, 10 mm back). Knees at
   each end run back to the arm and pad tabs.
 - **Bezel:** one continuous front sweeps back along the same line as the pods (see below).
 
@@ -382,7 +423,11 @@ perimeters).
    - `bezel_*_one_piece.stl` is the whole bezel for reference; it's too wide for the A1.
    - The carrier is 263 mm long, too long to lie straight on the A1's 256 mm bed. Turn it 45°
      in the slicer: its footprint is then 229 × 211 mm.
-5. `stl/spacer_washers.stl`: only if a tab doesn't sit flat against the arm or the pad.
+5. `stl/drl_diffusers_driver.stl` and `..._passenger.stl`: the light blade's diffuser
+   (a 247 mm curved strip) and the ladder's, standing on edge as they're laid out. Print
+   them in natural (clear) PCTG or PETG, 100% infill, no supports. They're meant to be
+   frosted, so the layer lines help. Frosted acrylic cut to size also works.
+6. `stl/spacer_washers.stl`: only if a tab doesn't sit flat against the arm or the pad.
 
 **Material:** ASA or ABS is best; PETG works. Don't use PLA, which softens in a hot engine
 bay. Use 4 walls, 40% gyroid infill, and 6 top and bottom layers.
@@ -399,6 +444,12 @@ bay. Use 4 walls, 40% gyroid infill, and 6 top and bottom layers.
   stock (2 at the hood end in the photo; use the fender end's as found)
 - 1 × 3 mm × 12 mm dowel pin, and plastic epoxy (or a plastic-welding pen), for the two bezel
   pieces
+- Lights (C7 look): about 250 mm of 4 mm wide 12 V COB LED strip for the light blade, and a
+  25 mm piece of 8 mm wide 12 V COB strip for the ladder (or white/amber switchback strip).
+  Stick each strip on the back of its diffuser, push the diffuser into its channel from behind
+  against the ledge, and hold it with a few dots of clear silicone or epoxy. Wire both through
+  a fuse to a switched 12 V feed (or a DRL module), and check your local rules for DRL and
+  turn-signal colours before wiring the ladder in amber.
 
 ## Joining the bezel halves
 
