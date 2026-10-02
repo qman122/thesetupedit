@@ -84,9 +84,17 @@ P3C_CHIN = -4.0      # ...and the bottom edge under it
 P3C_TRAY_BOTTOM = 9.0   # the housing's bottom edge: the windows' bottoms
 P3C_TRAY_HOOD_X = -129.0  # ...its hood end, where P4's first window ends (the hood-side head can't go further
                           # that way: its body would reach the pad's square adjuster)
-STRIP_HOOD_X = -139.0   # P3J: the strip starts where the face turns into the hood-side corner
-HOOK_R = 16.0        # P3J: the hook's radius on the strip's centre line: as tight as the strip will bend
-                     # edgeways (a side-bend strip's minimum radius; tighter kinks it and leaves a dark spot)
+# P3J's light line: a thin strip (5 mm, like a modern car's), the face's full width, kicking up at
+# both ends at crisp corners (in three pieces of strip, or one that bends that tight edgeways)
+THIN = Spec(slot=5.0, inner=5.0, wall=1.0, skin=0.0, depth=7.0, insert=6.0, front=True, closed=1.5)
+THIN_Z = 3.0         # its bottom run: walls from -0.5 to 6.5 (the pockets' chamfered bottoms end at 8)
+THIN_CHIN = -1.2     # the bottom edge under it
+STRIP_HOOD_X = -137.0   # the inner kick-up, where the face starts turning into the hood-side corner
+KICK_IN = (3.0, 24.0)   # ...leaning 3 mm toward the corner, up to z 24
+KICK_OUT = (8.0, 46.0)  # the fender kick-up: leaning 8 mm toward the fender, up to z 46
+POCKET_CHAMFER = (4.0, 2.5, 0.0)   # P3J's pockets at the face: this much wider each side and deeper at
+                                   # the bottom than at the head, in flat chamfers; none at the top,
+                                   # which stays a straight, sharp brow over the lenses
 BOLD_STYLES = ("P3J", "P4J", "P3C")   # the looks with the bold strip (and the lower bottom edge)
 
 
@@ -305,6 +313,7 @@ class Style:
         self.chin_z = CHIN_Z
         self.rake = RAKE if name in ("C7", "P3C") else 0.0
         self.win_edge = C7_EDGE if name in ("C7", "P3C") else None
+        self.pocket = None     # (side, bottom, top) chamfers of the pockets at the face
         L, path = sw.L, sw.path
         i0 = int(np.argmin(path[:, 0]))              # from the hood corner on, x only grows
         self._ax = (path[i0:, 0], L[i0:])
@@ -367,16 +376,19 @@ class Style:
             self.channels.append(lad)
             self.chin = (a0 - 22.0, a1 + 22.0)
         if name == "P3J":
-            # three projectors in a line; the bold strip runs the face's full width, from where it
-            # turns into the hood-side corner, and hooks up round the fender end toward the corner's top
+            # three projectors in a line, in stepped pockets under a sharp brow; a thin light line
+            # runs the face's full width under them and kicks up at both ends at crisp corners
             pxs = [t[0] for t in fg["tunnels"]]
             half = PROJ_W / 2 + 1.0
-            a_start, a_bend = ax(STRIP_HOOD_X), ax(pxs[-1] + half + 14.0)
-            pts = filleted([(a_start, BOLD_Z), (a_bend, BOLD_Z), (a_bend + 10.0, 46.0)], HOOK_R)
-            self.channels.append(Channel(pts, BOLD))
-            self.wire = (a_start + 12.0, 0.5, 25.0)
+            a_start, a_bend = ax(STRIP_HOOD_X), ax(pxs[-1] + half + 12.0)
+            pts = [(a_start - KICK_IN[0], KICK_IN[1]), (a_start, THIN_Z), (a_bend, THIN_Z),
+                   (a_bend + KICK_OUT[0], KICK_OUT[1])]
+            self.channels.append(Channel(pts, THIN))
+            self.wire = (a_start + 12.0, THIN_Z, 25.0)
             self.chin = (a_start - 22.0, a_bend + 12.0)
-            self.chin_z = BOLD_CHIN
+            self.chin_z = THIN_CHIN
+            self.pocket = POCKET_CHAMFER
+            self.win_edge = 0.6
         if name == "P3C":
             # the C7 look round three projectors: a black housing (a recessed tray with raked ends and
             # crisp corners) round the windows, which lean back like the C7's, with a raked fin
@@ -472,6 +484,11 @@ class Style:
         the front; for C7 leaning back, from upright at the pod to RAKE at the front."""
         if self.chamfer:
             return chamfer_rect(x, z, hw, hh, CH * e_)
+        if self.pocket is not None:          # flat chamfers, from nothing at the head to full at the face
+            cs, cb, ct = self.pocket
+            t = np.sqrt(np.clip(e_, 0, 1))   # e_ is the square of the depth fraction
+            zt, zb = hh + ct * t, -hh - cb * t
+            return self.ops.round_rect_xz(x, z - (zt + zb) / 2, hw + cs * t, (zt - zb) / 2, r_)
         if self.rake:
             return self.ops.round_rect_xz(x - self.shear(z, e_), z, hw, hh, r_)
         return None
