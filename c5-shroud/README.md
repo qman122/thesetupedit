@@ -95,8 +95,8 @@ to the strip you buy), closed behind by a 1.5 mm wall tied into the bezel's floo
 bottom edge comes down 1.2 mm below the bracket's floor to carry it. The strip presses in from
 the front, flush, and is its own diffuser; a few dots of clear silicone hold it. The line bends
 edgeways at its curves, so buy a side-bend ("horizontal bend") strip rated for a 10 mm radius
-(or butt a separate short piece in at the hood end and bend just the 36 mm J);for an even line use a dense or COB/neon-type strip
-with no visible dots. Its wires go out through a hole at the hood end, low down, and back in a
+(or butt a separate short piece in at the hood end and bend just the 36 mm J); for an even
+line use a dense or COB/neon-type strip with no visible dots. Its wires go out through a hole at the hood end, low down, and back in a
 groove under the bezel's floor to the bracket.
 
 **Bracket** (`carrier_*.stl`). The same mounting tabs, slots, knees and gussets as the pod
