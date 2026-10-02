@@ -276,9 +276,12 @@ def feature_geometry(sw):
     ww, wh = P.pod_face_w + 2 * P.window_clear_x, P.pod_face_h + 2 * P.window_clear_y
     if STYLE.startswith("P3"):          # three small projectors instead of the pods (bezel_styles.PROJ)
         ww, wh = bs.PROJ_W + 4.0, bs.PROJ_H + 4.0
+        zc = zc + bs.PROJ_LIFT
     floor_top = g.shell_levels(P)[2] - 0.15
     z_bot = floor_top - T_WALL + RL_MAX + 1.0      # the sill sits 1 mm above the rolled lip's top, so the
                                                    # lip under it is solid (not a thin upturned edge)
+    if STYLE.startswith("P3"):          # the sill just under the projector, with the light strip below it
+        z_bot = zc - bs.PROJ_H / 2 - 2.0
     z_topw = zc + wh / 2
     wins = [(px, py, (z_bot + z_topw) / 2, ww / 2, (z_topw - z_bot) / 2) for (px, py, _) in g.pod_poses(P)]
     # the tunnels: behind each pod's face they hug the pod's body (TUNNEL_CLEAR all round, small
