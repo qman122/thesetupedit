@@ -280,7 +280,7 @@ def feature_geometry(sw):
         # head's face and no gap round it shows from the front, even a little out of line
         lip = bs.proj_lip(STYLE)
         ww, wh = bs.PROJ_W - 2 * lip[0], bs.PROJ_H - 2 * lip[1]
-        zc = zc + bs.PROJ_LIFT
+        zc = zc + bs.proj_lift(STYLE)
         # each tunnel ends 0.5 mm in front of where its head's front goes (1 mm behind this)
         poses = [(x, yf + 1.0) for x, yf in bs.proj_layout(STYLE, [py for _, py in poses])]
     floor_top = g.shell_levels(P)[2] - 0.15
@@ -306,7 +306,7 @@ def feature_geometry(sw):
         flare = 0.0 if STYLE in ("B", "C", "BC", "C7") or bs.is_proj(STYLE) else FLARE_TOP     # even windows for the frames and the tray
         top = max(z_topw, min(z_topw + flare, rail_under - T_WALL - 2.0))
         front = (ww / 2 + FLARE_SIDE, (top - z_bot) / 2, (top + z_bot) / 2, 3.0 if STYLE in ("B", "BC") else 2.5 if STYLE == "C7" else 5.0 if bs.is_proj(STYLE) else WIN_R)
-        if STYLE in ("P3J", "P3V"):     # straight-sided pockets: the style chamfers them (bezel_styles.POCKET_CHAMFER)
+        if STYLE in ("P3J", "P3V", "P3D"):     # straight-sided pockets: the style chamfers them (bezel_styles.POCKET_CHAMFER)
             front = (ww / 2, (top - z_bot) / 2, (top + z_bot) / 2, 1.0)
         tunnels.append((px, py, back, front))
 

@@ -416,7 +416,7 @@ def proj_poses(p):
     """(x, y of the head's front, z of its centre) for each projector."""
     import bezel_styles as bs
     lay = bs.proj_layout(os.environ.get("BEZEL_STYLE", "P3J"), [py for (_, py, _) in pod_poses(p)])
-    return [(x, yf, pod_zc(p) + bs.PROJ_LIFT) for x, yf in lay]
+    return [(x, yf, pod_zc(p) + bs.proj_lift(os.environ.get("BEZEL_STYLE", "P3J"))) for x, yf in lay]
 
 
 def proj_keepouts(p):
@@ -1686,7 +1686,7 @@ def dowel_spot(p):
     a little lower, in a boss the bezel builds round it (bezel_sdf), under the heads' clearance."""
     us = split_plane_u(p)
     n_c = float(bow(p, us)) - p.post_depth / 2 - p.post_setback
-    if os.environ.get("BEZEL_STYLE", "") == "P3J":
+    if os.environ.get("BEZEL_STYLE", "") in ("P3J", "P3D"):
         # J: its floor is taken by the deeper recess and the light line's channel, so the pin goes up
         # in the post between the first two openings, half way up, just behind the recessed face
         return us, n_c + 1.5, (33.5,)

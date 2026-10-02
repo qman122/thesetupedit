@@ -70,6 +70,19 @@ threaded mounting stem on the back is a separate bracket held by 4 screws, and c
 thin switchback strip (white DRL, amber turn signal). (`stl/projectors_P3C/` is a C7-styled
 alternative: the same heads in a recessed housing with raked windows and fins, and a 10 mm strip.)
 
+**D (`stl/projectors_P3D/`), the owner's "dual straight DRL" concept.** The same projectors and
+bracket, with two light bars: one above the projectors, 3 mm under the top rail and following it,
+and one straight one below them. Both wrap 25 mm round onto the hood-side face (the door's side
+flange is close behind it further round) and stop before the tight fender corner. The bezel's
+face covers each head, with a round hole for its lens (`LENS_D` 42 mm, plus a 2 mm gap round it:
+measure the real lens and set it). To fit a bar between the heads and the rail, the heads sit
+3 mm lower than J's (z 3.6 to 51.6, `D_LIFT`), and the bezel's bottom edge comes down to -5.7 for
+the lower bar. Both bars are 4 mm strips in 5 mm channels behind a frosted diffuser (`LINE4`).
+How far the lens stands proud of the face depends on how far it stands out from the projector's
+face; each head's front is 1.8 mm behind the face (a 1.5 mm skin covers it).
+
+![D](preview/bezel_p3d.png)
+
 **W (`stl/projectors_P3V/`), the owner's concept sheet.** The same heads, bracket, eyelid recess
 and pockets as J, with smaller side bevels (5 mm, so the posts between the pockets are wider), and
 a 4 mm light line (`LINE4`: a 5 mm channel, 7 mm deep, with a 2 mm frosted diffuser pressed in

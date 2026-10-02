@@ -137,7 +137,22 @@ V_HOOD = (-140.0, 18.0, 6.0, 44.0)   # the hood end: turns up at x -140, radius 
                                      # the corner, up to z 44
 V_HUMP = 35.0             # each hump leaves the pockets' corners at this angle (deg) and peaks between them
 V_CHAMFER = (5.0, 1.5, 0.0)   # V's pockets: smaller side bevels than J's, for wider posts to hump between
-BOLD_STYLES = ("P3J", "P4J", "P3C", "P3V")   # the looks with the bold strip (and the lower bottom edge)
+# P3D (the owner's "dual straight DRL" concept): two light bars, one above the projectors and one
+# below, wrapping round onto the hood-side face and stopping before the tight fender corner; the
+# bezel's face covers each head, with a round hole for its lens. The heads sit 3 mm lower than J's
+# so a bar fits between them and the rail (the top bar follows the rail, 3 mm under it), and their
+# fronts are 1.8 mm behind the face (a 1.5 mm skin over each head's face)
+RAIL_T = 3.0             # the top rail's thickness (generate.Params.rail_t)
+D_LIFT = -3.0            # the heads' height, against the pods' (J and W: PROJ_LIFT)
+PROJ3D = tuple((x, y + 2.2) for x, y in PROJ3J)
+LENS_D = 42.0            # the lens's visible diameter (MEASURE: the 2.0 in projector's lens; the hole follows it)
+LENS_GAP = 2.0           # round the lens, in its hole (the misalignment clearance)
+D_BAR_UNDER_RAIL = 3.0   # the top bar's centre line, this far under the rail's underside
+D_BOTTOM_Z = -1.2        # the bottom bar's centre line (straight)
+D_ENDS = (190.0, 486.0)  # where both bars end (arc position): 25 mm round onto the hood-side face (the
+                         # door's side flange is close behind it further round), and before the tight
+                         # fender corner
+BOLD_STYLES = ("P3J", "P4J", "P3C", "P3V", "P3D")   # the looks with the bold strip (and the lower bottom edge)
 
 
 def is_proj(style):
@@ -146,7 +161,12 @@ def is_proj(style):
 
 def proj_lip(style):
     """(side, top/bottom) of how much smaller each opening is than the head's face (negative: a gap)."""
-    return J_LIP if style == "P3J" else PROJ_LIP
+    return J_LIP if style in ("P3J", "P3D") else PROJ_LIP
+
+
+def proj_lift(style):
+    """How much higher than the pods the heads sit."""
+    return D_LIFT if style == "P3D" else PROJ_LIFT
 
 
 def proj_layout(style, pod_ys):
@@ -156,6 +176,8 @@ def proj_layout(style, pod_ys):
         return list(PROJ4)
     if style == "P3J":
         return list(PROJ3J_FWD)
+    if style == "P3D":
+        return list(PROJ3D)
     if style == "P3V":
         return list(PROJ3J)
     if style == "P3C":
@@ -376,6 +398,7 @@ class Style:
         self.pocket = None     # (side, bottom, top) chamfers of the pockets at the face
         self.tray_recess = TRAY_RECESS
         self.pocket_r = POCKET_R
+        self.lens_hole = None
         self.block_extra = 0.0   # the tunnels' solid blocks reach this much further sideways
         L, path = sw.L, sw.path
         i0 = int(np.argmin(path[:, 0]))              # from the hood corner on, x only grows
@@ -438,6 +461,19 @@ class Style:
             self.wire = (a1 - 6.0, 3.0, 6.0)   # the blade's wire hole: arc position, height, length behind the channel
             self.channels.append(lad)
             self.chin = (a0 - 22.0, a1 + 22.0)
+        if name == "P3D":
+            a0, a1 = D_ENDS
+            aa = np.linspace(a0, a1, 160)
+            rail = self.T_of_a(aa) - RAIL_T                                # the rail's underside
+            top = [(a, r - D_BAR_UNDER_RAIL) for a, r in zip(aa, rail)]
+            bot = [(a0, D_BOTTOM_Z), (a1, D_BOTTOM_Z)]
+            self.channels.append(Channel(top, LINE4))
+            self.channels.append(Channel(bot, LINE4))
+            self.wire = (a0 + 12.0, D_BOTTOM_Z, 25.0)                       # the bars are wired together behind
+            self.chin = (a0 - 15.0, a1 + 15.0)
+            self.chin_z = D_BOTTOM_Z - LINE4.inner / 2 - LINE4.wall - 1.0
+            self.lens_hole = LENS_D / 2 + LENS_GAP
+            self.win_edge = 0.6
         if name == "P3V":
             pxs = [t[0] for t in fg["tunnels"]]
             zc = self.fronts[0][2]
@@ -668,6 +704,8 @@ class Style:
         the front; for C7 leaning back, from upright at the pod to RAKE at the front."""
         if self.chamfer:
             return chamfer_rect(x, z, hw, hh, CH * e_)
+        if self.lens_hole is not None:       # a round hole for the lens; the face covers the rest of the head
+            return np.hypot(x, z) - self.lens_hole
         if self.pocket is not None:          # flat chamfers, from nothing at the head to full at the face
             cs, cb, ct = self.pocket
             if t is not None and self.tray is not None:
