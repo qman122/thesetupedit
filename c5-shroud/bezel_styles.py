@@ -61,8 +61,12 @@ BLADE = Spec(slot=4.2, inner=4.2, wall=1.0, skin=0.0, depth=3.8, insert=1.5, fro
 BLADE_FLUSH = 0.3    # the diffuser's face sits this far behind the bezel's
 WIRE_R = 1.3         # wire hole from the blade's channel out underneath
 LOW_Z = 3.6          # the lower lights' centre line
-PROJ_W, PROJ_H = 46.0, 44.0   # P3 looks: a 1.5 in projector's square housing, face on (to confirm with the real ones)
-PROJ_LIFT = 3.0      # P3: the projectors sit this much higher than the pods did, to make room for a thick strip
+PROJ_W, PROJ_H = 55.0, 48.0   # P3: the owner's mini 2.0 in bi-LED projector, head face on (eBay listing's size drawing)
+PROJ_CLEAR = 0.5     # round the head, in its tunnel (the head only just fits under the rail at the fender end)
+PROJ_X = (-84.5, -4.0, 76.5)  # head centres: the fender one 8 mm in from the pod's place, so its body clears the
+                              # arm's mounting tab; the middle one halfway, for even gaps
+PROJ_LIFT = 2.9      # P3: the heads sit this much higher than the pods did: z 9.5 to 57.5, between the thick strip
+                     # (its walls end at 8.95) and the rail (its underside is at 59.0 over the fender head)
 # P3's thick light strip: a silicone switchback (white DRL / amber signal) strip, about 6.5 mm wide
 # and 6 mm thick, pressed into the channel from the front, flush; it is its own diffuser
 THICK = Spec(slot=6.5, inner=6.5, wall=1.0, skin=0.0, depth=7.0, insert=6.0, front=True)
@@ -308,7 +312,7 @@ class Style:
             # three small projectors at the pods' places; one light strip under them that sweeps up
             # past the fender-side one: straight (J) or dipping under each and peaking between (W)
             pxs = [t[0] for t in fg["tunnels"]]
-            half = PROJ_W / 2 + 2.0
+            half = PROJ_W / 2 + 1.0
             if name == "P3J":
                 pts = rounded_l((ax(pxs[0] - half + 4.0), THICK_Z), (ax(pxs[-1] + half + 10.0), THICK_Z),
                                 (ax(pxs[-1] + half + 10.0), 46.0), 9.0)[::-1]
@@ -317,8 +321,8 @@ class Style:
                 zs = [THICK_Z + 6.0, THICK_Z]
                 for xa, xb in zip(pxs, pxs[1:]):         # flat under each window, peaking in the gaps
                     xm = (xa + xb) / 2
-                    xs += [xa + half + 5.0, xm - 2.5, xm, xm + 2.5, xb - half - 5.0]
-                    zs += [THICK_Z, 26.0, 28.0, 26.0, THICK_Z]
+                    xs += [xa + half + 3.5, xm - 2.0, xm, xm + 2.0, xb - half - 3.5]
+                    zs += [THICK_Z, 22.0, 24.0, 22.0, THICK_Z]
                 xs += [pxs[-1] + half + 4.0, pxs[-1] + half + 10.0, pxs[-1] + half + 10.0]
                 zs += [THICK_Z, THICK_Z + 8.0, 46.0]
                 pts = np.c_[[ax(x) for x in xs], zs]
