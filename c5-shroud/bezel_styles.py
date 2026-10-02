@@ -147,6 +147,7 @@ D_LIFT = -3.0            # the heads' height, against the pods' (J and W: PROJ_L
 PROJ3D = tuple((x, y + 2.2) for x, y in PROJ3J)
 LENS_D = 42.0            # the lens's visible diameter (MEASURE: the 2.0 in projector's lens; the hole follows it)
 LENS_GAP = 2.0           # round the lens, in its hole (the misalignment clearance)
+LENS_BEVEL = 2.0         # the holes' edges bevelled this much wider at the face
 D_BAR_UNDER_RAIL = 3.0   # the top bar's centre line, this far under the rail's underside
 D_BOTTOM_Z = -1.2        # the bottom bar's centre line (straight)
 D_SQUINT = (-115.0, -145.0, 35.0, 8.0)   # the "mean" squint: the top bar runs level across the heads
@@ -714,8 +715,9 @@ class Style:
         the front; for C7 leaning back, from upright at the pod to RAKE at the front."""
         if self.chamfer:
             return chamfer_rect(x, z, hw, hh, CH * e_)
-        if self.lens_hole is not None:       # a round hole for the lens; the face covers the rest of the head
-            return np.hypot(x, z) - self.lens_hole
+        if self.lens_hole is not None:       # a round hole for the lens; the face covers the rest of the head,
+            t = np.sqrt(np.clip(e_, 0, 1))   # with a bevel round the hole's edge, widest at the face
+            return np.hypot(x, z) - (self.lens_hole + LENS_BEVEL * t)
         if self.pocket is not None:          # flat chamfers, from nothing at the head to full at the face
             cs, cb, ct = self.pocket
             if t is not None and self.tray is not None:
