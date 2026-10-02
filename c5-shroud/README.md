@@ -78,8 +78,9 @@ behind that) and a thick switchback strip (white DRL, amber turn signal). Three 
   raked fin between each pair. The bold 10 mm strip runs just under the housing and kicks up
   past its fender end, parallel to it.
 - `stl/projectors_P3J/`: **the owner's goal render.** Three projectors in a line, spread as far
-  apart as the car allows (as P3C), on a plain black face; the bold 10 mm strip runs under them,
-  from a little before the hood-side one, and wraps up round the fender end in a wide curve.
+  apart as the car allows (as P3C), on a plain black face; the bold 10 mm strip runs the face's
+  full width under them, from where it turns into the hood-side corner, and hooks up round the
+  fender end (`STRIP_HOOD_X`, `HOOK_R` in `bezel_styles.py`).
 - `stl/projectors_P3W/`: three projectors spread out; a 6.5 mm strip dips under each one and peaks
   in the gaps between them, then sweeps up at the end.
 - `stl/projectors_P4J/`: **four** projectors in a line and the bold 10 mm strip, wrapping up past
@@ -102,7 +103,11 @@ with the dowel pin in a small boss under the post.
 **Light strip.** A channel 6.5 mm wide (P3W) or 10 mm wide (P3C, P3J, P4J), 7 mm deep, for a silicone
 switchback strip up to 6 mm thick (`THICK` and `BOLD` in `bezel_styles.py`: change them to the
 strip you buy). The channel is closed behind by a 1.5 mm wall tied into the bezel's floor. The
-strip presses in from the front, flush, and is its own diffuser; a few dots of
+strip presses in from the front, flush, and is its own diffuser. The hook bends the strip
+edgeways (in the plane of the face), so buy a side-bend ("horizontal bend") strip and check its
+minimum bend radius against `HOOK_R` (16 mm on the centre line): bent tighter than it's rated, a
+strip kinks and leaves a dark spot. For one even line, use one piece from end to end (no joint
+at the corner) and a dense or COB/neon-type strip with no visible dots; a few dots of
 clear silicone hold it. Its wires go out through a hole at the hood end, low down, and back in
 a groove under the bezel's floor to the bracket. How bright it looks is down to the strip: a
 wide, high-output one (120+ LEDs/m) fills the 10 mm channel.

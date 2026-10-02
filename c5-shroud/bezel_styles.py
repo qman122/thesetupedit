@@ -84,6 +84,9 @@ P3C_CHIN = -4.0      # ...and the bottom edge under it
 P3C_TRAY_BOTTOM = 9.0   # the housing's bottom edge: the windows' bottoms
 P3C_TRAY_HOOD_X = -129.0  # ...its hood end, where P4's first window ends (the hood-side head can't go further
                           # that way: its body would reach the pad's square adjuster)
+STRIP_HOOD_X = -139.0   # P3J: the strip starts where the face turns into the hood-side corner
+HOOK_R = 16.0        # P3J: the hook's radius on the strip's centre line: as tight as the strip will bend
+                     # edgeways (a side-bend strip's minimum radius; tighter kinks it and leaves a dark spot)
 BOLD_STYLES = ("P3J", "P4J", "P3C")   # the looks with the bold strip (and the lower bottom edge)
 
 
@@ -364,12 +367,12 @@ class Style:
             self.channels.append(lad)
             self.chin = (a0 - 22.0, a1 + 22.0)
         if name == "P3J":
-            # three projectors in a line; the bold strip runs under them, from a little before the
-            # hood-side one, and wraps up round the fender end in a wide curve, toward the corner's top
+            # three projectors in a line; the bold strip runs the face's full width, from where it
+            # turns into the hood-side corner, and hooks up round the fender end toward the corner's top
             pxs = [t[0] for t in fg["tunnels"]]
             half = PROJ_W / 2 + 1.0
-            a_start, a_bend = ax(pxs[0] - half - 10.0), ax(pxs[-1] + half + 14.0)
-            pts = filleted([(a_start, BOLD_Z), (a_bend, BOLD_Z), (a_bend + 10.0, 46.0)], 16.0)
+            a_start, a_bend = ax(STRIP_HOOD_X), ax(pxs[-1] + half + 14.0)
+            pts = filleted([(a_start, BOLD_Z), (a_bend, BOLD_Z), (a_bend + 10.0, 46.0)], HOOK_R)
             self.channels.append(Channel(pts, BOLD))
             self.wire = (a_start + 12.0, 0.5, 25.0)
             self.chin = (a_start - 22.0, a_bend + 12.0)
