@@ -92,6 +92,8 @@ THIN_Z = 3.0         # its bottom run: walls from -0.5 to 6.5 (the pockets' cham
 THIN_CHIN = -1.2     # the bottom edge under it
 STRIP_HOOD_X = -137.0   # the inner kick-up, where the face starts turning into the hood-side corner
 KICK_IN = (3.0, 24.0)   # ...leaning 3 mm toward the corner, up to z 24
+HOOK_CURVE_R = 36.0  # the outer end's J: its radius on the centre line (the bigger, the easier on the strip)
+KICK_IN_R = 10.0     # ...and the inner kick-up's
 WRAP = 46.0          # the bottom run carries on round the fender-side corner onto the side, this much
                      # further along the face than past the fender head (it bends the easy way there)
 KICK_OUT = (6.0, 44.0)  # ...and kicks up on the side, swept 6 mm back, up to z 44 (well short of the ear's
@@ -191,10 +193,12 @@ def rounded_l(p0, corner, p1, r, step=0.5):
 
 
 def filleted(pts, r):
-    """Polyline with each inner corner rounded (a quadratic curve from r before it to r after)."""
+    """Polyline with each inner corner rounded (a quadratic curve from r before it to r after); r is
+    one radius for every corner or a list, one per corner."""
     pts = [np.asarray(p, float) for p in pts]
+    rs = list(r) if np.ndim(r) else [r] * (len(pts) - 2)
     out = [pts[0]]
-    for p0, c, p1 in zip(pts[:-2], pts[1:-1], pts[2:]):
+    for p0, c, p1, r in zip(pts[:-2], pts[1:-1], pts[2:], rs):
         u0, u1 = (p0 - c) / np.linalg.norm(p0 - c), (p1 - c) / np.linalg.norm(p1 - c)
         a, b = c + u0 * r, c + u1 * r
         t = np.linspace(0, 1, 20)[:, None]
@@ -388,9 +392,12 @@ class Style:
             half = PROJ_W / 2 + 1.0
             a_start, a0 = ax(STRIP_HOOD_X), ax(pxs[-1] + half + 12.0)
             head = [(a_start - KICK_IN[0], KICK_IN[1]), (a_start, THIN_Z)]
-            end = os.environ.get("P3J_END", "wrap_kick")   # the fender end's shape (options being tried)
+            end = os.environ.get("P3J_END", "curve")   # the fender end's shape (the others were options tried)
             if end == "hook":            # a smooth hook up the face
                 pts = list(filleted(head + [(a0, THIN_Z), (a0 + 8.0, 46.0)], 14.0))
+            elif end.startswith("curve"):   # a big, smooth J up the outer corner (curve26, curve36: radius);
+                r = float(end[5:] or HOOK_CURVE_R)    # the inner kick-up curves to match, smaller
+                pts = list(filleted(head + [(a0 + 14.0, THIN_Z), (a0 + 20.0, 46.0)], [KICK_IN_R, r]))
             elif end == "crisp":         # a crisp kick-up on the face
                 pts = head + [(a0, THIN_Z), (a0 + 8.0, 46.0)]
             elif end == "wrap":          # round the corner onto the side, and ends there
