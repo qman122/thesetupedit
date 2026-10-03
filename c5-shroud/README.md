@@ -85,6 +85,19 @@ face; each head's front is 1.8 mm behind the face (a 1.5 mm skin covers it).
 
 ![D](preview/bezel_p3d.png)
 
+**R (`stl/projectors_P3R/`), the owner's Audi R8-style board.** D's face (each head covered, a
+bevelled round hole for its lens, the bodies hidden) with one light line in a "C" round the three
+heads: along the top, down a leaning end at the fender side (its top corner at x 116, its bottom
+corner at x 106, both round radius 10, `R_CORNER`), and back along the bottom, open toward the hood.
+The bottom run reaches further in than the top one (`R_TOP_IN`, x -118), out round the hood-side
+corner onto the side face. One 4 mm strip in a 5 mm channel behind a frosted diffuser (`LINE4`),
+its wires leaving at the bottom run's hood-side end. Each run clears the lens holes' bevels by
+1.3 mm (`R_CLEAR`), so the heads sit 0.6 mm lower than D's (`R_LIFT`) for the top run to stay
+under the rail where it rounds the fender-side corner. The board's 1.5 in projectors would leave
+more room round them; this keeps the 2.0 in ones the bracket is built for.
+
+![R](preview/bezel_p3r.png)
+
 **W (`stl/projectors_P3V/`), the owner's concept sheet.** The same heads, bracket, eyelid recess
 and pockets as J, with smaller side bevels (5 mm, so the posts between the pockets are wider), and
 a 4 mm light line (`LINE4`: a 5 mm channel, 7 mm deep, with a 2 mm frosted diffuser pressed in

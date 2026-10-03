@@ -159,7 +159,17 @@ D_SQUINT_LOW = (-115.0, -145.0, 30.0, 8.0)   # ...and the bottom bar angles up 3
 D_ENDS = (190.0, 486.0)  # where both bars end (arc position): 25 mm round onto the hood-side face (the
                          # door's side flange is close behind it further round), and before the tight
                          # fender corner
-BOLD_STYLES = ("P3J", "P4J", "P3C", "P3V", "P3D")   # the looks with the bold strip (and the lower bottom edge)
+# P3R (the owner's Audi R8-style board): D's face and lens holes, with one light line in a "C" round
+# the heads: along the top, down a leaning, round-cornered end at the fender side, and back along
+# the bottom, open toward the hood, the bottom run reaching further in (round onto the hood-side
+# face) than the top one
+R_LIFT = -3.6            # the heads a little lower than D's, so the top run clears them where it
+                         # rounds the fender-side corner (the rail drops toward the fender corner)
+R_TOP_IN = -118.0        # the top run's inner end (x, head on)
+R_CORNER = (116.0, 106.0, 10.0)  # the leaning end: its top corner at x 116, its bottom corner at x 106,
+                                 # both round radius 10
+R_CLEAR = 1.3            # each run's slot clear of the lens holes' bevels by this much
+BOLD_STYLES = ("P3J", "P4J", "P3C", "P3V", "P3D", "P3R")   # the looks with the bold strip (and the lower bottom edge)
 
 
 def is_proj(style):
@@ -168,12 +178,12 @@ def is_proj(style):
 
 def proj_lip(style):
     """(side, top/bottom) of how much smaller each opening is than the head's face (negative: a gap)."""
-    return J_LIP if style in ("P3J", "P3D") else PROJ_LIP
+    return J_LIP if style in ("P3J", "P3D", "P3R") else PROJ_LIP
 
 
 def proj_lift(style):
     """How much higher than the pods the heads sit."""
-    return D_LIFT if style == "P3D" else PROJ_LIFT
+    return D_LIFT if style == "P3D" else R_LIFT if style == "P3R" else PROJ_LIFT
 
 
 def proj_layout(style, pod_ys):
@@ -183,7 +193,7 @@ def proj_layout(style, pod_ys):
         return list(PROJ4)
     if style == "P3J":
         return list(PROJ3J_FWD)
-    if style == "P3D":
+    if style in ("P3D", "P3R"):
         return list(PROJ3D)
     if style == "P3V":
         return list(PROJ3J)
@@ -483,6 +493,31 @@ class Style:
             self.wire = (ax(xs2) + 6.0, D_BOTTOM_Z, 25.0)                   # the bars are wired together behind
             self.chin = (ax(xe2) - 15.0, a1 + 15.0)
             self.chin_z = D_BOTTOM_Z - LINE4.inner / 2 - LINE4.wall - 1.0
+            self.lens_hole = LENS_D / 2 + LENS_GAP
+            self.win_edge = 0.6
+        if name == "P3R":
+            a0, _ = D_ENDS
+            x_of_a = lambda a_: float(np.interp(a_, self._ax[1], self._ax[0]))
+            zc = self.fronts[0][2]
+            off = LENS_D / 2 + LENS_GAP + LENS_BEVEL + LINE4.slot / 2 + R_CLEAR    # each run from the heads' centres
+            zt, zb = zc + off, zc - off
+            xt, xb, rc = R_CORNER
+            pts = filleted([(R_TOP_IN, zt), (xt, zt), (xb, zb), (x_of_a(a0), zb)], [rc, rc])
+            seg = np.hypot(*np.diff(pts, axis=0).T)
+            cum = np.r_[0, np.cumsum(seg)]
+            s_ = np.r_[np.arange(0, cum[-1], 1.0), cum[-1]]
+            x_, z_ = np.interp(s_, cum, pts[:, 0]), np.interp(s_, cum, pts[:, 1])
+            # the bottom run's last stretch goes round the hood-side corner onto the side face: there
+            # it follows the arc position on out to a0 (head on, x stops at the corner)
+            a_ = np.array([self.arc_of_x(q) for q in x_])
+            a_[-1] = a0
+            line = np.c_[a_, z_]
+            room = self.T_of_a(line[:, 0]) - RAIL_T - D_BAR_UNDER_RAIL - line[:, 1]
+            assert room.min() > -0.05, f"R: the top run is {-room.min():.2f} mm too close to the rail (R_LIFT)"
+            self.channels.append(Channel(line, LINE4))
+            self.wire = (a0 + 6.0, zb, 25.0)          # the strip's wires leave at its bottom end, by the hood side
+            self.chin = (a0 - 15.0, self.arc_of_x(xb) + 15.0)
+            self.chin_z = zb - LINE4.inner / 2 - LINE4.wall - 1.0
             self.lens_hole = LENS_D / 2 + LENS_GAP
             self.win_edge = 0.6
         if name == "P3V":
