@@ -204,11 +204,12 @@ PROJ3R = tuple((x, y - R_REC - R_SHAPE_BACK) for x, y in PROJ3D)   # the heads b
 J_LINE = os.environ.get("J_LINE", "ends")    # 'ends' (these rules) or 'swoosh' (the freehand one before)
 J_BEND_R = 25.0          # the one bend radius, on the centre line (easy on a side-bend strip)
 J_CORNERS = (195.0, 528.0)   # where the line leaves the hood-side and fender-side front corners (a)
-J_S = 36.0               # each end's S: this long past its corner...
-J_END = (40.0, 18.0)     # ...and the end this far past it, this high over the bottom edge
-J_CHIN_FADE = 15.0       # the face's bottom edge (the chin) carries on level round both corners and under
-J_CHIN = (J_CORNERS[0] - J_END[0] - J_CHIN_FADE, J_CORNERS[1] + J_END[0] + J_CHIN_FADE)   # both ends, so
-                         # they're exact mirrors, then eases up to the side panel's behind them
+J_S = 40.0               # each end's S: this long past its corner...
+J_END = (80.0, 13.0)     # ...then on back along the side panel, parallel to its bottom edge, to this far
+                         # past the corner, this high over the edge (the fender side's lower screw boss,
+                         # a 628 z 24, sets how far back both go)
+J_CHIN_FADE = J_S        # the face's bottom edge (the chin) carries on level round both corners, easing
+J_CHIN = (J_CORNERS[0] - J_CHIN_FADE, J_CORNERS[1] + J_CHIN_FADE)   # up to the side panel's under the S
 
 
 def chin_bottom(L, B, chin, chin_z, fade=20.0):
@@ -251,15 +252,15 @@ def s_rise(rise, span, r, n=60):
 def j_edge_line(sw, zlow):
     """J's light line in the face's (a, z), hood end to fender end: level at zlow along the face and round
     both corners, then past each corner the same S (J_BEND_R, J_S long) up to J_END's height over the
-    bottom edge (the chin, level under both ends), and level on to the end."""
+    side panel's bottom edge, and on back along the panel parallel to that edge to the end."""
     L, B = sw.L, sw.B
     u_end, h1 = J_END
     out = []
     for c, sgn in ((J_CORNERS[0], -1.0), (J_CORNERS[1], 1.0)):
-        z1 = float(np.interp(c + sgn * u_end, L, chin_bottom(L, B, J_CHIN, EYELID_CHIN, J_CHIN_FADE))) + h1
-        sp = s_rise(z1 - zlow, J_S, J_BEND_R)
+        edge = lambda u: float(np.interp(c + sgn * u, L, B))
+        sp = s_rise(edge(J_S) + h1 - zlow, J_S, J_BEND_R)
         end = [(c + sgn * sp[:, 0][k], zlow + sp[:, 1][k]) for k in range(len(sp))]
-        end += [(c + sgn * u, z1) for u in np.arange(J_S + 1.0, u_end + 0.01, 1.0)]
+        end += [(c + sgn * u, edge(u) + h1) for u in np.arange(J_S + 1.0, u_end + 0.01, 1.0)]
         out.append(end)
     face = [(a, zlow) for a in np.arange(J_CORNERS[0] + 1.0, J_CORNERS[1] - 0.5, 1.0)]
     return out[0][::-1] + face + out[1]
