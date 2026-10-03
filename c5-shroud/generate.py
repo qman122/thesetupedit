@@ -1697,12 +1697,13 @@ def dowel_spot(p):
     """(u, n, heights) of the dowel pins across the print split, in the front frame. With the
     projectors the floor under the post is only 3 mm thick, so the pin goes 5 mm further back and
     a little lower, in a boss the bezel builds round it (bezel_sdf), under the heads' clearance."""
+    import bezel_styles as bs
     us = split_plane_u(p)
     n_c = float(bow(p, us)) - p.post_depth / 2 - p.post_setback
     if os.environ.get("BEZEL_STYLE", "") in ("P3J", "P3D", "P3R"):
         # J: its floor is taken by the deeper recess and the light line's channel, so the pin goes up
         # in the post between the first two openings, half way up, just behind the recessed face
-        return us, n_c + 1.5, (33.5,)
+        return us, n_c + 1.5 - bs.dowel_back(os.environ.get("BEZEL_STYLE", "")), (33.5,)
     if proj_lights(p):
         return us, n_c - 5.0, (4.5,)
     return us, n_c, dowel_levels(p)

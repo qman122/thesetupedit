@@ -102,7 +102,8 @@ THIN = Spec(slot=5.0, inner=5.0, wall=1.0, skin=0.0, depth=7.0, insert=6.0, fron
 # (a flat COB strip or a side-bend neon, up to 5 mm thick) sits behind it, and its joins don't show
 DIFF = Spec(slot=8.0, inner=8.0, wall=1.0, skin=0.0, depth=8.0, insert=2.5, front=True, closed=1.5)
 SW_HOOD = (-139.0, 21.0)   # the swoosh's hood end: on the face where it turns into the corner, a third of the way up
-SW_SIDE = ((508.0, 2.5), (522.0, 3.5), (533.0, 7.0), (540.0, 13.0), (545.0, 19.0), (549.0, 24.0), (554.0, 26.5), (561.0, 27.0))
+SW_SIDE = ((508.0, 2.5), (522.0, 3.5), (533.0, 7.0), (540.0, 13.0), (545.0, 19.0), (549.0, 23.0), (556.0, 25.0),
+           (570.0, 25.0), (590.0, 23.0), (608.0, 22.0))   # ...on back under the fender-side screw boss
                            # ...and its fender end, (arc position, z): round the corner low, then up the side
                            # panel; the door's side flange sits ~4 mm behind the panel above z ~30 from
                            # here back, so the line (9.5 mm deep) can't go higher or further back
@@ -175,12 +176,28 @@ R_REC_IN = 4.5           # the step this far inside the line's centre (2 mm of w
 R_REC_R = 6.0            # the recess's corner radius
 R_FIN = (1.2, 1.6, 2.6)  # a blade between each two lenses, leaning with the ends: its front edge 1.2 mm behind
                          # the face, 3.2 mm wide there, 5.2 at the floor
-J_SHAPE = os.environ.get("J_SHAPE", "")      # J's sculpted face (face_relief): '', 'visor', 'scoop'
-J_TEXTURE = os.environ.get("J_TEXTURE", "") == "1"   # J's honeycomb (trial)
-V_SHAPE = os.environ.get("V_SHAPE", "")      # W's sculpted face (face_relief): '', 'visor', 'scoop'
+J_SHAPE = os.environ.get("J_SHAPE", "visor")   # J's sculpted face (face_relief): '', 'visor', 'scoop'
+J_TEXTURE = os.environ.get("J_TEXTURE", "1") == "1"   # J's honeycomb
+V_SHAPE = os.environ.get("V_SHAPE", "visor")      # W's sculpted face (face_relief): '', 'visor', 'scoop'
+SHAPE_BACK = {"": 0.0, "visor": 5.0, "scoop": 6.0, "wedge": 8.2}   # each form's deepest over the heads
+# J and W, like D and R, cover the heads with the face and show only the lens through a round hole:
+# the heads sit behind the recess's floor (EYELID) and the sculpted face, with D's skin over them
+PROJ3W = tuple((x, y - EYELID - SHAPE_BACK[V_SHAPE]) for x, y in PROJ3D)
+PROJ3JL = tuple((x, y - EYELID - SHAPE_BACK[J_SHAPE]) for x, y in PROJ3D)
+# the light lines carried round both corners onto the side panels (the owner's markup), (a, z), in the
+# bands where the door's side flange leaves the channel its depth, and clear of the screw bosses
+V_HOOD_WAVE = [(100.0, 32.0), (134.0, 18.0), (165.0, 30.0), (195.0, 10.0)]    # from its end in to the corner
+V_FENDER_WAVE = [(506.0, 25.0), (530.0, 9.0), (553.0, 24.0), (575.0, 9.0), (596.0, 21.0)]
+J_HOOD_SIDE = [(70.0, 36.0), (100.0, 33.0), (130.0, 29.0), (160.0, 25.0), (188.0, 22.0)]   # rising back along the side
 R_SHAPE = os.environ.get("R_SHAPE", "")      # the face's sculpted form (R_RELIEF): '', 'visor', 'wedge', 'scoop'
 R_SHAPE_BACK = {"": 0.0, "visor": 5.0, "wedge": 8.2, "scoop": 6.0}[R_SHAPE]   # its deepest over the heads
 PROJ3R = tuple((x, y - R_REC - R_SHAPE_BACK) for x, y in PROJ3D)   # the heads back by as much, the same skin over each
+
+
+def dowel_back(style):
+    """How much further back the print split's dowel goes in the post: with the face sculpted, the
+    post's front is back by as much."""
+    return SHAPE_BACK[J_SHAPE] if style == "P3J" else 0.0
 
 
 def smoothstep(x, a, b):
@@ -225,7 +242,7 @@ def is_proj(style):
 
 def proj_lip(style):
     """(side, top/bottom) of how much smaller each opening is than the head's face (negative: a gap)."""
-    return J_LIP if style in ("P3J", "P3D", "P3R") else PROJ_LIP
+    return J_LIP if style in ("P3J", "P3D", "P3R", "P3V") else PROJ_LIP
 
 
 def proj_lift(style):
@@ -239,13 +256,13 @@ def proj_layout(style, pod_ys):
     if style.startswith("P4"):
         return list(PROJ4)
     if style == "P3J":
-        return list(PROJ3J_FWD)
+        return list(PROJ3JL)
     if style == "P3D":
         return list(PROJ3D)
     if style == "P3R":
         return list(PROJ3R)
     if style == "P3V":
-        return list(PROJ3J)
+        return list(PROJ3W)
     if style == "P3C":
         return list(PROJ3C)
     return [(x, py - 1.0) for x, py in zip(PROJ_X, pod_ys)]
@@ -640,19 +657,15 @@ class Style:
                     x0, z0 = xy[-1]
                     xm = (cr + pxs[k + 1] - hwp + rp) / 2                # halfway to the next pocket's corner
                     xy.append((xm, z0 + (xm - x0) / np.tan(vh)))          # the peak, on the tangents
-            # the fender end: round the outer pocket's corner to the leg's angle, then straight on up
+            # the fender end: round the outer pocket's corner up to a hump, then on round the corner as
+            # a wave along the fender-side panel (V_FENDER_WAVE)
             cr = pxs[-1] + hwp - rp
-            v_end = np.radians(V_LEG[0])
-            for v in np.linspace(-np.pi / 2, v_end, 30)[1:]:
-                xy.append((cr + off * np.cos(v), zcc + off * np.sin(v)))
-            x0, z0 = xy[-1]
-            dx, dz = -np.sin(v_end), np.cos(v_end)                        # the tangent there
-            xy.append((x0 + dx * (V_LEG[1] - z0) / dz, V_LEG[1]))
-            pts = [(ax(x), z) for x, z in xy]
-            # the hood end: from the run, turn up round the curved corner
-            hx, hr, hlean, htop = V_HOOD
+            xy += [(cr + off * np.cos(v), zcc + off * np.sin(v)) for v in arc_up]
+            pts = [(ax(x), z) for x, z in xy] + list(V_FENDER_WAVE)
+            # the hood end: from the run round the curved corner, then a wave back along the hood-side panel
+            hx = V_HOOD[0]
             a_turn = ax(hx)
-            pts = list(filleted([(a_turn - hlean, htop), (a_turn, zrun), pts[0]], [hr])) + pts[1:]
+            pts = list(V_HOOD_WAVE) + [(a_turn, zrun)] + pts
             # round the humps' peaks a little (Chaikin on the whole line keeps it smooth)
             arr = np.array(pts)
             for _ in range(2):
@@ -661,19 +674,21 @@ class Style:
                     q += [0.8 * p0 + 0.2 * p1, 0.2 * p0 + 0.8 * p1]
                 arr = np.array(q + [arr[-1]])
             pts = [tuple(p) for p in arr]
-            self.channels.append(Channel(pts, LINE4, base=EYELID))
-            self.wire = (a_turn + 12.0, zrun, 25.0)
             hw_line = LINE4.inner / 2 + LINE4.wall
-            ea0 = min(p[0] for p in pts) - hw_line - 5.0
-            ea1 = max(p[0] for p in pts) + hw_line + 5.0
+            # the recess covers the face only; on round the corners the line's channel steps out of it
+            ea0, ea1 = a_turn - 8.0, ax(pxs[-1] + hwp) + 12.0
+            def base_fn(a, ea0=ea0, ea1=ea1):
+                return EYELID * smoothstep(a, ea0 - 4.0, ea0 + 8.0) * (1.0 - smoothstep(a, ea1 - 8.0, ea1 + 4.0))
+            self.channels.append(Channel(pts, LINE4, base=EYELID, base_fn=base_fn))
+            self.wire = (a_turn + 12.0, zrun, 25.0)
             zb_t = zrun - hw_line - 0.8
             self.tray = dict(u0=ea0, u1=ea1, zb=zb_t, zmid=zc, r=4.0, top=EYELID_TOP)
             self.tray_recess = EYELID
             self.chin = (ea0 - 20.0, ea1 + 20.0)
             self.chin_z = zb_t - 1.0
-            self.pocket = V_CHAMFER
-            self.block_extra = V_CHAMFER[0]
-            self.honey = R_HONEY                     # honeycomb on the recess's floor, between the pockets
+            self.lens_hole = LENS_D / 2 + LENS_GAP    # the face covers each head: only the lens shows
+            self.win_edge = 0.6
+            self.honey = R_HONEY                     # honeycomb on the recess's floor, round the lenses
             if V_SHAPE:                              # the face sculpted (the heads stand proud of it, as J's)
                 sw.relief = face_relief(V_SHAPE, self.T_of_a)
         if name == "P3J":
@@ -692,7 +707,7 @@ class Style:
                 hwo = PROJ_W / 2 - lip[0]                                        # the openings
                 zlow = self.fronts[0][2] - PROJ_H / 2 + lip[1] - HOOK_GAP - DIFF.inner / 2 - DIFF.wall
                 x_rise = pxs[0] - hwo - HOOK_GAP - DIFF.inner / 2 - DIFF.wall   # past the hood-side opening
-                ctrl = [(ax(SW_HOOD[0]), SW_HOOD[1]), (ax(SW_HOOD[0] + 9.0), SW_HOOD[1] - 7.0),
+                ctrl = list(J_HOOD_SIDE) + [(ax(SW_HOOD[0]), SW_HOOD[1]), (ax(SW_HOOD[0] + 9.0), SW_HOOD[1] - 7.0),
                         (ax(x_rise - 6.0), zlow + 2.5), (ax(x_rise + 4.0), zlow)]
                 ctrl += [(ax(x), zlow) for x in np.linspace(x_rise + 12.0, 100.0, 12)]
                 ctrl += [(a, z if z > zlow else zlow) for a, z in SW_SIDE]
@@ -736,14 +751,14 @@ class Style:
                 # the recess covers the face only, to just past the fender-side opening; the line's
                 # channel steps out of it there, onto the corner and the side panel
                 ea1 = ax(pxs[-1] + PROJ_W / 2 - proj_lip(name)[0] + 6.0)
-                b0, b1 = ea1 - 10.0, ea1 + 4.0
-                base_fn = lambda a, b0=b0, b1=b1: EYELID_J * (1.0 - np.clip((a - b0) / (b1 - b0), 0, 1) ** 2 * (3 - 2 * np.clip((a - b0) / (b1 - b0), 0, 1)))
-                self.channels.append(Channel(pts, DIFF, base=EYELID_J, base_fn=base_fn))
+                ea0 = ax(SW_HOOD[0]) - 8.0                 # the recess covers the face only, both ends
+                def base_fn(a, ea0=ea0, ea1=ea1):
+                    return EYELID * smoothstep(a, ea0 - 4.0, ea0 + 8.0) * (1.0 - smoothstep(a, ea1 - 10.0, ea1 + 4.0))
+                self.channels.append(Channel(pts, DIFF, base=EYELID, base_fn=base_fn))
                 low = [p[0] for p in pts if p[1] < 8.0]
-                self.chin = (ea0 - 20.0, max(low) + 12.0)
-                self.tray_recess = EYELID_J
-                self.pocket = (0.0, 0.0, 0.0)          # straight-through openings, an even gap round each head
-                self.pocket_r = (J_OPEN_R, J_OPEN_R)
+                self.chin = (min(low) - 20.0, max(low) + 12.0)
+                self.tray_recess = EYELID
+                self.lens_hole = LENS_D / 2 + LENS_GAP    # the face covers each head: only the lens shows
                 self.block_extra = 0.0
             else:
                 ea1 = max(p[0] for p in pts) + hw_line + 5.0
