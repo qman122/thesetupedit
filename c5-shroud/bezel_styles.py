@@ -148,12 +148,16 @@ PROJ3D = tuple((x, y + 2.2) for x, y in PROJ3J)
 LENS_D = 42.0            # the lens's visible diameter (MEASURE: the 2.0 in projector's lens; the hole follows it)
 LENS_GAP = 2.0           # round the lens, in its hole (the misalignment clearance)
 LENS_BEVEL = 2.0         # the holes' edges bevelled this much wider at the face
-D_BAR_UNDER_RAIL = 3.0   # the top bar's centre line, this far under the rail's underside
-D_BOTTOM_Z = -1.2        # the bottom bar's centre line (straight)
-D_SQUINT = (-88.0, -118.0, 40.0, 8.0)   # the "mean" squint: the top bar runs level across the heads
-                                        # (as low as the rail at the fender end allows), then,
-                                        # right past the hood-side head, angles down 40 degrees
-                                        # from x -88 to x -118 round a radius 8 bend...
+D_BAR_UNDER_RAIL = 3.0   # the top bar's centre line at least this far under the rail's underside
+D_TILT = 5.0             # the whole eye leans in: the heads step down toward the hood along this slope, and
+                         # both bars run parallel to the line through their centres
+D_TILT_TOP = -2.6        # the fender-side head sits this much lower than the others did, so the top bar, at
+                         # the slope, still fits under the rail where it is lowest (the fender end)
+D_BAR_OFF = 28.8         # each bar's centre line this far above / below the line through the heads' centres
+                         # (the lens hole, its bevel and 1.3 mm of wall to the bar's slot)
+D_SQUINT = (-88.0, -118.0, 40.0, 8.0)   # the "mean" squint: right past the hood-side head the top bar
+                                        # angles down 40 degrees from x -88 to x -118 round a radius 8
+                                        # bend...
 D_SQUINT_LOW = (-88.0, -118.0, 36.0, 8.0)   # ...and the bottom bar angles up 36 degrees over the same
                                             # stretch, so the two lines close in to a sharp inner
                                             # corner (about 11 mm apart at the tips, on centre)
@@ -175,6 +179,16 @@ def proj_lip(style):
 def proj_lift(style):
     """How much higher than the pods the heads sit."""
     return D_LIFT if style == "P3D" else PROJ_LIFT
+
+
+def proj_dz(style):
+    """Per projector (in proj_layout's order), how much lower than proj_lift its head sits: D leans
+    its eye in, the heads stepping down toward the hood (-x) at D_TILT."""
+    if style != "P3D":
+        return [0.0] * len(proj_layout(style, [0.0] * 3))
+    xs = [x for x, _ in PROJ3D]
+    s = np.tan(np.radians(D_TILT))
+    return [D_TILT_TOP - (max(xs) - x) * s for x in xs]
 
 
 def proj_layout(style, pod_ys):
@@ -471,21 +485,43 @@ class Style:
             self.chin = (a0 - 22.0, a1 + 22.0)
         if name == "P3D":
             a0, a1 = D_ENDS
+            x_of_a = lambda a_: np.interp(a_, self._ax[1], self._ax[0])
+            # the line through the heads' centres (head on): they step down toward the hood at D_TILT
+            hx, hz = np.array([f[0] for f in self.fronts]), np.array([f[2] for f in self.fronts])
+            m_, c_ = np.polyfit(hx, hz, 1)
+            line = lambda x, off: m_ * x + c_ + off
+
+            def bar(off, xs, xe, ang, rb, sgn):
+                """A bar parallel to the head line from the fender end to x xs, then (round an rb
+                bend) angled sgn * ang degrees from level to x xe; laid out head on, then mapped."""
+                x1 = float(x_of_a(a1))
+                tip = (xe, line(xs, off) + sgn * (xs - xe) * np.tan(np.radians(ang)))
+                pts = filleted([tip, (xs, line(xs, off)), (x1, line(x1, off))], [rb])
+                seg = np.hypot(*np.diff(pts, axis=0).T)
+                cum = np.r_[0, np.cumsum(seg)]
+                s_ = np.r_[np.arange(0, cum[-1], 1.0), cum[-1]]
+                x_, z_ = np.interp(s_, cum, pts[:, 0]), np.interp(s_, cum, pts[:, 1])
+                return np.c_[[self.arc_of_x(q) for q in x_], z_]
             xs, xe, ang, rb = D_SQUINT
-            aa = np.linspace(ax(xs), a1, 120)
-            z_flat = float(np.min(self.T_of_a(aa) - RAIL_T - D_BAR_UNDER_RAIL))   # level, under the rail's lowest
-            z_end = z_flat - (xs - xe) * np.tan(np.radians(ang))
-            top = list(filleted([(ax(xe), z_end), (ax(xs), z_flat), (a1, z_flat)], [rb]))
+            top = bar(D_BAR_OFF, xs, xe, ang, rb, -1)
+            run = top[top[:, 0] >= self.arc_of_x(xs)]
+            room = self.T_of_a(run[:, 0]) - RAIL_T - D_BAR_UNDER_RAIL - run[:, 1]
+            assert room.min() > -0.05, f"D: the top bar runs {-room.min():.2f} mm too close to the rail (D_TILT_TOP)"
             xs2, xe2, ang2, rb2 = D_SQUINT_LOW
-            bot = list(filleted([(ax(xe2), D_BOTTOM_Z + (xs2 - xe2) * np.tan(np.radians(ang2))),
-                                 (ax(xs2), D_BOTTOM_Z), (a1, D_BOTTOM_Z)], [rb2]))
+            bot = bar(-D_BAR_OFF, xs2, xe2, ang2, rb2, 1)
             self.channels.append(Channel(top, LINE4))
             self.channels.append(Channel(bot, LINE4))
-            aw = ax(xs2 - 20.0)       # the bars are wired together behind, from the bottom bar's
-            zw = float(np.interp(aw, [bot[0][0], ax(xs2)], [bot[0][1], D_BOTTOM_Z]))   # angled stretch
-            self.wire = (aw, zw, 25.0)                                                   # (clear of the head)
-            self.chin = (ax(xe2) - 15.0, a1 + 15.0)
-            self.chin_z = D_BOTTOM_Z - LINE4.inner / 2 - LINE4.wall - 1.0
+            aw = self.arc_of_x(xs2 - 20.0)      # the bars are wired together behind, from the bottom
+            self.wire = (aw, float(np.interp(aw, bot[:, 0], bot[:, 1])), 25.0)   # bar's angled stretch (clear of the head)
+            # the face comes down under the bottom bar in one straight edge, parallel to the bars,
+            # right out to the hood-side corner (past the hood-side tunnel's block, which reaches
+            # out to the corner wall and, round the lowest head, is lower than the old edge)
+            t0 = fg["tunnels"][0]
+            x_blk = t0[0] - t0[2][0] - self.ops.TUNNEL_T - self.ops.OUTER_FILL
+            self.chin = (self.arc_of_x(x_blk) - 24.0, a1 + 15.0)
+            Ls = sw.L
+            under = LINE4.inner / 2 + LINE4.wall + 1.0
+            self.chin_z = np.minimum(line(x_of_a(Ls), -D_BAR_OFF), np.interp(Ls, bot[:, 0], bot[:, 1])) - under
             self.lens_hole = LENS_D / 2 + LENS_GAP
             self.win_edge = 0.6
         if name == "P3V":
