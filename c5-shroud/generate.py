@@ -1713,76 +1713,95 @@ SPLICE_IN = 7.0         # how far it reaches into the fender piece
 SPLICE_BACK = 6.0       # ...and how far it runs along the inside of the hood piece
 SPLICE_H = 45.0         # its face plate, down from the rail's underside
 SPLICE_CLEAR = 0.15     # round the fender piece's walls, so the halves slide together
+SPLICE_FUSE = 0.8       # how far its plates run into the hood piece's walls
+
+
+def _inside_lines(cs, rows, n_probe):
+    """For a cut through the bezel (a CrossSection in n, z): the rail's underside (the bottom of
+    the topmost material at n_probe) and, at each height in rows, the face wall's inner side (the
+    back of the frontmost material; None where there's none)."""
+    from matplotlib.path import Path
+    polys = [Path(q) for q in cs.to_polygons()]
+    (n0, z0), (n1, z1) = cs.bounds()[:2], cs.bounds()[2:]
+
+    def inside(pts):
+        return sum(pa.contains_points(pts).astype(int) for pa in polys) % 2 == 1
+    zz = np.arange(z0, z1, 0.05)
+    col = inside(np.c_[np.full_like(zz, n_probe), zz])
+    i = len(col) - 1 - np.argmax(col[::-1])
+    while i > 0 and col[i - 1]:
+        i -= 1
+    nn = np.arange(n0 - 1, n1 + 1, 0.05)
+    out = []
+    for r in rows:
+        m = inside(np.c_[nn, np.full_like(nn, r)])
+        if not m.any():
+            out.append(None)
+            continue
+        j = len(m) - 1 - np.argmax(m[::-1])
+        while j > 0 and m[j - 1]:
+            j -= 1
+        out.append(nn[j])
+    return zz[i], out
 
 
 def splice_sleeve(p, man, us):
     """Projector bezels: an L-shaped sleeve across the print split, on the hood piece. Its plates
     follow the inside of the face wall and the underside of the top rail at the cut, 6 mm along
-    the hood piece (fused to it) and 7 mm on into the fender piece, which slides onto it: the
-    halves line up in depth and height, and the joint's glue area grows several times over. Where
-    the fender piece's walls wander or carry ribs and bosses within the 7 mm, the sleeve is
-    trimmed to clear them all along (so it slides in) by SPLICE_CLEAR. None of it shows."""
-    from matplotlib.path import Path
+    the hood piece (fused into its walls) and up to 7 mm on into the fender piece, which slides
+    onto it: the halves line up in depth and height, and the joint's glue area grows several
+    times over. On the fender side the plates sit SPLICE_CLEAR inside that piece's walls (as far
+    in as they come anywhere along the reach), and stop short of anything else in the way (the
+    next tunnel's side wall, say). None of it shows."""
     F = np.array(front_frame(p))
     R, t = F[:, :3], F[:, 3]
     to_cut = (np.c_[np.eye(3)[[1, 2, 0]], [0, 0, -us]] @ np.r_[np.c_[R.T, -R.T @ t], [[0, 0, 0, 1]]])[:3]
     back = np.r_[np.c_[R, t], [[0, 0, 0, 1]]] @ np.r_[np.c_[np.eye(3)[[2, 0, 1]], [us, 0, 0]], [[0, 0, 0, 1]]]
     loc = man.transform(to_cut.tolist())                     # (n, z, u - us)
-    polys = [Path(q) for q in loc.slice(0.0).to_polygons()]
-    (n0, z0), (n1, z1) = loc.slice(0.0).bounds()[:2], loc.slice(0.0).bounds()[2:]
-    nn = np.arange(n0 - 1, n1 + 1, 0.1)
-
-    def solid(row):          # material along n at one height (even-odd over the section's outlines)
-        pts = np.c_[nn, np.full_like(nn, row)]
-        c = sum(pa.contains_points(pts).astype(int) for pa in polys)
-        return c % 2 == 1
-
-    def front_run_start(row):   # the back of the frontmost material at this height (the face's inner side)
-        m = solid(row)
-        if not m.any():
-            return None
-        i = len(m) - 1 - np.argmax(m[::-1])          # the frontmost solid cell
-        while i > 0 and m[i - 1]:
-            i -= 1
-        return nn[i]
-    # the rail's underside: the bottom of the topmost material, a little behind the face
-    zz = np.arange(z0, z1, 0.1)
+    cut = loc.slice(-0.05)
+    (n0, _), (n1, _) = cut.bounds()[:2], cut.bounds()[2:]
     n_probe = n0 + 0.4 * (n1 - n0)
-    col = np.array([any(pa.contains_points([[n_probe, z]]).any() for pa in polys) for z in zz])
-    i = len(col) - 1 - np.argmax(col[::-1])
-    while i > 0 and col[i - 1]:
-        i -= 1
-    z_ru = zz[i]
-    rows = np.r_[np.arange(z_ru - SPLICE_H, z_ru - SPLICE_T, 0.25), z_ru - SPLICE_T + 0.5]   # into the rail plate
-    nfi = [front_run_start(r) for r in rows]
-    keep = [(r, n) for r, n in zip(rows, nfi) if n is not None]
-    rows, nfi = np.array([k[0] for k in keep]), np.array([k[1] for k in keep])
-    n_top = nfi[-1]
-    face = np.r_[np.c_[nfi + 0.3, rows], np.c_[nfi[::-1] - SPLICE_T, rows[::-1]]]
-    rail = [[n0 + 3.0, z_ru - SPLICE_T], [n_top + 0.3, z_ru - SPLICE_T], [n_top + 0.3, z_ru + 0.3], [n0 + 3.0, z_ru + 0.3]]
-    prof = CS([face.tolist()]) + CS([rail])
-    # what it must clear, seen along the cut's normal: the fender piece's walls within its reach
-    # (grown by the clearance) and the projectors (grown by 1 mm), over the whole length
+    z_ru, _ = _inside_lines(cut, [], n_probe)
+    rows = np.r_[np.arange(z_ru - SPLICE_H, z_ru - SPLICE_T, 0.5), z_ru - SPLICE_T + 0.5]   # up into the rail plate
+    _, nfi = _inside_lines(cut, rows, n_probe)
+    # on the fender side: as far in as the walls come anywhere along the reach
+    z_f, n_f = z_ru, [q for q in nfi]
+    for u_ in np.arange(0.1, SPLICE_IN + 0.6, 0.5):
+        zr, nf = _inside_lines(loc.slice(u_), rows, n_probe)
+        z_f = min(z_f, zr)
+        n_f = [None if (a is None or b is None) else min(a, b) for a, b in zip(n_f, nf)]
+
+    # the outline joins the samples with straight lines: on the fender side take the innermost of
+    # each one's neighbours, so the lines can't cut across a corner in the wall (a channel's box)
+    n_f = [None if q is None else min(x for x in n_f[max(i - 1, 0):i + 2] if x is not None) for i, q in enumerate(n_f)]
+
+    def plates(nf, zr, outer, inner):
+        """The L: the face plate behind the wall line nf (from outer to inner of it), the rail plate
+        under zr (likewise), joined in the corner."""
+        ok = [(r, q) for r, q in zip(rows, nf) if q is not None]
+        rr, qq = np.array([a for a, _ in ok]), np.array([b for _, b in ok])
+        face = np.r_[np.c_[qq + outer, rr], np.c_[qq[::-1] - inner, rr[::-1]]]
+        top = qq[-1] + outer
+        rail = [[n0 + 5.0, zr - inner], [top, zr - inner], [top, zr + outer], [n0 + 5.0, zr + outer]]
+        L = CS([face.tolist()]) + CS([rail])
+        if outer < 0:      # clear of the fillet in the walls' inside corner: a 2 mm chamfer
+            c = 2.0
+            L = L - CS([[[top + 1.0, zr + outer - c - 1.0], [top + 1.0, zr + 1.0], [top - c - 1.0, zr + 1.0]]])
+        return L
+    root_p = plates(nfi, z_ru, SPLICE_FUSE, SPLICE_T)                          # fused into the hood piece's walls
+    ten_p = plates(n_f, z_f, -SPLICE_CLEAR, SPLICE_T + SPLICE_CLEAR)          # clear of the fender piece's
     lights = lights_dummy(p).transform(to_cut.tolist())
 
-    def clear_of_lights(u0, u1):      # the projectors' outline (1 mm round it) between u0 and u1
-        return (lights ^ box(-500, 500, -500, 500, u0 - 1.0, u1 + 1.0)).project().offset(1.0, m3d.JoinType.Round)
-    # into the fender piece it reaches up to SPLICE_IN, stopping 0.5 mm short of the first thing in
-    # its way there besides the walls it hugs (the next tunnel's side wall, say)
-    walls = loc.slice(0.05).offset(1.0, m3d.JoinType.Round)      # the walls it hugs, as they curve on
-    inner = prof - walls
-    hit = (loc ^ box(-500, 500, -500, 500, 0.05, SPLICE_IN + 0.5)) ^ M.extrude(inner, SPLICE_IN + 0.5)
+    def clear_of_lights(prof, u0, u1):      # trimmed round the projectors (1 mm), only if they come near
+        near = lights ^ M.extrude(prof, u1 - u0).translate([0, 0, u0])
+        if near.is_empty():
+            return prof
+        return prof - (lights ^ box(-500, 500, -500, 500, u0 - 1.0, u1 + 1.0)).project().offset(1.0, m3d.JoinType.Miter)
+    ten_p = clear_of_lights(ten_p, 0.0, SPLICE_IN)
+    hit = (loc ^ box(-500, 500, -500, 500, 0.05, SPLICE_IN + 0.5)) ^ M.extrude(ten_p, SPLICE_IN + 0.5)
     reach_in = SPLICE_IN if hit.is_empty() else max(2.0, min(SPLICE_IN, hit.bounding_box()[2] - 0.5))
-    fender = (loc ^ box(-500, 500, -500, 500, 0.0, reach_in + 0.5)).project().offset(SPLICE_CLEAR, m3d.JoinType.Round)
-    tenon = M.extrude(prof - fender - clear_of_lights(0.0, reach_in), reach_in + 0.3).translate([0, 0, -0.3])   # overlaps the root
-    # on the hood piece the projectors stand at an angle to the cut, the nearest corner a few mm
-    # from it: the sleeve runs the full SPLICE_BACK where it's clear of them, and all of it as far
-    # back as the nearest one allows
-    root = M.extrude(prof - clear_of_lights(-SPLICE_BACK, 0.0), SPLICE_BACK).translate([0, 0, -SPLICE_BACK])
-    near = lights ^ M.extrude(prof, SPLICE_BACK + 1.0).translate([0, 0, -SPLICE_BACK - 1.0])
-    free = SPLICE_BACK if near.is_empty() else min(SPLICE_BACK, -near.bounding_box()[5] - 1.0)
-    if free > 0.5:
-        root = root + M.extrude(prof, free).translate([0, 0, -free])
+    tenon = M.extrude(ten_p, reach_in + 0.5).translate([0, 0, -0.5])          # overlaps the root
+    root = M.extrude(clear_of_lights(root_p, -SPLICE_BACK, 0.0), SPLICE_BACK).translate([0, 0, -SPLICE_BACK])
     return (root + tenon).transform(back[:3].tolist())
 
 
