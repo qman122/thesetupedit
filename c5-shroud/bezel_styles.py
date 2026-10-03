@@ -160,16 +160,17 @@ D_SQUINT_LOW = (-115.0, -145.0, 30.0, 8.0)   # ...and the bottom bar angles up 3
 D_ENDS = (190.0, 486.0)  # where both bars end (arc position): 25 mm round onto the hood-side face (the
                          # door's side flange is close behind it further round), and before the tight
                          # fender corner
-# P3R (the owner's Audi R8-style board): D's face and lens holes, with one light line in a "C" round
-# the heads: along the top, down a leaning, round-cornered end at the fender side, and back along
-# the bottom, open toward the hood, the bottom run reaching further in (round onto the hood-side
-# face) than the top one
+# P3R (the owner's Audi R8-style board): D's face and lens holes, with one light line in a loop round
+# the heads: along the top and bottom, closed at each front corner by a leaning, round-cornered end
+# (a "C" each side, the hood one the fender one mirrored)
 R_LIFT = -3.6            # the heads a little lower than D's, so the top run clears them where it
                          # rounds the fender-side corner (the rail drops toward the fender corner)
 R_TOP_IN = -118.0        # the top run's inner end (x, head on)
 R_CORNER = (116.0, 106.0, 10.0)  # the leaning end: its top corner at x 116, its bottom corner at x 106,
                                  # both round radius 10
 R_CLEAR = 1.3            # each run's slot clear of the lens holes' bevels by this much
+R_FACE = (222.0, 503.0)  # the face between its two front corners (a): the loop's ends mirror about its middle
+R_SEAM = 20.0            # the strip's two ends meet on the bottom run this far in from the hood end's corner
 R_REC = 4.0              # inside the C the face steps back this far (a housing round the lenses), its ends
                          # leaning with the C's: the light line runs round it on a raised frame
 R_REC_IN = 4.5           # the step this far inside the line's centre (2 mm of wall to its channel)
@@ -184,10 +185,12 @@ SHAPE_BACK = {"": 0.0, "visor": 5.0, "scoop": 6.0, "wedge": 8.2}   # each form's
 # the heads sit behind the recess's floor (EYELID) and the sculpted face, with D's skin over them
 PROJ3W = tuple((x, y - EYELID - SHAPE_BACK[V_SHAPE]) for x, y in PROJ3D)
 PROJ3JL = tuple((x, y - EYELID - SHAPE_BACK[J_SHAPE]) for x, y in PROJ3D)
-# the light lines carried round both corners onto the side panels (the owner's markup), (a, z), in the
-# bands where the door's side flange leaves the channel its depth, and clear of the screw bosses
-V_HOOD_WAVE = [(100.0, 32.0), (134.0, 18.0), (165.0, 30.0), (195.0, 10.0)]    # from its end in to the corner
-V_FENDER_WAVE = [(506.0, 25.0), (530.0, 9.0), (553.0, 24.0), (575.0, 9.0), (596.0, 21.0)]
+# W's two ends, the same move each side, measured from where the line leaves the front corner (the
+# corners end at a 195 and 528): on level round the corner, one peak (a copy of the face's), then an
+# upward kick to the peaks' height, all well short of the fender-side screw boss (a 589). The bottom
+# edge (the chin) carries on level under both ends, so they're exact mirrors, then eases up behind them.
+V_CORNERS = (195.0, 528.0)
+V_END_FADE = 15.0         # the chin eases up to the side panel's edge over this much past the line's ends
 J_HOOD_SIDE = [(70.0, 36.0), (100.0, 33.0), (130.0, 29.0), (160.0, 25.0), (188.0, 22.0)]   # rising back along the side
 R_SHAPE = os.environ.get("R_SHAPE", "")      # the face's sculpted form (R_RELIEF): '', 'visor', 'wedge', 'scoop'
 R_SHAPE_BACK = {"": 0.0, "visor": 5.0, "wedge": 8.2, "scoop": 6.0}[R_SHAPE]   # its deepest over the heads
@@ -199,12 +202,13 @@ PROJ3R = tuple((x, y - R_REC - R_SHAPE_BACK) for x, y in PROJ3D)   # the heads b
 # (two arcs of the same radius, a straight between), the same length, finishing the same height over
 # the bottom edge. The fender side sets the limit (its screw boss at a 589); both ends stop well short.
 J_LINE = os.environ.get("J_LINE", "ends")    # 'ends' (these rules) or 'swoosh' (the freehand one before)
-J_BEND_R = 20.0          # the one bend radius, on the centre line (easy on a side-bend strip)
+J_BEND_R = 25.0          # the one bend radius, on the centre line (easy on a side-bend strip)
 J_CORNERS = (195.0, 528.0)   # where the line leaves the hood-side and fender-side front corners (a)
-J_S = 38.0               # each end's S: this long past its corner...
-J_END = (42.0, 18.0)     # ...and the end this far past it, this high over the bottom edge
-J_CHIN_FADE = J_S        # the face's bottom edge (the chin) carries on level round each corner too, easing
-J_CHIN = (J_CORNERS[0] - J_CHIN_FADE, J_CORNERS[1] + J_CHIN_FADE)   # up to the side panel's under the S
+J_S = 36.0               # each end's S: this long past its corner...
+J_END = (40.0, 18.0)     # ...and the end this far past it, this high over the bottom edge
+J_CHIN_FADE = 15.0       # the face's bottom edge (the chin) carries on level round both corners and under
+J_CHIN = (J_CORNERS[0] - J_END[0] - J_CHIN_FADE, J_CORNERS[1] + J_END[0] + J_CHIN_FADE)   # both ends, so
+                         # they're exact mirrors, then eases up to the side panel's behind them
 
 
 def chin_bottom(L, B, chin, chin_z, fade=20.0):
@@ -247,12 +251,12 @@ def s_rise(rise, span, r, n=60):
 def j_edge_line(sw, zlow):
     """J's light line in the face's (a, z), hood end to fender end: level at zlow along the face and round
     both corners, then past each corner the same S (J_BEND_R, J_S long) up to J_END's height over the
-    bottom edge, and level on to the end."""
+    bottom edge (the chin, level under both ends), and level on to the end."""
     L, B = sw.L, sw.B
     u_end, h1 = J_END
     out = []
     for c, sgn in ((J_CORNERS[0], -1.0), (J_CORNERS[1], 1.0)):
-        z1 = float(np.interp(c + sgn * u_end, L, B)) + h1
+        z1 = float(np.interp(c + sgn * u_end, L, chin_bottom(L, B, J_CHIN, EYELID_CHIN, J_CHIN_FADE))) + h1
         sp = s_rise(z1 - zlow, J_S, J_BEND_R)
         end = [(c + sgn * sp[:, 0][k], zlow + sp[:, 1][k]) for k in range(len(sp))]
         end += [(c + sgn * u, z1) for u in np.arange(J_S + 1.0, u_end + 0.01, 1.0)]
@@ -660,37 +664,37 @@ class Style:
             self.lens_hole = LENS_D / 2 + LENS_GAP
             self.win_edge = 0.6
         if name == "P3R":
-            a0, _ = D_ENDS
             x_of_a = lambda a_: float(np.interp(a_, self._ax[1], self._ax[0]))
             zc = self.fronts[0][2]
             off = LENS_D / 2 + LENS_GAP + LENS_BEVEL + LINE4.slot / 2 + R_CLEAR    # each run from the heads' centres
             zt, zb = zc + off, zc - off
             xt, xb, rc = R_CORNER
-            pts = filleted([(R_TOP_IN, zt), (xt, zt), (xb, zb), (x_of_a(a0), zb)], [rc, rc])
+            # the hood end mirrors the fender end about the face's middle (between its two corners), so
+            # the loop reads the same flipped
+            am = (R_FACE[0] + R_FACE[1]) / 2
+            ft, fb = self.arc_of_x(xt), self.arc_of_x(xb)
+            ht, hb = 2 * am - ft, 2 * am - fb
+            xs = x_of_a(hb) + R_SEAM                      # the strip's two ends meet on the bottom run, here
+            pts = filleted([(xs, zb), (xb, zb), (xt, zt), (x_of_a(ht), zt), (x_of_a(hb), zb), (xs, zb)], [rc] * 4)
             seg = np.hypot(*np.diff(pts, axis=0).T)
             cum = np.r_[0, np.cumsum(seg)]
             s_ = np.r_[np.arange(0, cum[-1], 1.0), cum[-1]]
             x_, z_ = np.interp(s_, cum, pts[:, 0]), np.interp(s_, cum, pts[:, 1])
-            # the bottom run's last stretch goes round the hood-side corner onto the side face: there
-            # it follows the arc position on out to a0 (head on, x stops at the corner)
-            a_ = np.array([self.arc_of_x(q) for q in x_])
-            a_[-1] = a0
-            line = np.c_[a_, z_]
+            line = np.c_[[self.arc_of_x(q) for q in x_], z_]
             room = self.T_of_a(line[:, 0]) - RAIL_T - D_BAR_UNDER_RAIL - line[:, 1]
             assert room.min() > -0.05, f"R: the top run is {-room.min():.2f} mm too close to the rail (R_LIFT)"
             self.channels.append(Channel(line, LINE4))
-            # the recessed housing inside the C: a parallelogram, its ends leaning with the C's leaning
-            # end, the top run's inner end at its top inner corner
-            lean = (self.arc_of_x(xt) - self.arc_of_x(xb)) / (zt - zb)
+            # the recessed housing inside the loop: its ends leaning with the loop's (mirrored)
+            lean = (ft - fb) / (zt - zb)
             ri = R_REC_IN
-            u1 = self.arc_of_x((xt + xb) / 2) - ri          # the outer end, at mid height
-            u0 = self.arc_of_x(R_TOP_IN) - lean * (zt - zc)  # the inner end, under the top run's end
-            self.tray = dict(u0=u0, u1=u1, zb=zb + ri, zmid=zc, r=R_REC_R, top=(-1e3, zt - ri), lean=lean)
+            u1 = (ft + fb) / 2 - ri                        # the ends, at mid height
+            u0 = (ht + hb) / 2 + ri
+            self.tray = dict(u0=u0, u1=u1, zb=zb + ri, zmid=zc, r=R_REC_R, top=(-1e3, zt - ri), lean=lean, lean0=-lean)
             self.tray_recess = R_REC
             pxs = [f[0] for f in self.fronts]
             self.fins = [self.arc_of_x((p0 + p1) / 2) for p0, p1 in zip(pxs, pxs[1:])]
             self.fin = R_FIN
-            self.wire = (a0 + 6.0, zb, 25.0)          # the strip's wires leave at its bottom end, by the hood side
+            self.wire = (self.arc_of_x(xs), zb, 25.0)     # the strip's wires leave where its ends meet
             self.grooves = [(p0, p1, w, R_STRAKE_DEPTH) for p0, p1, w in R_STRAKES]
             ga, gs, gn, gw, (gz0, gz1) = R_GILLS
             for k in range(gn):
@@ -699,7 +703,7 @@ class Style:
             self.honey = R_HONEY
             if R_SHAPE:
                 sw.relief = face_relief(R_SHAPE, self.T_of_a)
-            self.chin = (a0 - 15.0, self.arc_of_x(xb) + 15.0)
+            self.chin = (hb - 15.0, fb + 15.0)
             self.chin_z = zb - LINE4.inner / 2 - LINE4.wall - 1.0
             self.lens_hole = LENS_D / 2 + LENS_GAP
             self.win_edge = 0.6
@@ -725,15 +729,23 @@ class Style:
                     x0, z0 = xy[-1]
                     xm = (cr + pxs[k + 1] - hwp + rp) / 2                # halfway to the next pocket's corner
                     xy.append((xm, z0 + (xm - x0) / np.tan(vh)))          # the peak, on the tangents
-            # the fender end: round the outer pocket's corner up to a hump, then on round the corner as
-            # a wave along the fender-side panel (V_FENDER_WAVE)
-            cr = pxs[-1] + hwp - rp
-            xy += [(cr + off * np.cos(v), zcc + off * np.sin(v)) for v in arc_up]
-            pts = [(ax(x), z) for x, z in xy] + list(V_FENDER_WAVE)
-            # the hood end: from the run round the curved corner, then a wave back along the hood-side panel
-            hx = V_HOOD[0]
-            a_turn = ax(hx)
-            pts = list(V_HOOD_WAVE) + [(a_turn, zrun)] + pts
+            # each end, in (u = distance past the corner, z): a peak, the face's own shape (from a
+            # pocket's corner round and up to the hump, and down round the next), then the kick (the
+            # same corner, then straight on up to the peaks' height)
+            cr = pxs[0] + hwp - rp
+            xm = (cr + pxs[1] - hwp + rp) / 2
+            up = [(off * np.cos(v), zcc + off * np.sin(v)) for v in arc_up]
+            peak_z = up[-1][1] + (xm - cr - up[-1][0]) / np.tan(vh)
+            span = 2 * (xm - cr)
+            end = up + [(span / 2, peak_z)] + [(span - x, z) for x, z in up[::-1]]
+            kick = [(span + x, z) for x, z in up]
+            kick.append((kick[-1][0] + (peak_z - kick[-1][1]) * np.tan(vh), peak_z))
+            end += kick[1:]
+            u_end = end[-1][0]
+            c0, c1 = V_CORNERS
+            pts = [(c0 - u, z) for u, z in end[::-1]] + [(c0, zrun)] + [(ax(x), z) for x, z in xy]
+            pts += [(c1, zrun)] + [(c1 + u, z) for u, z in end]
+            a_turn = ax(V_HOOD[0])
             # round the humps' peaks a little (Chaikin on the whole line keeps it smooth)
             arr = np.array(pts)
             for _ in range(2):
@@ -741,6 +753,18 @@ class Style:
                 for p0, p1 in zip(arr[:-1], arr[1:]):
                     q += [0.8 * p0 + 0.2 * p1, 0.2 * p0 + 0.8 * p1]
                 arr = np.array(q + [arr[-1]])
+            # the kicks end at the peaks' height as rounded (their tips come down a little)
+            zpk = arr[(arr[:, 0] > c0) & (arr[:, 0] < c1), 1].max()
+            for flip in (False, True):
+                if flip:
+                    arr = arr[::-1]
+                k = 0
+                while arr[k + 1, 1] > zpk:
+                    k += 1
+                t = (arr[k, 1] - zpk) / (arr[k, 1] - arr[k + 1, 1])
+                arr = np.vstack([arr[k] + t * (arr[k + 1] - arr[k]), arr[k + 1:]])
+                if flip:
+                    arr = arr[::-1]
             pts = [tuple(p) for p in arr]
             hw_line = LINE4.inner / 2 + LINE4.wall
             # the recess covers the face only; on round the corners the line's channel steps out of it
@@ -752,7 +776,8 @@ class Style:
             zb_t = zrun - hw_line - 0.8
             self.tray = dict(u0=ea0, u1=ea1, zb=zb_t, zmid=zc, r=4.0, top=EYELID_TOP)
             self.tray_recess = EYELID
-            self.chin = (ea0 - 20.0, ea1 + 20.0)
+            self.chin = (c0 - u_end - V_END_FADE, c1 + u_end + V_END_FADE)   # level under both ends
+            self.chin_fade = V_END_FADE
             self.chin_z = zb_t - 1.0
             self.lens_hole = LENS_D / 2 + LENS_GAP    # the face covers each head: only the lens shows
             self.win_edge = 0.6
@@ -923,8 +948,11 @@ class Style:
         """The tray's outline in the face: between its ends (raked for C7), its bottom edge and
         a top that follows the door's lip (top[0] under it, at most top[1])."""
         t = self.tray
-        u = a - (Z - t["zmid"]) * t.get("lean", self.rake)
         ac, ha = (t["u0"] + t["u1"]) / 2, (t["u1"] - t["u0"]) / 2
+        lean = t.get("lean", self.rake)
+        if "lean0" in t:                     # each end its own lean (R: mirrored ends)
+            lean = np.where(a < ac, t["lean0"], lean)
+        u = a - (Z - t["zmid"]) * lean
         da = np.abs(u - ac) - ha
         zt = np.minimum(self.T_of_a(a) - t["top"][0], t["top"][1])
         zm, hz = (zt + t["zb"]) / 2, (zt - t["zb"]) / 2
@@ -1006,8 +1034,10 @@ class Style:
                 F = o.diff_round(F, ch.slot(d, nn), 0.3)
         f_front, f_edge, f_floor = self.fin
         k = (f_floor - f_edge) / (self.tray_recess - f_front)   # wider at the floor (C: the windows trim them to the post)
-        lean = self.tray.get("lean", self.rake)
         for af in self.fins:
+            lean = self.tray.get("lean", self.rake)
+            if "lean0" in self.tray and af < (self.tray["u0"] + self.tray["u1"]) / 2:
+                lean = self.tray["lean0"]           # leaning with the nearer end
             depth = np.maximum(-nn - f_front, 0)
             side = (np.abs(a - af - (Z - self.tray["zmid"]) * lean) - f_edge - k * depth) / np.sqrt(1 + k * k)
             fin = o.inter_round(side, nn + f_front, 0.5)
