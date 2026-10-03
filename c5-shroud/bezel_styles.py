@@ -175,6 +175,8 @@ R_REC_IN = 4.5           # the step this far inside the line's centre (2 mm of w
 R_REC_R = 6.0            # the recess's corner radius
 R_FIN = (1.2, 1.6, 2.6)  # a blade between each two lenses, leaning with the ends: its front edge 1.2 mm behind
                          # the face, 3.2 mm wide there, 5.2 at the floor
+J_SHAPE = os.environ.get("J_SHAPE", "")      # J's sculpted face (face_relief): '', 'visor', 'scoop'
+J_TEXTURE = os.environ.get("J_TEXTURE", "") == "1"   # J's honeycomb (trial)
 V_SHAPE = os.environ.get("V_SHAPE", "")      # W's sculpted face (face_relief): '', 'visor', 'scoop'
 R_SHAPE = os.environ.get("R_SHAPE", "")      # the face's sculpted form (R_RELIEF): '', 'visor', 'wedge', 'scoop'
 R_SHAPE_BACK = {"": 0.0, "visor": 5.0, "wedge": 8.2, "scoop": 6.0}[R_SHAPE]   # its deepest over the heads
@@ -754,6 +756,10 @@ class Style:
             self.tray = dict(u0=ea0, u1=ea1, zb=EYELID_BOTTOM, zmid=self.fronts[0][2], r=4.0, top=EYELID_TOP)
             self.chin_z = EYELID_CHIN
             self.win_edge = 0.6
+            if J_TEXTURE:
+                self.honey = R_HONEY                 # honeycomb on the recess's floor round the openings
+            if J_SHAPE:                              # the face sculpted (the heads, forward already, stand prouder)
+                sw.relief = face_relief(J_SHAPE, self.T_of_a)
         if name == "P3C":
             # the C7 look round three projectors: a black housing (a recessed tray with raked ends and
             # crisp corners) round the windows, which lean back like the C7's, with a raked fin
