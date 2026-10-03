@@ -283,23 +283,18 @@ def feature_geometry(sw):
         zc = zc + bs.proj_lift(STYLE)
         # each tunnel ends 0.5 mm in front of where its head's front goes (1 mm behind this)
         poses = [(x, yf + 1.0) for x, yf in bs.proj_layout(STYLE, [py for _, py in poses])]
-    zcs = [zc + dz for dz in bs.proj_dz(STYLE)] if bs.is_proj(STYLE) else [zc] * len(poses)   # each head's centre
     floor_top = g.shell_levels(P)[2] - 0.15
-    z_bot0 = floor_top - T_WALL + RL_MAX + 1.0     # the sill sits 1 mm above the rolled lip's top, so the
+    z_bot = floor_top - T_WALL + RL_MAX + 1.0      # the sill sits 1 mm above the rolled lip's top, so the
                                                    # lip under it is solid (not a thin upturned edge)
-    wins = []
-    for (px, py), zc in zip(poses, zcs):
-        z_bot = z_bot0
-        if bs.is_proj(STYLE):          # the sill just under the projector, with the light strip below it
-            z_bot = zc - bs.PROJ_H / 2 + bs.proj_lip(STYLE)[1]
-        z_topw = zc + wh / 2
-        wins.append((px, py, (z_bot + z_topw) / 2, ww / 2, (z_topw - z_bot) / 2))
+    if bs.is_proj(STYLE):              # the sill just under the projector, with the light strip below it
+        z_bot = zc - bs.PROJ_H / 2 + bs.proj_lip(STYLE)[1]
+    z_topw = zc + wh / 2
+    wins = [(px, py, (z_bot + z_topw) / 2, ww / 2, (z_topw - z_bot) / 2) for (px, py) in poses]
     # the tunnels: behind each pod's face they hug the pod's body (TUNNEL_CLEAR all round, small
     # corners); forward of it they curve out to the opening at the front, which is a little wider
     # than the window and taller where the rail leaves room above it
     tunnels = []
-    for (px, py), zc, (_, _, zw, _, hh_) in zip(poses, zcs, wins):
-        z_bot, z_topw = zw - hh_, zw + hh_
+    for (px, py) in poses:
         zb0, zb1 = P.pod_lift - TUNNEL_CLEAR, g.pod_top(P) + TUNNEL_CLEAR
         back = (P.pod_body_w / 2 + TUNNEL_CLEAR, (zb1 - zb0) / 2, (zb0 + zb1) / 2, 3.0)
         if bs.is_proj(STYLE):
@@ -692,9 +687,6 @@ def build(h=H, preview=False):
     y0 = min(sw.path[:, 1].min(), fg["tongue"][:, 1].min()) - 6
     y1 = sw.path[:, 1].max() + 6
     z0, z1 = sw.B.min() - 6, max(sw.T.max(), fg["lip_c"]) + 6
-    # a chin or a tunnel can reach lower than the sweep's own bottom (D's stepped heads)
-    low = min(sw.Bw.min(), min(back[2] - back[1] for (_, _, back, _) in fg["tunnels"]) - T_WALL)
-    z0 = min(z0, low - 4)
     xs = np.arange(x0, x1, h)
     ys = np.arange(y0, y1, h)
     zs = np.arange(z0, z1, h)

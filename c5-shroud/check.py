@@ -147,27 +147,26 @@ check(f"bezel sits {gap:.1f} mm in front of the nuts (the wings pass outside the
 
 # 6c. every lens sees out straight ahead: no ray from anywhere on a lens, within 10 degrees
 #     either side of straight ahead (seen from above, at lens height), hits the bezel
-_slices = {}       # the bezel cut at each lens's height (D's heads step down toward the hood)
+_lens_z = g.pod_zc(P) if PODS else g.proj_poses(P)[0][2]
+_polys = [Path(np.asarray(q)) for q in shroud.slice(_lens_z).to_polygons()]
 
 
-def _hits(pts_, z_):
-    if z_ not in _slices:
-        _slices[z_] = [Path(np.asarray(q)) for q in shroud.slice(z_).to_polygons()]
+def _hits(pts_):
     c = np.zeros(len(pts_), int)
-    for pa in _slices[z_]:
+    for pa in _polys:
         c += pa.contains_points(pts_)
     return (c % 2 == 1).any()
 
 
 blocked = 0
-_lenses = ([(px, py, lx, g.pod_zc(P)) for (px, py, _) in g.pod_poses(P) for lx in (-18.5, 18.5)] if PODS
-           else [(x, yf, 0.0, zc) for (x, yf, zc) in g.proj_poses(P)])
-for (px, py, lx, lz) in _lenses:
+_lenses = ([(px, py, lx) for (px, py, _) in g.pod_poses(P) for lx in (-18.5, 18.5)] if PODS
+           else [(x, yf, 0.0) for (x, yf, _) in g.proj_poses(P)])
+for (px, py, lx) in _lenses:
     for x0 in px + lx + np.linspace(-15, 15, 7):
         for a_ in range(-10, 11, 2):
             t_ = math.radians(a_)
             s_ = np.arange(0.8, 160, 0.5)
-            blocked += _hits(np.stack([x0 + s_ * math.sin(t_), py + 0.3 + s_ * math.cos(t_)], 1), lz)
+            blocked += _hits(np.stack([x0 + s_ * math.sin(t_), py + 0.3 + s_ * math.cos(t_)], 1))
 check("every lens has a clear view 10 degrees either side of straight ahead", blocked == 0,
       f"{blocked} blocked rays")
 

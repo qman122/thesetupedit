@@ -415,9 +415,8 @@ def slot_y(w, length, axis, y0, y1, x, z):
 def proj_poses(p):
     """(x, y of the head's front, z of its centre) for each projector."""
     import bezel_styles as bs
-    st = os.environ.get("BEZEL_STYLE", "P3J")
-    lay = bs.proj_layout(st, [py for (_, py, _) in pod_poses(p)])
-    return [(x, yf, pod_zc(p) + bs.proj_lift(st) + dz) for (x, yf), dz in zip(lay, bs.proj_dz(st))]
+    lay = bs.proj_layout(os.environ.get("BEZEL_STYLE", "P3J"), [py for (_, py, _) in pod_poses(p)])
+    return [(x, yf, pod_zc(p) + bs.proj_lift(os.environ.get("BEZEL_STYLE", "P3J"))) for x, yf in lay]
 
 
 def proj_keepouts(p):
@@ -525,55 +524,21 @@ def carrier_projectors(p):
     x_hi = max(sp[0] for sp in spans) + ow + 4.5
     spine = CS.square([x_hi - x_lo, ys_hi - ys_lo]).translate([x_lo, ys_lo])
     beam = CS.batch_boolean(feet + [spine], m3d.OpType.Add).offset(1.0, m3d.JoinType.Round)
+    parts.append(M.extrude(beam, p.floor_t).translate([0, 0, -p.floor_t]))
     ring = (beam.offset(-0.3, m3d.JoinType.Miter) - beam.offset(-p.wall_t - 0.3, m3d.JoinType.Miter)) ^ CS.square([170, 400], center=True)
-    # D leans its eye in, so its heads step down toward the hood: where a head would come within
-    # 1 mm of the beam, the beam steps down under it (keeping the room the level heads have), and
-    # ramps between the steps; everywhere else (and for the other looks) it stays at z 0
-    hb0 = pod_zc(p) + bs.proj_lift(st_) - bs.PROJ_H / 2
-    fl = [0.0 if zc - bs.PROJ_H / 2 >= 1.0 else zc - bs.PROJ_H / 2 - hb0 for (_, _, zc, _, _) in spans]
-    stepped = min(fl) < 0
-    wf = ow + 8.0           # each step a little wider than its foot (not on its edge: no slivers)
-    kx, kz = [-400.0, spans[0][0] - wf - 12.0], [0.0, 0.0]
-    for sp, f in zip(spans, fl):
-        kx += [sp[0] - wf, sp[0] + wf]
-        kz += [f, f]
-    kx += [spans[-1][0] + wf + 12.0, 400.0]
-    kz += [0.0, 0.0]
-
-    def floor_at(x):
-        return float(np.interp(x, kx, kz)) if stepped else 0.0
-
-    def follow(lo, hi):
-        """The space between lo and hi above the stepped floor's top (an XZ profile, through all y)."""
-        pts = [[x, z + lo] for x, z in zip(kx, kz)] + [[x, z + hi] for x, z in zip(kx[::-1], kz[::-1])]
-        return plate_xz(CS([pts]), 500.0, 1000.0)
-    if stepped:
-        fmin = min(fl)
-        # over each lowered step, the room for its head and body, down to the step: the foot's
-        # whole width (past its rounded edge), from 1.5 mm behind the body to 1 mm in front of the head
-        hp = ow + 4.5 + 1.0 + 0.5
-        pockets = M.batch_boolean([box(sp[0] - hp, sp[0] + hp,
-                                       min(sp[3], sp[1] - p.proj_head_d - p.proj_body_d) - 1.5, sp[1] + 1.0, f, 0.5)
-                                   for sp, f in zip(spans, fl) if f < 0], m3d.OpType.Add)
-        slab = M.extrude(beam, p.floor_t - fmin).translate([0, 0, fmin - p.floor_t]) ^ follow(-p.floor_t, 200.0)
-        parts.append(slab - pockets)
-        parts.append(M.extrude(ring, p.lip_h + 1 - fmin + 1).translate([0, 0, fmin - p.floor_t - p.lip_h - 1])
-                     ^ follow(-p.floor_t - p.lip_h, -p.floor_t + 1.0))
-    else:
-        parts.append(M.extrude(beam, p.floor_t).translate([0, 0, -p.floor_t]))
-        parts.append(M.extrude(ring, p.lip_h + 1).translate([0, 0, -p.floor_t - p.lip_h]))
+    parts.append(M.extrude(ring, p.lip_h + 1).translate([0, 0, -p.floor_t - p.lip_h]))
     # the cradles: a saddle under the body, walls up its sides to its top, a boss at each screw
-    for (x, yf, zc, y0, y1), f in zip(spans, fl):
+    for (x, yf, zc, y0, y1) in spans:
         zb, zt = zc - p.proj_body_w / 2 - p.cradle_clear, zc + p.proj_body_w / 2 + p.cradle_clear
-        parts.append(box(x - ow, x + ow, y0, y1, f - 1.0, zb))
-        parts += [box(x + bw, x + ow, y0, y1, f - 1.0, zt), box(x - ow, x - bw, y0, y1, f - 1.0, zt)]
+        parts.append(box(x - ow, x + ow, y0, y1, -1.0, zb))
+        parts += [box(x + bw, x + ow, y0, y1, -1.0, zt), box(x - ow, x - bw, y0, y1, -1.0, zt)]
         for hx, hy in _strap_holes(p, y1 - y0):
             parts.append(cyl_z(9.0, zt - 14.0, zt, x + hx, (y0 + y1) / 2 + hy))
             cuts.append(cyl_z(p.strap_screw_d, zt - 13.0, zt + 1.0, x + hx, (y0 + y1) / 2 + hy))
         # air for the body's fan: two windows in each wall
         L = y1 - y0
         if L < 25.0:            # a short cradle (kept off a nut): a rest under the head as well
-            parts.append(box(x - 12.0, x + 12.0, y1 + 2.0, yf - 18.0, f - 1.0, zc - bs.PROJ_H / 2 - 0.4))
+            parts.append(box(x - 12.0, x + 12.0, y1 + 2.0, yf - 18.0, -1.0, zc - bs.PROJ_H / 2 - 0.4))
         for sx in (-1, 1):
             for (wa, wb) in ((y0 + 4.0, y0 + L / 2 - 2.0), (y0 + L / 2 + 2.0, y1 - 4.0)):
                 if wb - wa > 4.0:
@@ -586,26 +551,22 @@ def carrier_projectors(p):
         x, yf, zc, y0, y1 = sp
         knee = CS.hull_points([[x - ow - 4.5, y0], [x + ow + 4.5, y0], [x - ow - 4.5, yf - gap], [x + ow + 4.5, yf - gap],
                                [tx0, y_back], [tx1, y_back], [tx0, ty1], [tx1, ty1]]).offset(0.6, m3d.JoinType.Round)
-        if stepped:
-            parts.append((M.extrude(knee, p.floor_t - min(fl)).translate([0, 0, min(fl) - p.floor_t]) ^ follow(-p.floor_t, 200.0)) - pockets)
-        else:
-            parts.append(M.extrude(knee, p.floor_t).translate([0, 0, -p.floor_t]))
+        parts.append(M.extrude(knee, p.floor_t).translate([0, 0, -p.floor_t]))
     parts += _tab_parts(p)
     # wiring, on the beam under the front of the heads (9.5 mm of room there): a raised pad with
     # two M3 holes 24 mm apart for a connector block, under the second head from the hood end,
     # and pairs of zip-tie slots under the others and by the hood end, where the strip's wires
     # come back from the bezel
-    x2, yf2, f2 = spans[1][0], spans[1][1], fl[1]
+    x2, yf2 = spans[1][0], spans[1][1]
     pf = max(7.0, gap - 4.0)              # the pad's front: back as far as the beam's front needs
-    parts.append(box(x2 - 9.0, x2 + 9.0, yf2 - pf - 30.0, yf2 - pf, f2 - 1.0, f2 + 2.0))
+    parts.append(box(x2 - 9.0, x2 + 9.0, yf2 - pf - 30.0, yf2 - pf, -1.0, 2.0))
     for dy in (-pf - 27.0, -pf - 3.0):
-        cuts.append(cyl_z(2.6, f2 - p.floor_t - 1, f2 + 3.0, x2, yf2 + dy))
+        cuts.append(cyl_z(2.6, -p.floor_t - 1, 3.0, x2, yf2 + dy))
     ties = [(sp[0], sp[1] - 12.0) for i, sp in enumerate(spans) if i != 1]
     ties.append((spans[0][0] - ow - 1.5, spans[0][1] - 24.0))
     for (tx, ty) in ties:
-        ft_ = floor_at(tx)
         for dx in (-5.0, 5.0):
-            cuts.append(box(tx + dx - 1.25, tx + dx + 1.25, ty - 2.5, ty + 2.5, ft_ - p.floor_t - 1, ft_ + 1.0))
+            cuts.append(box(tx + dx - 1.25, tx + dx + 1.25, ty - 2.5, ty + 2.5, -p.floor_t - 1, 1.0))
     body = M.batch_boolean(parts, m3d.OpType.Add)
     for (_, hx, hz, axis) in mount_points(p):
         ln = p.arm_slot_len if axis == "x" else p.pad_slot_len
@@ -1658,21 +1619,8 @@ def diffusers(p):
     import trimesh
     tm = trimesh.load(path)
     out, y = [], 0.0
-    st = os.environ.get("BEZEL_STYLE", "")
     for piece in sorted(tm.split(only_watertight=False), key=lambda q: -q.volume):
         m = M(m3d.Mesh(np.asarray(piece.vertices, np.float32), np.asarray(piece.faces, np.uint32)))
-        if st == "P3D":
-            # D's bars lean in (bezel_styles.D_TILT), along the face's x, at every depth alike:
-            # tipped back by as much, each one's long edges are level again; each then stands on
-            # its long straight edge (the top bar upside down, its tip, angled down, in the air)
-            import bezel_styles as bs
-            m = m.rotate([0, bs.D_TILT, 0])
-            q = to_trimesh(m)
-            z0, z1 = q.bounds[:, 2]
-            dn = q.area_faces[(q.face_normals[:, 2] < -0.99) & (q.triangles_center[:, 2] < z0 + 0.05)].sum()
-            up = q.area_faces[(q.face_normals[:, 2] > 0.99) & (q.triangles_center[:, 2] > z1 - 0.05)].sum()
-            if up > dn:
-                m = m.rotate([0, 180, 0])
         b = m.bounding_box()
         out.append(m.translate([-(b[0] + b[3]) / 2, y - b[1], -b[2]]))
         y += b[4] - b[1] + 6.0

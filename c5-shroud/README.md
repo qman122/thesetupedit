@@ -72,21 +72,14 @@ alternative: the same heads in a recessed housing with raked windows and fins, a
 
 **D (`stl/projectors_P3D/`), the owner's "dual straight DRL" concept.** The same projectors and
 bracket, with two light bars, one above the projectors and one below, shaped as squinting, mean eyes
-(`D_TILT`, `D_SQUINT`, `D_SQUINT_LOW`): the whole eye leans in. The three heads step down toward
-the hood along a 5 degree slope (the fender-side one 2.6 mm lower than before, the middle one about
-9, the hood-side one about 16; they stay level themselves, so the beam's cutoff is flat), and both
-bars run parallel to the line through their centres, 28.8 mm above and below it. Right past the
-hood-side head the top bar angles down 40 degrees and the bottom one up 36, so the two close in to
-a sharp inner corner (tips about 11 mm apart on centre). The top bar is as high as the rail allows
-at the fender end. The bezel's face comes down under the bottom bar, following it, to about -22
-at the hood end (it was -5.7), and the bracket's floor steps down under the middle and hood-side
-heads (to -6.6 and -13.3 at its top, keeping the 3.6 mm under each head the level heads had), ramping
-between them; under the fender-side head it stays where it was, clear of the arm's pivot bolt.
-Check on the car that the deeper bracket and the lower face clear everything under the headlight,
-open and closed. Both bars stop before the tight fender corner. The bezel's
+(`D_SQUINT`, `D_SQUINT_LOW`): both run level across the projectors (the top one as low as the
+rail at the fender end allows, so the dark band above it grows heavier toward the hood), then,
+past the hood-side projector, the top one angles down 35 degrees and the bottom one up 30, so
+the eye tapers to its inner corner. Both stop before the tight fender corner. The bezel's
 face covers each head, with a round hole for its lens (`LENS_D` 42 mm, plus a 2 mm gap round it:
-measure the real lens and set it). To fit a bar between the heads and the rail, the heads start
-3 mm lower than J's (`D_LIFT`, before the tilt). Both bars are 4 mm strips in 5 mm channels behind a frosted diffuser (`LINE4`).
+measure the real lens and set it). To fit a bar between the heads and the rail, the heads sit
+3 mm lower than J's (z 3.6 to 51.6, `D_LIFT`), and the bezel's bottom edge comes down to -5.7 for
+the lower bar. Both bars are 4 mm strips in 5 mm channels behind a frosted diffuser (`LINE4`).
 How far the lens stands proud of the face depends on how far it stands out from the projector's
 face; each head's front is 1.8 mm behind the face (a 1.5 mm skin covers it).
 
