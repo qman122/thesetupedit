@@ -176,6 +176,15 @@ R_REC_R = 6.0            # the recess's corner radius
 R_FIN = (1.2, 1.6, 2.6)  # a blade between each two lenses, leaning with the ends: its front edge 1.2 mm behind
                          # the face, 3.2 mm wide there, 5.2 at the floor
 PROJ3R = tuple((x, y - R_REC) for x, y in PROJ3D)   # the heads back by as much, the same skin over each
+# R's sculpting (the bezel's own shapes, cut into its surfaces so nothing passes the door's outline):
+R_STRAKES = [((150.0, 16.0), (52.0, 23.0), 3.6),    # hood-side panel: three grooves like speed lines, rising
+             ((150.0, 24.5), (66.0, 31.0), 3.6),    # toward the back, each one shorter (front end, back end,
+             ((150.0, 33.0), (82.0, 38.5), 3.6)]    # width), clear of the door's screw bosses
+R_STRAKE_DEPTH = 1.4     # into the 3 mm wall, with 45 degree sides
+R_GILLS = (504.0, 7.5, 4, 3.0, (12.0, 50.0))   # the fender corner past the C: 4 slots from a 504, 7.5 apart,
+                                               # 3 mm wide, z 12 to 50, leaning with the C
+R_GILL_DEPTH = 1.4
+R_HONEY = (6.5, 0.9, 0.6)    # the housing's floor: raised honeycomb, cells 6.5 mm across, ridges 0.9 wide, 0.6 high
 BOLD_STYLES = ("P3J", "P4J", "P3C", "P3V", "P3D", "P3R")   # the looks with the bold strip (and the lower bottom edge)
 
 
@@ -294,6 +303,33 @@ def filleted(pts, r):
         out += list((1 - t) ** 2 * a + 2 * t * (1 - t) * c + t ** 2 * b)
     out.append(pts[-1])
     return np.array(out)
+
+
+def capsule(a, z, p0, p1, w):
+    """Distance from a capsule (a segment p0-p1, half width w/2) in the face's (a, z)."""
+    (a0, z0), (a1, z1) = p0, p1
+    da, dz = a1 - a0, z1 - z0
+    t = np.clip(((a - a0) * da + (z - z0) * dz) / (da * da + dz * dz), 0, 1)
+    return np.hypot(a - a0 - t * da, z - z0 - t * dz) - w / 2
+
+
+def honeycomb(a, z, cell, w):
+    """Distance from the walls of a honeycomb (flat-topped hexagons, cell mm across the flats) in (a, z),
+    less half the walls' width: negative on the ridges."""
+    sx, sy = cell * np.sqrt(3.0), cell                # the lattice: two rectangular grids, one offset
+    best = None
+    for ox, oy in ((0.0, 0.0), (sx / 2, sy / 2)):
+        qx = (a - ox) - sx * np.round((a - ox) / sx)
+        qy = (z - oy) - sy * np.round((z - oy) / sy)
+        d = np.hypot(qx, qy)
+        if best is None:
+            best, bx, by = d, qx, qy
+        else:
+            m = d < best
+            best, bx, by = np.where(m, d, best), np.where(m, qx, bx), np.where(m, qy, by)
+    # distance to the cell's edge: its hexagonal 'radius' (pointy along a) is the inradius cell/2
+    hexr = np.maximum(np.abs(by), np.abs(bx) * (np.sqrt(3.0) / 2) + np.abs(by) / 2)
+    return np.abs(cell / 2 - hexr) - w / 2
 
 
 class Channel:
@@ -427,6 +463,8 @@ class Style:
         self.lens_hole = None
         self.block_extra = 0.0   # the tunnels' solid blocks reach this much further sideways
         self.fin = (FIN_FRONT, FIN_EDGE, 2.15)   # the fins: front edge behind the face, half width there and at the floor
+        self.grooves = []        # sculpted grooves: ((a0, z0), (a1, z1), width, depth), cut with 45 degree sides
+        self.honey = None        # (cell, ridge width, height): raised honeycomb on the recess's floor
         L, path = sw.L, sw.path
         i0 = int(np.argmin(path[:, 0]))              # from the hood corner on, x only grows
         self._ax = (path[i0:, 0], L[i0:])
@@ -537,6 +575,12 @@ class Style:
             self.fins = [self.arc_of_x((p0 + p1) / 2) for p0, p1 in zip(pxs, pxs[1:])]
             self.fin = R_FIN
             self.wire = (a0 + 6.0, zb, 25.0)          # the strip's wires leave at its bottom end, by the hood side
+            self.grooves = [(p0, p1, w, R_STRAKE_DEPTH) for p0, p1, w in R_STRAKES]
+            ga, gs, gn, gw, (gz0, gz1) = R_GILLS
+            for k in range(gn):
+                a_ = ga + k * gs
+                self.grooves.append(((a_ - lean * (zc - gz0), gz0), (a_ + lean * (gz1 - zc), gz1), gw, R_GILL_DEPTH))
+            self.honey = R_HONEY
             self.chin = (a0 - 15.0, self.arc_of_x(xb) + 15.0)
             self.chin_z = zb - LINE4.inner / 2 - LINE4.wall - 1.0
             self.lens_hole = LENS_D / 2 + LENS_GAP
@@ -867,6 +911,18 @@ class Style:
             dep = self.channels[0].back      # the channel's back (its depth, plus any recess it sits in)
             hole = iround(np.hypot(a - aw, Z - zw) - WIRE_R, slab(nn, -(dep + wl), -(dep - 1.0)), 0.3)
             F = o.diff_round(F, hole, 0.4)
+        for (p0, p1, w, dep) in self.grooves:          # sculpted grooves, 45 degree sides
+            cap = capsule(a, Z, p0, p1, w)
+            cut = np.maximum(np.maximum((cap - (nn + dep)) / SQ2, -(nn + dep)), nn - 3.0)
+            F = o.diff_round(F, cut, 0.3)
+        if self.honey is not None and self.tray is not None:
+            cell, w, h = self.honey
+            fl = -self.tray_recess
+            ridge = np.maximum(honeycomb(a, Z, cell, w), np.abs(nn - fl - (h - 0.5) / 2) - (h + 0.5) / 2)   # 0.5 into the floor
+            ridge = np.maximum(ridge, self.tray2d(a, Z) + 1.2)            # inside the housing, clear of its walls
+            for (px, hw, zc, hh) in self.fronts:                          # and of the lens holes' bevels
+                ridge = np.maximum(ridge, (self.lens_hole or 0.0) + LENS_BEVEL + 1.0 - np.hypot(X - px, Z - zc))
+            F = o.union_round(F, ridge, 0.25)
         if self.chamfer:
             for (px, hw, zc, hh) in self.fronts:
                 bev = chamfer_rect(X - px, Z - zc, hw, hh, CH) - np.clip(nn, 0, FRAME_BEVEL)
