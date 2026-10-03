@@ -1618,9 +1618,22 @@ def diffusers(p):
         return None
     import trimesh
     tm = trimesh.load(path)
+    pieces = [M(m3d.Mesh(np.asarray(q.vertices, np.float32), np.asarray(q.faces, np.uint32)))
+              for q in sorted(tm.split(only_watertight=False), key=lambda q: -q.volume)]
+    st = os.environ.get("BEZEL_STYLE", "")
+    if st == "P3R":
+        # R's "C" would stand with its top run in the air: cut across its leaning end, level with the
+        # heads' centres, into two L's, each standing on its long run's straight edge (the top one
+        # upside down)
+        import bezel_styles as bs
+        zc = pod_zc(p) + bs.proj_lift(st)
+        cut = []
+        for m in pieces:
+            up, down = m.split_by_plane([0, 0, 1], zc)
+            cut += [down, up.rotate([0, 180, 0])]
+        pieces = cut
     out, y = [], 0.0
-    for piece in sorted(tm.split(only_watertight=False), key=lambda q: -q.volume):
-        m = M(m3d.Mesh(np.asarray(piece.vertices, np.float32), np.asarray(piece.faces, np.uint32)))
+    for m in pieces:
         b = m.bounding_box()
         out.append(m.translate([-(b[0] + b[3]) / 2, y - b[1], -b[2]]))
         y += b[4] - b[1] + 6.0
