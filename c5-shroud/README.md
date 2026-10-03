@@ -91,7 +91,11 @@ heads: along the top, down a leaning end at the fender side (its top corner at x
 corner at x 106, both round radius 10, `R_CORNER`), and back along the bottom, open toward the hood.
 The bottom run reaches further in than the top one (`R_TOP_IN`, x -118), out round the hood-side
 corner onto the side face. One 4 mm strip in a 5 mm channel behind a frosted diffuser (`LINE4`),
-its wires leaving at the bottom run's hood-side end. Each run clears the lens holes' bevels by
+its wires leaving at the bottom run's hood-side end. Inside the C the face steps back 4 mm
+(`R_REC`): a recessed housing round the lenses, a parallelogram whose ends lean with the C's, so
+the light line runs round it on a raised frame; in it a slim blade stands between each two lenses,
+leaning the same way (`R_FIN`), hinting at a cell for each projector. The heads sit 4 mm further
+back to keep the same skin over each. Each run clears the lens holes' bevels by
 1.3 mm (`R_CLEAR`), so the heads sit 0.6 mm lower than D's (`R_LIFT`) for the top run to stay
 under the rail where it rounds the fender-side corner. The board's 1.5 in projectors would leave
 more room round them; this keeps the 2.0 in ones the bracket is built for.

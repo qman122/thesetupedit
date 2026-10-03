@@ -169,6 +169,13 @@ R_TOP_IN = -118.0        # the top run's inner end (x, head on)
 R_CORNER = (116.0, 106.0, 10.0)  # the leaning end: its top corner at x 116, its bottom corner at x 106,
                                  # both round radius 10
 R_CLEAR = 1.3            # each run's slot clear of the lens holes' bevels by this much
+R_REC = 4.0              # inside the C the face steps back this far (a housing round the lenses), its ends
+                         # leaning with the C's: the light line runs round it on a raised frame
+R_REC_IN = 4.5           # the step this far inside the line's centre (2 mm of wall to its channel)
+R_REC_R = 6.0            # the recess's corner radius
+R_FIN = (1.2, 1.6, 2.6)  # a blade between each two lenses, leaning with the ends: its front edge 1.2 mm behind
+                         # the face, 3.2 mm wide there, 5.2 at the floor
+PROJ3R = tuple((x, y - R_REC) for x, y in PROJ3D)   # the heads back by as much, the same skin over each
 BOLD_STYLES = ("P3J", "P4J", "P3C", "P3V", "P3D", "P3R")   # the looks with the bold strip (and the lower bottom edge)
 
 
@@ -193,8 +200,10 @@ def proj_layout(style, pod_ys):
         return list(PROJ4)
     if style == "P3J":
         return list(PROJ3J_FWD)
-    if style in ("P3D", "P3R"):
+    if style == "P3D":
         return list(PROJ3D)
+    if style == "P3R":
+        return list(PROJ3R)
     if style == "P3V":
         return list(PROJ3J)
     if style == "P3C":
@@ -417,6 +426,7 @@ class Style:
         self.pocket_r = POCKET_R
         self.lens_hole = None
         self.block_extra = 0.0   # the tunnels' solid blocks reach this much further sideways
+        self.fin = (FIN_FRONT, FIN_EDGE, 2.15)   # the fins: front edge behind the face, half width there and at the floor
         L, path = sw.L, sw.path
         i0 = int(np.argmin(path[:, 0]))              # from the hood corner on, x only grows
         self._ax = (path[i0:, 0], L[i0:])
@@ -515,6 +525,17 @@ class Style:
             room = self.T_of_a(line[:, 0]) - RAIL_T - D_BAR_UNDER_RAIL - line[:, 1]
             assert room.min() > -0.05, f"R: the top run is {-room.min():.2f} mm too close to the rail (R_LIFT)"
             self.channels.append(Channel(line, LINE4))
+            # the recessed housing inside the C: a parallelogram, its ends leaning with the C's leaning
+            # end, the top run's inner end at its top inner corner
+            lean = (self.arc_of_x(xt) - self.arc_of_x(xb)) / (zt - zb)
+            ri = R_REC_IN
+            u1 = self.arc_of_x((xt + xb) / 2) - ri          # the outer end, at mid height
+            u0 = self.arc_of_x(R_TOP_IN) - lean * (zt - zc)  # the inner end, under the top run's end
+            self.tray = dict(u0=u0, u1=u1, zb=zb + ri, zmid=zc, r=R_REC_R, top=(-1e3, zt - ri), lean=lean)
+            self.tray_recess = R_REC
+            pxs = [f[0] for f in self.fronts]
+            self.fins = [self.arc_of_x((p0 + p1) / 2) for p0, p1 in zip(pxs, pxs[1:])]
+            self.fin = R_FIN
             self.wire = (a0 + 6.0, zb, 25.0)          # the strip's wires leave at its bottom end, by the hood side
             self.chin = (a0 - 15.0, self.arc_of_x(xb) + 15.0)
             self.chin_z = zb - LINE4.inner / 2 - LINE4.wall - 1.0
@@ -728,7 +749,7 @@ class Style:
         """The tray's outline in the face: between its ends (raked for C7), its bottom edge and
         a top that follows the door's lip (top[0] under it, at most top[1])."""
         t = self.tray
-        u = a - (Z - t["zmid"]) * self.rake
+        u = a - (Z - t["zmid"]) * t.get("lean", self.rake)
         ac, ha = (t["u0"] + t["u1"]) / 2, (t["u1"] - t["u0"]) / 2
         da = np.abs(u - ac) - ha
         zt = np.minimum(self.T_of_a(a) - t["top"][0], t["top"][1])
@@ -809,12 +830,14 @@ class Style:
             if ch.base0 > 0:      # in a recess (its depth can vary along it)
                 F = o.diff_round(F, ch.inner(d, nn), 0.5)
                 F = o.diff_round(F, ch.slot(d, nn), 0.3)
-        k = (2.15 - FIN_EDGE) / (TRAY_RECESS - FIN_FRONT)   # wider than the post at the floor: the windows trim them to it
+        f_front, f_edge, f_floor = self.fin
+        k = (f_floor - f_edge) / (self.tray_recess - f_front)   # wider at the floor (C: the windows trim them to the post)
+        lean = self.tray.get("lean", self.rake)
         for af in self.fins:
-            depth = np.maximum(-nn - FIN_FRONT, 0)
-            side = (np.abs(a - af - (Z - self.tray["zmid"]) * self.rake) - FIN_EDGE - k * depth) / np.sqrt(1 + k * k)
-            fin = o.inter_round(side, nn + FIN_FRONT, 0.5)
-            fin = iround(fin, np.maximum(-(nn + TRAY_RECESS + 1.0), t2 - 1.0), 0.4)
+            depth = np.maximum(-nn - f_front, 0)
+            side = (np.abs(a - af - (Z - self.tray["zmid"]) * lean) - f_edge - k * depth) / np.sqrt(1 + k * k)
+            fin = o.inter_round(side, nn + f_front, 0.5)
+            fin = iround(fin, np.maximum(-(nn + self.tray_recess + 1.0), t2 - 1.0), 0.4)
             F = o.union_round(F, fin, 0.8)
         return F
 
