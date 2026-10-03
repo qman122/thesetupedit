@@ -175,7 +175,35 @@ R_REC_IN = 4.5           # the step this far inside the line's centre (2 mm of w
 R_REC_R = 6.0            # the recess's corner radius
 R_FIN = (1.2, 1.6, 2.6)  # a blade between each two lenses, leaning with the ends: its front edge 1.2 mm behind
                          # the face, 3.2 mm wide there, 5.2 at the floor
-PROJ3R = tuple((x, y - R_REC) for x, y in PROJ3D)   # the heads back by as much, the same skin over each
+R_SHAPE = os.environ.get("R_SHAPE", "")      # the face's sculpted form (R_RELIEF): '', 'visor', 'wedge', 'scoop'
+R_SHAPE_BACK = {"": 0.0, "visor": 5.0, "wedge": 8.2, "scoop": 6.0}[R_SHAPE]   # its deepest over the heads
+PROJ3R = tuple((x, y - R_REC - R_SHAPE_BACK) for x, y in PROJ3D)   # the heads back by as much, the same skin over each
+
+
+def smoothstep(x, a, b):
+    t = np.clip((x - a) / (b - a), 0, 1)
+    return t * t * (3 - 2 * t)
+
+
+def r_relief(shape, T_of_a):
+    """R's sculpt map: how far back the face sits at (a, z). Nothing on the side panels (the door's
+    screw bosses) or at the top rail (the door's lip sits on its front edge), easing in below it.
+      visor: 5 mm back under the rail, which overhangs it as a brow
+      wedge: raked back 7 degrees toward the bottom, the top leaning forward
+      scoop: concave, 6 mm back through the middle, the top and bottom edges flaring out"""
+    def f(a, z):
+        wa = smoothstep(a, 195.0, 222.0) * (1.0 - smoothstep(a, 503.0, 528.0))
+        T = T_of_a(a)
+        wt = 1.0 - smoothstep(z, T - 10.0, T - 3.5)
+        if shape == "visor":
+            d = 5.0 + 0.0 * z
+        elif shape == "wedge":
+            d = np.clip(0.125 * (T - 3.5 - z), 0, None)
+        else:
+            u = np.clip((z + 7.0) / (T - 3.5 + 7.0), 0, 1)
+            d = 6.0 * np.sin(np.pi * u) ** 0.7
+        return wa * wt * d
+    return f
 # R's sculpting (the bezel's own shapes, cut into its surfaces so nothing passes the door's outline):
 R_STRAKES = [((150.0, 16.0), (52.0, 23.0), 3.6),    # hood-side panel: three grooves like speed lines, rising
              ((150.0, 24.5), (66.0, 31.0), 3.6),    # toward the back, each one shorter (front end, back end,
@@ -581,6 +609,8 @@ class Style:
                 a_ = ga + k * gs
                 self.grooves.append(((a_ - lean * (zc - gz0), gz0), (a_ + lean * (gz1 - zc), gz1), gw, R_GILL_DEPTH))
             self.honey = R_HONEY
+            if R_SHAPE:
+                sw.relief = r_relief(R_SHAPE, self.T_of_a)
             self.chin = (a0 - 15.0, self.arc_of_x(xb) + 15.0)
             self.chin_z = zb - LINE4.inner / 2 - LINE4.wall - 1.0
             self.lens_hole = LENS_D / 2 + LENS_GAP

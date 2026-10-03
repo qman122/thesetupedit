@@ -155,6 +155,7 @@ class Sweep:
         self.Dr = T_WALL + (Dr - 3.6) * (P.blade_depth - T_WALL) / (P.blade_depth - 3.6)
         self.Df = T_WALL + (Df - 3.6) * (P.floor_depth - T_WALL) / (P.floor_depth - 3.6)
         self.Bw = self.B.copy()        # the front wall's bottom: the style can bring it lower (a chin)
+        self.relief = None             # the style's sculpt map: relief(a, z), how far the face sits back there
         self.tree = cKDTree(path)
         from scipy.interpolate import CubicSpline
         self.cs = CubicSpline(self.L, path)
@@ -260,11 +261,19 @@ class Sweep:
         sdf = smin(sdf, bead, 0.8 * np.clip(hb / 0.6, 0, 1))
         return sdf
 
+    def nn_relief(self, sc, nn, z):
+        """The distance out past the face, with the style's sculpt map applied: the whole section
+        (and everything on the face) sits back by relief(a, z) there. Broadcasts sc, nn and z."""
+        if self.relief is None:
+            return nn + 0.0 * z
+        a = np.interp(sc, np.arange(self.n), self.L)
+        return nn + self.relief(a, z)
+
     def body(self, x, y, z):
         """SDF of the swept shell with rounded ear tips. x, y: (N,), z: (M,) -> (N, M)."""
         sc, nn, e = self.project(x, y)
         T, B, Dr, Df, rb, Rl, Bw = [a[:, None] for a in self.params(sc)]
-        sec = self.section(nn[:, None], z[None, :], T, B, Dr, Df, rb, Rl, Bw)
+        sec = self.section(self.nn_relief(sc[:, None], nn[:, None], z[None, :]), z[None, :], T, B, Dr, Df, rb, Rl, Bw)
         return inter_round(sec, e[:, None] + 0.0 * z[None, :], R_EDGE)
 
 
@@ -530,9 +539,10 @@ def sdf_points(sw, fg, pts):
         q = pts[a:a + 200000]
         sc, nn, e = sw.project(q[:, 0], q[:, 1])
         T, B, Dr, Df, rb, Rl, Bw = sw.params(sc)
-        F = inter_round(sw.section(nn, q[:, 2], T, B, Dr, Df, rb, Rl, Bw), e, R_EDGE)
+        nr = sw.nn_relief(sc, nn, q[:, 2])
+        F = inter_round(sw.section(nr, q[:, 2], T, B, Dr, Df, rb, Rl, Bw), e, R_EDGE)
         out[a:a + len(q)] = apply_features(F[:, None], q[:, 0], q[:, 1], q[:, 2], fg, pointwise=True,
-                                           outside=nn[:, None], door=fg["door"], sc=sc)[:, 0]
+                                           outside=nr[:, None], door=fg["door"], sc=sc)[:, 0]
     return out
 
 
@@ -707,7 +717,8 @@ def build(h=H, preview=False):
         if not act.any():
             continue
         F = sw.body(x[act], y[act], zs)
-        F = apply_features(F, x[act], y[act], zs, fg, outside=nn[act][:, None], door=fg["door"], sc=sc[act])
+        F = apply_features(F, x[act], y[act], zs, fg, outside=sw.nn_relief(sc[act][:, None], nn[act][:, None], zs[None, :]),
+                           door=fg["door"], sc=sc[act])
         blk = np.full((len(x), len(zs)), 4.0, np.float32)
         blk[act] = np.clip(F, -4, 4)
         V[i:i + 8] = blk.reshape(X.shape[0], X.shape[1], len(zs))
@@ -763,7 +774,7 @@ def build_inserts(sw, fg, h=0.2):
     a = np.interp(sc, np.arange(sw.n), sw.L)[:, None]
     V = np.full((X.size, len(zs)), 4.0, np.float32)
     near = nn > -15
-    V[near] = np.clip(st.inserts(a[near], nn[near][:, None], zs[None, :]), -4, 4)
+    V[near] = np.clip(st.inserts(a[near], sw.nn_relief(sc[near][:, None], nn[near][:, None], zs[None, :]), zs[None, :]), -4, 4)
     V = V.reshape(len(xs), len(ys), len(zs))
     V[np.abs(V) < 1e-3] = 1e-3
     verts, faces, _, _ = marching_cubes(V, level=0.0, spacing=(h, h, h))
