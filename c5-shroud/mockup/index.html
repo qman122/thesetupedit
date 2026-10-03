@@ -1,0 +1,608 @@
+<title>C5 Triple-Pod Mockup</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<style>
+  :root {
+    color-scheme: dark;
+    --bg: #111315;
+    --panel: #1a1d20;
+    --panel-2: #22262a;
+    --line: #30353b;
+    --text: #e9e6df;
+    --muted: #9ba2a9;
+    --accent: #f2b233;
+    --accent-ink: #1a1405;
+    --lens: #dbe9ff;
+    --display: "Barlow Condensed", "Arial Narrow", "Helvetica Neue", Arial, sans-serif;
+    --body: "IBM Plex Sans", "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    --mono: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+  }
+  html, body { background: var(--bg); }
+  body {
+    color: var(--text);
+    font: 15px/1.5 var(--body);
+    padding-inline: 16px;
+    padding-block: 20px 40px;
+  }
+  .wrap { max-width: 1180px; margin: 0 auto; display: grid; gap: 18px; }
+  header { display: grid; gap: 4px; }
+  .eyebrow {
+    font: 500 12px/1 var(--mono);
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--accent);
+  }
+  h1 {
+    font: 700 clamp(34px, 6vw, 56px)/0.95 var(--display);
+    letter-spacing: 0.01em;
+    margin: 0;
+    text-wrap: balance;
+  }
+  .lede { color: var(--muted); margin: 4px 0 0; max-width: 64ch; }
+
+  .stage {
+    position: relative;
+    border: 1px solid var(--line);
+    border-radius: 6px;
+    overflow: hidden;
+    background: #15181b;
+    aspect-ratio: 16 / 9;
+    max-width: 100%;
+    min-height: 320px;
+  }
+  .stage canvas { display: block; width: 100%; height: 100%; touch-action: none; }
+  .hint {
+    position: absolute; left: 12px; bottom: 10px;
+    font: 12px/1 var(--mono); color: var(--muted);
+    background: rgba(17, 19, 21, 0.72); padding: 6px 8px; border-radius: 4px;
+    pointer-events: none;
+  }
+  .loading {
+    position: absolute; inset: 0; display: grid; place-items: center;
+    font: 13px var(--mono); color: var(--muted);
+  }
+
+  .controls {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+    gap: 14px 22px;
+    padding: 16px;
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-radius: 6px;
+  }
+  .ctl { display: grid; gap: 8px; align-content: start; }
+  .ctl-label {
+    font: 600 13px/1 var(--display);
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+  .seg { display: flex; flex-wrap: wrap; gap: 6px; }
+  .seg button {
+    font: 500 14px/1 var(--body);
+    color: var(--text);
+    background: var(--panel-2);
+    border: 1px solid var(--line);
+    border-radius: 4px;
+    padding: 9px 12px;
+    cursor: pointer;
+  }
+  .seg button:hover { border-color: #4a525b; }
+  .seg button[aria-pressed="true"] {
+    background: var(--accent); color: var(--accent-ink); border-color: var(--accent);
+  }
+  .seg button:focus-visible, .swatch:focus-visible { outline: 2px solid var(--lens); outline-offset: 2px; }
+  .swatches { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+  .swatch {
+    width: 30px; height: 30px; border-radius: 50%;
+    border: 2px solid var(--line); cursor: pointer; padding: 0;
+  }
+  .swatch[aria-pressed="true"] { border-color: var(--accent); box-shadow: 0 0 0 2px var(--bg) inset; }
+  .paint-name { font: 13px var(--mono); color: var(--muted); }
+
+  .specs {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+    gap: 1px;
+    background: var(--line);
+    border: 1px solid var(--line);
+    border-radius: 6px;
+    overflow: hidden;
+  }
+  .spec { background: var(--panel); padding: 14px 16px; display: grid; gap: 4px; align-content: start; }
+  .spec b {
+    font: 600 26px/1 var(--display);
+    letter-spacing: 0.01em;
+    font-variant-numeric: tabular-nums;
+  }
+  .spec span { color: var(--muted); font-size: 13px; }
+  .legend { display: flex; flex-wrap: wrap; gap: 8px 18px; font-size: 13px; color: var(--muted); }
+  .legend i { display: inline-block; width: 12px; height: 12px; border-radius: 2px; margin-right: 6px; vertical-align: -1px; }
+  .note { color: var(--muted); font-size: 13px; max-width: 80ch; margin: 0; }
+  @media (prefers-reduced-motion: reduce) { * { scroll-behavior: auto; } }
+</style>
+
+<div class="wrap">
+  <header>
+    <div class="eyebrow">Sleepy-eye build · v2 parts · 1997–2004 nose</div>
+    <h1>C5 Triple-Pod Mockup</h1>
+    <p class="lede">Three 3.0 × 1.8 in LED pods per side on the printed carrier, behind the printed bezel, riding on the pop-up doors. Switch the doors between closed, the sleepy stop and full up.</p>
+  </header>
+
+  <div class="stage" id="stage">
+    <canvas id="scene" aria-label="3D view of the front of the car with the triple-pod headlights"></canvas>
+    <div class="loading" id="loading">Loading parts…</div>
+    <div class="hint">Drag to orbit · pinch or scroll to zoom</div>
+  </div>
+
+  <div class="controls">
+    <div class="ctl">
+      <div class="ctl-label">Headlight doors</div>
+      <div class="seg" data-group="door">
+        <button type="button" id="door-closed" data-v="closed">Closed</button>
+        <button type="button" id="door-sleepy" data-v="sleepy" aria-pressed="true">Sleepy stop</button>
+        <button type="button" id="door-up" data-v="up">Full up</button>
+      </div>
+    </div>
+    <div class="ctl">
+      <div class="ctl-label">Pods</div>
+      <div class="seg" data-group="lights">
+        <button type="button" id="lights-on" data-v="on" aria-pressed="true">On</button>
+        <button type="button" id="lights-off" data-v="off">Off</button>
+      </div>
+    </div>
+    <div class="ctl">
+      <div class="ctl-label">Printed parts</div>
+      <div class="seg" data-group="finish">
+        <button type="button" id="finish-real" data-v="real" aria-pressed="true">Black, as printed</button>
+        <button type="button" id="finish-hi" data-v="hi">Highlight</button>
+      </div>
+    </div>
+    <div class="ctl">
+      <div class="ctl-label">View</div>
+      <div class="seg" data-group="view">
+        <button type="button" id="view-34" data-v="34" aria-pressed="true">¾ front</button>
+        <button type="button" id="view-front" data-v="front">Head-on</button>
+        <button type="button" id="view-close" data-v="close">Close-up</button>
+        <button type="button" id="view-side" data-v="side">Side</button>
+      </div>
+    </div>
+    <div class="ctl">
+      <div class="ctl-label">Paint</div>
+      <div class="swatches" id="swatches"></div>
+      <div class="paint-name" id="paint-name"></div>
+    </div>
+  </div>
+
+  <div class="legend" id="legend" hidden>
+    <span><i style="background:#5b8bd6"></i>Carrier (bolts to the fender arm and aiming pad)</span>
+    <span><i style="background:#e0b440"></i>Bezel (frames the three lenses)</span>
+    <span><i style="background:#2a2d31"></i>LED pods</span>
+  </div>
+
+  <div class="specs">
+    <div class="spec"><b>5¼–5½ in</b><span>Door front edge above the frame rail at the sleepy stop</span></div>
+    <div class="spec"><b>3 per side</b><span>Pods, 3.0 × 1.8 in face, stepped 12 mm back each toward the fender</span></div>
+    <div class="spec"><b>4 × M6</b><span>Per side: fender arm holes 1 and 4, both aiming-pad holes, all slotted</span></div>
+    <div class="spec"><b>269 mm</b><span>Bezel width in the 279 mm (11 in) opening; 148 mm tall at the hood end, 102 mm at the fender end (estimates)</span></div>
+    <div class="spec"><b>+16 / −10 mm</b><span>Pod slide in the floor slots to meet the bezel</span></div>
+  </div>
+
+  <p class="note">The car body here is a simplified shape built for this mockup, not a scan, so its proportions are approximate. The carrier, bezel and pods are the real design files at true size, placed where they bolt on. Door angles are set by eye: about 13° at the sleepy stop and 48° full up. The pods step back toward the fender, and the bezel copies the outside shape of the stock bezel, so its lower part tucks down into the body at the sleepy stop.</p>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/three@0.147.0/build/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.147.0/examples/js/controls/OrbitControls.js"></script>
+<script>
+(function () {
+  const PAINTS = [
+    { name: "Torch Red", hex: 0xa3141c },
+    { name: "Black", hex: 0x0e0f11 },
+    { name: "Sebring Silver", hex: 0x9ea3a8 },
+    { name: "Millennium Yellow", hex: 0xe0a80c },
+    { name: "Arctic White", hex: 0xe6e8e4 },
+    { name: "Navy Blue", hex: 0x1b2640 },
+  ];
+  const ANG = { closed: 0, sleepy: 13 * Math.PI / 180, up: 48 * Math.PI / 180 };
+  const VIEWS = {
+    "34":    { pos: [1650, 900, 1900], target: [380, 430, -300] },
+    front:   { pos: [0, 560, 2700],    target: [0, 440, -200] },
+    close:   { pos: [1250, 860, 980],  target: [640, 500, -200] },
+    side:    { pos: [2900, 650, -250], target: [0, 450, -450] },
+  };
+
+  const stage = document.getElementById("stage");
+  const canvas = document.getElementById("scene");
+  const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, preserveDrawingBuffer: true });
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+  renderer.outputEncoding = THREE.sRGBEncoding;
+  renderer.toneMapping = THREE.ACESFilmicToneMapping;
+  renderer.toneMappingExposure = 1.05;
+  renderer.shadowMap.enabled = true;
+  renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+
+  const scene = new THREE.Scene();
+  scene.background = new THREE.Color(0x15181b);
+  scene.fog = new THREE.Fog(0x15181b, 6500, 16000);
+  const camera = new THREE.PerspectiveCamera(32, 16 / 9, 10, 40000);
+  const controls = new THREE.OrbitControls(camera, canvas);
+  controls.enableDamping = true;
+  controls.maxPolarAngle = Math.PI * 0.49;
+  controls.minDistance = 250;
+  controls.maxDistance = 8000;
+
+  // ---------- lighting ----------
+  const hemi = new THREE.HemisphereLight(0xd4dde8, 0x1d2024, 0.55);
+  scene.add(hemi);
+  const key = new THREE.DirectionalLight(0xffffff, 1.1);
+  key.position.set(2200, 3200, 2600);
+  key.castShadow = true;
+  key.shadow.mapSize.set(2048, 2048);
+  Object.assign(key.shadow.camera, { left: -2200, right: 2200, top: 2200, bottom: -2200, near: 100, far: 9000 });
+  key.shadow.bias = -0.0004;
+  scene.add(key);
+  const rim = new THREE.DirectionalLight(0x9fb4d0, 0.45);
+  rim.position.set(-2600, 1400, -2400);
+  scene.add(rim);
+
+  const ground = new THREE.Mesh(
+    new THREE.PlaneGeometry(30000, 30000),
+    new THREE.MeshStandardMaterial({ color: 0x1c1f23, roughness: 0.92, metalness: 0 })
+  );
+  ground.rotation.x = -Math.PI / 2;
+  ground.receiveShadow = true;
+  scene.add(ground);
+
+  // ---------- simplified body ----------
+  const WH = 935;               // half width, mm
+  const XC = 660;               // headlight centre, from the centreline
+  const HW = 140;               // half the 279 mm opening
+  const S0 = 60, S1 = 380;      // opening, measured back from the nose outline
+  const DEPTH = 175;            // headlight pocket depth
+  const prof = new THREE.SplineCurve([
+    [70, 150], [22, 205], [0, 300], [6, 400], [30, 465], [85, 512], [200, 552],
+    [400, 596], [700, 636], [1100, 676], [1500, 700], [1760, 712],
+  ].map(([s, y]) => new THREE.Vector2(s, y)));
+  const zFront = (x) => -240 * Math.pow(Math.min(1, Math.abs(x) / WH), 2.4);
+  const smooth = (a, b, v) => { const t = Math.min(1, Math.max(0, (v - a) / (b - a))); return t * t * (3 - 2 * t); };
+  function crown(x, s) {
+    const ax = Math.abs(x);
+    let d = 85 * Math.exp(-Math.pow((ax - 700) / 170, 2)) * smooth(60, 260, s);
+    if (ax > 820) d -= 220 * Math.pow((ax - 820) / 115, 2);
+    return d;
+  }
+  function pocket(x, s) {
+    const dx = Math.abs(Math.abs(x) - XC);
+    return (1 - smooth(HW - 6, HW, dx)) * smooth(S0, S0 + 6, s) * (1 - smooth(S1 - 6, S1, s));
+  }
+  // s -> profile height, for the part of the profile where s only increases
+  const lut = [];
+  {
+    const pts = [];
+    for (let i = 0; i <= 2000; i++) pts.push(prof.getPoint(i / 2000));
+    let iMin = 0;                                   // the nose tip: where the profile stops coming forward
+    pts.forEach((p, i) => { if (p.x < pts[iMin].x) iMin = i; });
+    for (let i = iMin; i < pts.length; i++) {
+      const p = pts[i];
+      if (!lut.length || p.x > lut[lut.length - 1][0]) lut.push([p.x, p.y]);
+    }
+  }
+  function profY(s) {
+    let lo = 0, hi = lut.length - 1;
+    if (s <= lut[0][0]) return lut[0][1];
+    while (hi - lo > 1) { const m = (lo + hi) >> 1; if (lut[m][0] < s) lo = m; else hi = m; }
+    const [s0, y0] = lut[lo], [s1, y1] = lut[hi];
+    return y0 + (y1 - y0) * (s - s0) / (s1 - s0);
+  }
+  const surfY = (x, s) => profY(s) + crown(x, s);
+
+  // vertex kinds: 0 paint, 1 black trim, 2 amber lamp, 3 dark pocket
+  const bodyKinds = [];
+  const bodyGeo = (function () {
+    const NU = 240, NV = 170, pos = [], idx = [];
+    for (let j = 0; j <= NV; j++) {
+      const p = prof.getPoint(j / NV);
+      for (let i = 0; i <= NU; i++) {
+        const x = (i / NU * 2 - 1) * WH, s = p.x;
+        const m = pocket(x, s) * smooth(440, 470, p.y);   // only the top of the fender, not the bumper below it
+        const c = crown(x, s);
+        const y = p.y + (c < 0 ? c * smooth(300, 500, p.y) : c) - DEPTH * m;   // roll the edges only up top
+        pos.push(x, y, zFront(x) - s);
+        const ax = Math.abs(x);
+        let k = 0;
+        if (m > 0.05) k = 3;
+        else if (s < 45 && ax < 430 && p.y > 185 && p.y < 305) k = 1;
+        else if (s < 45 && ax > 540 && ax < 770 && p.y > 318 && p.y < 362) k = 2;
+        bodyKinds.push(k);
+      }
+    }
+    const W = NU + 1;
+    for (let j = 0; j < NV; j++) for (let i = 0; i < NU; i++) {
+      const a = j * W + i, b = a + 1, c = a + W, d = c + 1;
+      idx.push(a, b, c, b, d, c);
+    }
+    const g = new THREE.BufferGeometry();
+    g.setAttribute("position", new THREE.Float32BufferAttribute(pos, 3));
+    g.setAttribute("color", new THREE.Float32BufferAttribute(new Array(pos.length).fill(1), 3));
+    g.setIndex(idx);
+    g.computeVertexNormals();
+    return g;
+  })();
+
+  // side panels down to the rocker, with wheel arches left open
+  const sideGeo = (function () {
+    const NV = 170, pos = [], idx = [];
+    const arch = (z, y) => Math.hypot(z + 1060, y - 330) < 385;
+    for (const sign of [-1, 1]) {
+      const x = sign * WH;
+      for (let j = 0; j < NV; j++) {
+        const p0 = prof.getPoint(j / NV), p1 = prof.getPoint((j + 1) / NV);
+        if (p0.x < 150 || p1.x < 150) continue;          // the front corners are covered by the nose
+        const z0 = zFront(x) - p0.x, z1 = zFront(x) - p1.x;
+        const y0 = p0.y + crown(x, p0.x), y1 = p1.y + crown(x, p1.x);
+        const steps = 12;
+        for (let k = 0; k < steps; k++) {
+          const ya0 = y0 + (175 - y0) * k / steps, ya1 = y0 + (175 - y0) * (k + 1) / steps;
+          const yb0 = y1 + (175 - y1) * k / steps, yb1 = y1 + (175 - y1) * (k + 1) / steps;
+          if (arch((z0 + z1) / 2, (ya0 + ya1 + yb0 + yb1) / 4)) continue;
+          const n = pos.length / 3;
+          pos.push(x, ya0, z0, x, ya1, z0, x, yb0, z1, x, yb1, z1);
+          if (sign > 0) idx.push(n, n + 2, n + 1, n + 1, n + 2, n + 3);
+          else idx.push(n, n + 1, n + 2, n + 1, n + 3, n + 2);
+        }
+      }
+    }
+    const g = new THREE.BufferGeometry();
+    g.setAttribute("position", new THREE.Float32BufferAttribute(pos, 3));
+    g.setIndex(idx);
+    g.computeVertexNormals();
+    return g;
+  })();
+
+  const paintMat = new THREE.MeshPhysicalMaterial({
+    color: 0xffffff, vertexColors: true, roughness: 0.32, metalness: 0.25, clearcoat: 1, clearcoatRoughness: 0.08, side: THREE.DoubleSide,
+  });
+  const sideMat = new THREE.MeshPhysicalMaterial({ color: 0xa3141c, roughness: 0.32, metalness: 0.25, clearcoat: 1, clearcoatRoughness: 0.08, side: THREE.DoubleSide });
+  const body = new THREE.Mesh(bodyGeo, paintMat);
+  body.castShadow = body.receiveShadow = true;
+  scene.add(body);
+  const sides = new THREE.Mesh(sideGeo, sideMat);
+  sides.castShadow = true;
+  scene.add(sides);
+
+  // wheels
+  const tireMat = new THREE.MeshStandardMaterial({ color: 0x141414, roughness: 0.85 });
+  const rimMat = new THREE.MeshStandardMaterial({ color: 0xb9bec4, roughness: 0.25, metalness: 0.9 });
+  for (const sign of [-1, 1]) {
+    const w = new THREE.Group();
+    const tire = new THREE.Mesh(new THREE.CylinderGeometry(330, 330, 245, 48, 1), tireMat);
+    tire.rotation.z = Math.PI / 2;
+    const rimDisc = new THREE.Mesh(new THREE.CylinderGeometry(215, 215, 10, 40), rimMat);
+    rimDisc.rotation.z = Math.PI / 2;
+    rimDisc.position.x = sign * 118;
+    w.add(tire, rimDisc);
+    for (let k = 0; k < 5; k++) {
+      const spoke = new THREE.Mesh(new THREE.BoxGeometry(14, 180, 34), rimMat);
+      spoke.position.set(sign * 126, 0, 0);
+      spoke.rotation.x = k * Math.PI * 2 / 5;
+      spoke.translateY(90);
+      w.add(spoke);
+    }
+    w.position.set(sign * (WH - 128), 330, -1060);
+    w.traverse((o) => { if (o.isMesh) o.castShadow = true; });
+    scene.add(w);
+  }
+
+  // windshield and cowl
+  const glass = new THREE.Mesh(
+    (function () {
+      const g = new THREE.BufferGeometry();
+      const zb = zFront(0) - 1760, yb = 712;
+      g.setAttribute("position", new THREE.Float32BufferAttribute([
+        -720, yb + 10, zb, 720, yb + 10, zb, -600, 1120, zb - 700, 600, 1120, zb - 700], 3));
+      g.setIndex([0, 2, 1, 1, 2, 3]);
+      g.computeVertexNormals();
+      return g;
+    })(),
+    new THREE.MeshPhysicalMaterial({ color: 0x0b0f14, roughness: 0.05, metalness: 0.4, clearcoat: 1, side: THREE.DoubleSide })
+  );
+  scene.add(glass);
+
+  // ---------- headlight doors and the printed assembly ----------
+  const doorGeo = (function () {
+    const NX = 40, NS = 60, pos = [], idx = [];
+    const xa = XC - HW + 3, xb = XC + HW - 3, sa = S0 + 3, sb = S1;
+    const top = [], skirt = 26;
+    for (let j = 0; j <= NS; j++) for (let i = 0; i <= NX; i++) {
+      const x = xa + (xb - xa) * i / NX, s = sa + (sb - sa) * j / NS;
+      pos.push(x, surfY(x, s) + 1.5, zFront(x) - s);
+    }
+    const W = NX + 1;
+    for (let j = 0; j < NS; j++) for (let i = 0; i < NX; i++) {
+      const a = j * W + i, b = a + 1, c = a + W, d = c + 1;
+      idx.push(a, b, c, b, d, c);
+    }
+    // skirt around the edge so the door reads as a lid
+    const ring = [];
+    for (let i = 0; i <= NX; i++) ring.push(i);
+    for (let j = 1; j <= NS; j++) ring.push(j * W + NX);
+    for (let i = NX - 1; i >= 0; i--) ring.push(NS * W + i);
+    for (let j = NS - 1; j >= 1; j--) ring.push(j * W);
+    ring.push(0);
+    const base = pos.length / 3;
+    for (const r of ring) pos.push(pos[r * 3], pos[r * 3 + 1] - skirt, pos[r * 3 + 2]);
+    for (let k = 0; k < ring.length - 1; k++) {
+      const a = ring[k], b = ring[k + 1], c = base + k, d = base + k + 1;
+      idx.push(a, b, c, b, d, c);
+    }
+    const g = new THREE.BufferGeometry();
+    g.setAttribute("position", new THREE.Float32BufferAttribute(pos, 3));
+    g.setIndex(idx);
+    g.computeVertexNormals();
+    return g;
+  })();
+  const doorMat = new THREE.MeshPhysicalMaterial({
+    color: 0xa3141c, roughness: 0.32, metalness: 0.25, clearcoat: 1, clearcoatRoughness: 0.08, side: THREE.DoubleSide,
+  });
+
+  const printedReal = { carrier: 0x2a2d31, shroud: 0x0f1012 };
+  const printedHi = { carrier: 0x5b8bd6, shroud: 0xe0b440 };
+  const carrierMat = new THREE.MeshStandardMaterial({ color: printedReal.carrier, roughness: 0.75, metalness: 0.05, flatShading: true });
+  const shroudMat = new THREE.MeshStandardMaterial({ color: printedReal.shroud, roughness: 0.6, metalness: 0.05, flatShading: true });
+  const podMat = new THREE.MeshStandardMaterial({ color: 0x1b1d20, roughness: 0.45, metalness: 0.6, flatShading: true });
+  const lensOff = { color: 0x1a232c, emissive: 0x000000, emissiveIntensity: 0 };
+  const lensMat = new THREE.MeshStandardMaterial({ color: lensOff.color, roughness: 0.08, metalness: 0.3 });
+
+  const doors = [];
+  const beams = [];
+  const want = [];
+  const partCache = {};
+  function loadPart(url) {
+    if (!partCache[url]) {
+      partCache[url] = fetch(url).then((r) => {
+        if (!r.ok) throw new Error(url);
+        return r.json();
+      }).then((d) => {
+        const g = new THREE.BufferGeometry();
+        g.setAttribute("position", new THREE.Float32BufferAttribute(d.p, 3));
+        g.setIndex(d.i);
+        g.computeVertexNormals();
+        return g;
+      });
+    }
+    return partCache[url];
+  }
+
+  function addSide(sign, sideName) {
+    const pivotS = S1, xc = sign * XC;
+    const pivot = new THREE.Vector3(xc, surfY(xc, pivotS) - 14, zFront(xc) - pivotS);
+    const hinge = new THREE.Group();
+    hinge.position.copy(pivot);
+    scene.add(hinge);
+
+    const lid = new THREE.Mesh(doorGeo, doorMat);
+    if (sign < 0) { lid.scale.x = -1; }
+    lid.position.set(-pivot.x, -pivot.y, -pivot.z);
+    lid.castShadow = true;
+    hinge.add(lid);
+
+    // assembly origin: pod faces, top of the carrier floor, centre of the pod row
+    const sF = S0 + 26;
+    const origin = new THREE.Vector3(xc, surfY(xc, sF) - 32 - 46.5, zFront(xc) - sF - 11.5);
+    const asm = new THREE.Group();
+    asm.position.copy(origin).sub(pivot);
+    asm.rotation.x = ANG.sleepy;        // pods sit level when the door is at the sleepy stop
+    hinge.add(asm);
+
+    for (const [file, mat] of [[`parts/carrier_${sideName}.json`, carrierMat], [`parts/shroud_${sideName}.json`, shroudMat], [`parts/pods_${sideName}.json`, podMat]]) {
+      want.push(loadPart(file).then((g) => {
+        const mesh = new THREE.Mesh(g, mat);
+        mesh.castShadow = mesh.receiveShadow = true;
+        asm.add(mesh);
+      }));
+    }
+    // twin lenses on each pod face (from the design files, so they follow each pod's angle)
+    want.push(loadPart(`parts/lenses_${sideName}.json`).then((g) => asm.add(new THREE.Mesh(g, lensMat))));
+    const beam = new THREE.SpotLight(0xe6efff, 0, 9000, 0.42, 0.55, 1.2);
+    beam.position.set(0, 23, 20);
+    const tgt = new THREE.Object3D();
+    tgt.position.set(0, -420, 4000);
+    asm.add(beam, tgt);
+    beam.target = tgt;
+    beams.push(beam);
+    doors.push(hinge);
+  }
+  addSide(1, "driver");       // car's left is +x in this view
+  addSide(-1, "passenger");
+
+  // ---------- state ----------
+  const state = { door: "sleepy", angle: ANG.sleepy, lights: "on", finish: "real", paint: 0 };
+
+  function applyPaint() {
+    const c = new THREE.Color(PAINTS[state.paint].hex);
+    const trim = new THREE.Color(0x0c0d0f), amber = new THREE.Color(0xe8830f), dark = new THREE.Color(0x08090a);
+    const col = bodyGeo.getAttribute("color");
+    for (let i = 0; i < bodyKinds.length; i++) {
+      const k = bodyKinds[i], v = k === 0 ? c : k === 1 ? trim : k === 2 ? amber : dark;
+      col.setXYZ(i, v.r, v.g, v.b);
+    }
+    col.needsUpdate = true;
+    sideMat.color.copy(c);
+    doorMat.color.copy(c);
+    document.getElementById("paint-name").textContent = PAINTS[state.paint].name;
+    document.querySelectorAll(".swatch").forEach((b, i) => b.setAttribute("aria-pressed", String(i === state.paint)));
+  }
+  function applyLights() {
+    const on = state.lights === "on";
+    lensMat.color.set(on ? 0xffffff : lensOff.color);
+    lensMat.emissive.set(on ? 0xdbe9ff : 0x000000);
+    lensMat.emissiveIntensity = on ? 2.2 : 0;
+    beams.forEach((b) => (b.intensity = on ? 2.4 : 0));
+    hemi.intensity = on ? 0.42 : 0.55;
+  }
+  function applyFinish() {
+    const f = state.finish === "hi" ? printedHi : printedReal;
+    carrierMat.color.set(f.carrier);
+    shroudMat.color.set(f.shroud);
+    document.getElementById("legend").hidden = state.finish !== "hi";
+  }
+  function setView(v) {
+    const p = VIEWS[v];
+    camera.position.set(...p.pos);
+    controls.target.set(...p.target);
+    controls.update();
+  }
+
+  const swWrap = document.getElementById("swatches");
+  PAINTS.forEach((p, i) => {
+    const b = document.createElement("button");
+    b.type = "button";
+    b.className = "swatch";
+    b.id = "paint-" + i;
+    b.title = p.name;
+    b.setAttribute("aria-label", p.name);
+    b.style.background = "#" + p.hex.toString(16).padStart(6, "0");
+    b.addEventListener("click", () => { state.paint = i; applyPaint(); });
+    swWrap.appendChild(b);
+  });
+
+  document.querySelectorAll(".seg").forEach((seg) => {
+    seg.addEventListener("click", (e) => {
+      const btn = e.target.closest("button");
+      if (!btn) return;
+      seg.querySelectorAll("button").forEach((b) => b.setAttribute("aria-pressed", String(b === btn)));
+      const g = seg.dataset.group, v = btn.dataset.v;
+      if (g === "door") state.door = v;
+      if (g === "lights") { state.lights = v; applyLights(); }
+      if (g === "finish") { state.finish = v; applyFinish(); }
+      if (g === "view") setView(v);
+    });
+  });
+
+  function resize() {
+    const w = stage.clientWidth, h = stage.clientHeight;
+    renderer.setSize(w, h, false);
+    camera.aspect = w / h;
+    camera.updateProjectionMatrix();
+  }
+  new ResizeObserver(resize).observe(stage);
+
+  const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  function frame() {
+    const target = ANG[state.door];
+    state.angle = reduce ? target : state.angle + (target - state.angle) * 0.08;
+    doors.forEach((h) => (h.rotation.x = -state.angle));
+    controls.update();
+    renderer.render(scene, camera);
+    requestAnimationFrame(frame);
+  }
+
+  applyPaint(); applyLights(); applyFinish(); setView("34"); resize();
+  Promise.all(want).then(() => { document.getElementById("loading").hidden = true; })
+    .catch(() => { document.getElementById("loading").textContent = "Couldn't load the part files."; });
+  window.__mock = { state, setView, applyLights, applyPaint, applyFinish, ANG, scene, doors };
+  frame();
+})();
+</script>

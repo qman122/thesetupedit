@@ -1,1 +1,8 @@
 _preview/
+c5-shroud/__pycache__/
+c5-shroud/mockup/cover_*.json
+c5-shroud/stl/projectors_*/assembled/
+
+c5-shroud/tools/viewer/style_*/
+c5-shroud/tools/photoreal/scene/
+c5-shroud/tools/photoreal/out/
