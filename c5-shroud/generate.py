@@ -532,7 +532,7 @@ def carrier_projectors(p):
     hb0 = pod_zc(p) + bs.proj_lift(st_) - bs.PROJ_H / 2
     fl = [0.0 if zc - bs.PROJ_H / 2 >= 1.0 else zc - bs.PROJ_H / 2 - hb0 for (_, _, zc, _, _) in spans]
     stepped = min(fl) < 0
-    wf = ow + 5.5
+    wf = ow + 8.0           # each step a little wider than its foot (not on its edge: no slivers)
     kx, kz = [-400.0, spans[0][0] - wf - 12.0], [0.0, 0.0]
     for sp, f in zip(spans, fl):
         kx += [sp[0] - wf, sp[0] + wf]
@@ -549,9 +549,11 @@ def carrier_projectors(p):
         return plate_xz(CS([pts]), 500.0, 1000.0)
     if stepped:
         fmin = min(fl)
-        # over each lowered step, the room for its head (1 mm round it) and body, down to the step
-        pockets = M.batch_boolean([box(sp[0] - bs.PROJ_W / 2 - 1.0, sp[0] + bs.PROJ_W / 2 + 1.0,
-                                       min(sp[3], sp[1] - p.proj_head_d - p.proj_body_d) - 1.0, sp[1] + 1.0, f, 0.5)
+        # over each lowered step, the room for its head and body, down to the step: the foot's
+        # whole width (past its rounded edge), from 1.5 mm behind the body to 1 mm in front of the head
+        hp = ow + 4.5 + 1.0 + 0.5
+        pockets = M.batch_boolean([box(sp[0] - hp, sp[0] + hp,
+                                       min(sp[3], sp[1] - p.proj_head_d - p.proj_body_d) - 1.5, sp[1] + 1.0, f, 0.5)
                                    for sp, f in zip(spans, fl) if f < 0], m3d.OpType.Add)
         slab = M.extrude(beam, p.floor_t - fmin).translate([0, 0, fmin - p.floor_t]) ^ follow(-p.floor_t, 200.0)
         parts.append(slab - pockets)
@@ -1656,8 +1658,21 @@ def diffusers(p):
     import trimesh
     tm = trimesh.load(path)
     out, y = [], 0.0
+    st = os.environ.get("BEZEL_STYLE", "")
     for piece in sorted(tm.split(only_watertight=False), key=lambda q: -q.volume):
         m = M(m3d.Mesh(np.asarray(piece.vertices, np.float32), np.asarray(piece.faces, np.uint32)))
+        if st == "P3D":
+            # D's bars lean in (bezel_styles.D_TILT), along the face's x, at every depth alike:
+            # tipped back by as much, each one's long edges are level again; each then stands on
+            # its long straight edge (the top bar upside down, its tip, angled down, in the air)
+            import bezel_styles as bs
+            m = m.rotate([0, bs.D_TILT, 0])
+            q = to_trimesh(m)
+            z0, z1 = q.bounds[:, 2]
+            dn = q.area_faces[(q.face_normals[:, 2] < -0.99) & (q.triangles_center[:, 2] < z0 + 0.05)].sum()
+            up = q.area_faces[(q.face_normals[:, 2] > 0.99) & (q.triangles_center[:, 2] > z1 - 0.05)].sum()
+            if up > dn:
+                m = m.rotate([0, 180, 0])
         b = m.bounding_box()
         out.append(m.translate([-(b[0] + b[3]) / 2, y - b[1], -b[2]]))
         y += b[4] - b[1] + 6.0
