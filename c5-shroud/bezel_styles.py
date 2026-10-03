@@ -150,12 +150,13 @@ LENS_GAP = 2.0           # round the lens, in its hole (the misalignment clearan
 LENS_BEVEL = 2.0         # the holes' edges bevelled this much wider at the face
 D_BAR_UNDER_RAIL = 3.0   # the top bar's centre line, this far under the rail's underside
 D_BOTTOM_Z = -1.2        # the bottom bar's centre line (straight)
-D_SQUINT = (-115.0, -145.0, 35.0, 8.0)   # the "mean" squint: the top bar runs level across the heads
-                                         # (as low as the rail at the fender end allows), then,
-                                         # past the hood-side head, angles down 35 degrees from
-                                         # x -115 to x -145 round a radius 8 bend...
-D_SQUINT_LOW = (-115.0, -145.0, 30.0, 8.0)   # ...and the bottom bar angles up 30 degrees over the same
-                                             # stretch, so the eye tapers to its inner corner
+D_SQUINT = (-88.0, -118.0, 40.0, 8.0)   # the "mean" squint: the top bar runs level across the heads
+                                        # (as low as the rail at the fender end allows), then,
+                                        # right past the hood-side head, angles down 40 degrees
+                                        # from x -88 to x -118 round a radius 8 bend...
+D_SQUINT_LOW = (-88.0, -118.0, 36.0, 8.0)   # ...and the bottom bar angles up 36 degrees over the same
+                                            # stretch, so the two lines close in to a sharp inner
+                                            # corner (about 11 mm apart at the tips, on centre)
 D_ENDS = (190.0, 486.0)  # where both bars end (arc position): 25 mm round onto the hood-side face (the
                          # door's side flange is close behind it further round), and before the tight
                          # fender corner
@@ -480,7 +481,9 @@ class Style:
                                  (ax(xs2), D_BOTTOM_Z), (a1, D_BOTTOM_Z)], [rb2]))
             self.channels.append(Channel(top, LINE4))
             self.channels.append(Channel(bot, LINE4))
-            self.wire = (ax(xs2) + 6.0, D_BOTTOM_Z, 25.0)                   # the bars are wired together behind
+            aw = ax(xs2 - 20.0)       # the bars are wired together behind, from the bottom bar's
+            zw = float(np.interp(aw, [bot[0][0], ax(xs2)], [bot[0][1], D_BOTTOM_Z]))   # angled stretch
+            self.wire = (aw, zw, 25.0)                                                   # (clear of the head)
             self.chin = (ax(xe2) - 15.0, a1 + 15.0)
             self.chin_z = D_BOTTOM_Z - LINE4.inner / 2 - LINE4.wall - 1.0
             self.lens_hole = LENS_D / 2 + LENS_GAP
