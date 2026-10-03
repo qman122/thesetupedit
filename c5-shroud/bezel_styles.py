@@ -175,6 +175,7 @@ R_REC_IN = 4.5           # the step this far inside the line's centre (2 mm of w
 R_REC_R = 6.0            # the recess's corner radius
 R_FIN = (1.2, 1.6, 2.6)  # a blade between each two lenses, leaning with the ends: its front edge 1.2 mm behind
                          # the face, 3.2 mm wide there, 5.2 at the floor
+V_SHAPE = os.environ.get("V_SHAPE", "")      # W's sculpted face (face_relief): '', 'visor', 'scoop'
 R_SHAPE = os.environ.get("R_SHAPE", "")      # the face's sculpted form (R_RELIEF): '', 'visor', 'wedge', 'scoop'
 R_SHAPE_BACK = {"": 0.0, "visor": 5.0, "wedge": 8.2, "scoop": 6.0}[R_SHAPE]   # its deepest over the heads
 PROJ3R = tuple((x, y - R_REC - R_SHAPE_BACK) for x, y in PROJ3D)   # the heads back by as much, the same skin over each
@@ -185,8 +186,8 @@ def smoothstep(x, a, b):
     return t * t * (3 - 2 * t)
 
 
-def r_relief(shape, T_of_a):
-    """R's sculpt map: how far back the face sits at (a, z). Nothing on the side panels (the door's
+def face_relief(shape, T_of_a):
+    """A sculpt map for the face: how far back the face sits at (a, z). Nothing on the side panels (the door's
     screw bosses) or at the top rail (the door's lip sits on its front edge), easing in below it.
       visor: 5 mm back under the rail, which overhangs it as a brow
       wedge: raked back 7 degrees toward the bottom, the top leaning forward
@@ -610,7 +611,7 @@ class Style:
                 self.grooves.append(((a_ - lean * (zc - gz0), gz0), (a_ + lean * (gz1 - zc), gz1), gw, R_GILL_DEPTH))
             self.honey = R_HONEY
             if R_SHAPE:
-                sw.relief = r_relief(R_SHAPE, self.T_of_a)
+                sw.relief = face_relief(R_SHAPE, self.T_of_a)
             self.chin = (a0 - 15.0, self.arc_of_x(xb) + 15.0)
             self.chin_z = zb - LINE4.inner / 2 - LINE4.wall - 1.0
             self.lens_hole = LENS_D / 2 + LENS_GAP
@@ -670,6 +671,9 @@ class Style:
             self.chin_z = zb_t - 1.0
             self.pocket = V_CHAMFER
             self.block_extra = V_CHAMFER[0]
+            self.honey = R_HONEY                     # honeycomb on the recess's floor, between the pockets
+            if V_SHAPE:                              # the face sculpted (the heads stand proud of it, as J's)
+                sw.relief = face_relief(V_SHAPE, self.T_of_a)
         if name == "P3J":
             # three projectors in a line, in stepped pockets under a sharp brow; a thin light line
             # runs the face's full width under them and kicks up at both ends at crisp corners
@@ -950,8 +954,16 @@ class Style:
             fl = -self.tray_recess
             ridge = np.maximum(honeycomb(a, Z, cell, w), np.abs(nn - fl - (h - 0.5) / 2) - (h + 0.5) / 2)   # 0.5 into the floor
             ridge = np.maximum(ridge, self.tray2d(a, Z) + 1.2)            # inside the housing, clear of its walls
-            for (px, hw, zc, hh) in self.fronts:                          # and of the lens holes' bevels
-                ridge = np.maximum(ridge, (self.lens_hole or 0.0) + LENS_BEVEL + 1.0 - np.hypot(X - px, Z - zc))
+            for (px, hw, zc, hh) in self.fronts:
+                if self.lens_hole is not None:                            # clear of the lens holes' bevels
+                    ridge = np.maximum(ridge, self.lens_hole + LENS_BEVEL + 1.0 - np.hypot(X - px, Z - zc))
+                elif self.pocket is not None:                             # or of the pockets and their chamfers
+                    cs, cb, ct = self.pocket
+                    out_ = np.maximum(np.abs(X - px) - (hw + cs + 1.2),
+                                      np.maximum(zc - hh - cb - 1.2 - Z, Z - (zc + hh + ct + 1.2)))
+                    ridge = np.maximum(ridge, -out_)
+            for ch, d in zip(self.channels, c["d"]):                      # and of the light line's channel
+                ridge = np.maximum(ridge, -(d[0] - ch.s.wall - 1.0))
             F = o.union_round(F, ridge, 0.25)
         if self.chamfer:
             for (px, hw, zc, hh) in self.fronts:
