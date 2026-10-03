@@ -1708,9 +1708,98 @@ def dowel_spot(p):
     return us, n_c, dowel_levels(p)
 
 
+SPLICE_T = 2.4          # the splice sleeve's plates (6 perimeters at 0.4 mm)
+SPLICE_IN = 7.0         # how far it reaches into the fender piece
+SPLICE_BACK = 6.0       # ...and how far it runs along the inside of the hood piece
+SPLICE_H = 45.0         # its face plate, down from the rail's underside
+SPLICE_CLEAR = 0.15     # round the fender piece's walls, so the halves slide together
+
+
+def splice_sleeve(p, man, us):
+    """Projector bezels: an L-shaped sleeve across the print split, on the hood piece. Its plates
+    follow the inside of the face wall and the underside of the top rail at the cut, 6 mm along
+    the hood piece (fused to it) and 7 mm on into the fender piece, which slides onto it: the
+    halves line up in depth and height, and the joint's glue area grows several times over. Where
+    the fender piece's walls wander or carry ribs and bosses within the 7 mm, the sleeve is
+    trimmed to clear them all along (so it slides in) by SPLICE_CLEAR. None of it shows."""
+    from matplotlib.path import Path
+    F = np.array(front_frame(p))
+    R, t = F[:, :3], F[:, 3]
+    to_cut = (np.c_[np.eye(3)[[1, 2, 0]], [0, 0, -us]] @ np.r_[np.c_[R.T, -R.T @ t], [[0, 0, 0, 1]]])[:3]
+    back = np.r_[np.c_[R, t], [[0, 0, 0, 1]]] @ np.r_[np.c_[np.eye(3)[[2, 0, 1]], [us, 0, 0]], [[0, 0, 0, 1]]]
+    loc = man.transform(to_cut.tolist())                     # (n, z, u - us)
+    polys = [Path(q) for q in loc.slice(0.0).to_polygons()]
+    (n0, z0), (n1, z1) = loc.slice(0.0).bounds()[:2], loc.slice(0.0).bounds()[2:]
+    nn = np.arange(n0 - 1, n1 + 1, 0.1)
+
+    def solid(row):          # material along n at one height (even-odd over the section's outlines)
+        pts = np.c_[nn, np.full_like(nn, row)]
+        c = sum(pa.contains_points(pts).astype(int) for pa in polys)
+        return c % 2 == 1
+
+    def front_run_start(row):   # the back of the frontmost material at this height (the face's inner side)
+        m = solid(row)
+        if not m.any():
+            return None
+        i = len(m) - 1 - np.argmax(m[::-1])          # the frontmost solid cell
+        while i > 0 and m[i - 1]:
+            i -= 1
+        return nn[i]
+    # the rail's underside: the bottom of the topmost material, a little behind the face
+    zz = np.arange(z0, z1, 0.1)
+    n_probe = n0 + 0.4 * (n1 - n0)
+    col = np.array([any(pa.contains_points([[n_probe, z]]).any() for pa in polys) for z in zz])
+    i = len(col) - 1 - np.argmax(col[::-1])
+    while i > 0 and col[i - 1]:
+        i -= 1
+    z_ru = zz[i]
+    rows = np.r_[np.arange(z_ru - SPLICE_H, z_ru - SPLICE_T, 0.25), z_ru - SPLICE_T + 0.5]   # into the rail plate
+    nfi = [front_run_start(r) for r in rows]
+    keep = [(r, n) for r, n in zip(rows, nfi) if n is not None]
+    rows, nfi = np.array([k[0] for k in keep]), np.array([k[1] for k in keep])
+    n_top = nfi[-1]
+    face = np.r_[np.c_[nfi + 0.3, rows], np.c_[nfi[::-1] - SPLICE_T, rows[::-1]]]
+    rail = [[n0 + 3.0, z_ru - SPLICE_T], [n_top + 0.3, z_ru - SPLICE_T], [n_top + 0.3, z_ru + 0.3], [n0 + 3.0, z_ru + 0.3]]
+    prof = CS([face.tolist()]) + CS([rail])
+    # what it must clear, seen along the cut's normal: the fender piece's walls within its reach
+    # (grown by the clearance) and the projectors (grown by 1 mm), over the whole length
+    lights = lights_dummy(p).transform(to_cut.tolist())
+
+    def clear_of_lights(u0, u1):      # the projectors' outline (1 mm round it) between u0 and u1
+        return (lights ^ box(-500, 500, -500, 500, u0 - 1.0, u1 + 1.0)).project().offset(1.0, m3d.JoinType.Round)
+    # into the fender piece it reaches up to SPLICE_IN, stopping 0.5 mm short of the first thing in
+    # its way there besides the walls it hugs (the next tunnel's side wall, say)
+    walls = loc.slice(0.05).offset(1.0, m3d.JoinType.Round)      # the walls it hugs, as they curve on
+    inner = prof - walls
+    hit = (loc ^ box(-500, 500, -500, 500, 0.05, SPLICE_IN + 0.5)) ^ M.extrude(inner, SPLICE_IN + 0.5)
+    reach_in = SPLICE_IN if hit.is_empty() else max(2.0, min(SPLICE_IN, hit.bounding_box()[2] - 0.5))
+    fender = (loc ^ box(-500, 500, -500, 500, 0.0, reach_in + 0.5)).project().offset(SPLICE_CLEAR, m3d.JoinType.Round)
+    tenon = M.extrude(prof - fender - clear_of_lights(0.0, reach_in), reach_in + 0.3).translate([0, 0, -0.3])   # overlaps the root
+    # on the hood piece the projectors stand at an angle to the cut, the nearest corner a few mm
+    # from it: the sleeve runs the full SPLICE_BACK where it's clear of them, and all of it as far
+    # back as the nearest one allows
+    root = M.extrude(prof - clear_of_lights(-SPLICE_BACK, 0.0), SPLICE_BACK).translate([0, 0, -SPLICE_BACK])
+    near = lights ^ M.extrude(prof, SPLICE_BACK + 1.0).translate([0, 0, -SPLICE_BACK - 1.0])
+    free = SPLICE_BACK if near.is_empty() else min(SPLICE_BACK, -near.bounding_box()[5] - 1.0)
+    if free > 0.5:
+        root = root + M.extrude(prof, free).translate([0, 0, -free])
+    return (root + tenon).transform(back[:3].tolist())
+
+
+def joint_test(p, pieces, half=18.0):
+    """A quick print to try the halves' fit: each piece cut 18 mm either side of the split, both
+    as printed (on the top rail), side by side."""
+    us = dowel_spot(p)[0]
+    near = box(us - half, us + half, -2000, 2000, -500, 500).transform(front_frame(p))
+    a, b = [print_orient_shroud(q ^ near) for q in pieces]
+    ba, bb = a.bounding_box(), b.bounding_box()
+    return a + b.translate([0, ba[4] - bb[1] + 8.0, ba[2] - bb[2]])
+
+
 def split_shell(p, man):
     """The two print pieces: cut through the middle of the hood-side post, with a dowel hole
-    across the cut in the floor under the post (dowel_levels)."""
+    across the cut in the floor under the post (dowel_levels), and for the projector bezels a
+    splice sleeve across the cut on the hood piece (splice_sleeve)."""
     F = front_frame(p)
     us, n_c, zs = dowel_spot(p)
     pins = []
@@ -1720,7 +1809,11 @@ def split_shell(p, man):
     pins = lift_top(p, M.batch_boolean(pins, m3d.OpType.Add).transform(F))
     left = box(-2000, us, -2000, 2000, -500, 500).transform(F)
     right = box(us, 2000, -2000, 2000, -500, 500).transform(F)
-    return (man ^ left) - pins, (man ^ right) - pins
+    hood, fender = man ^ left, man ^ right
+    if proj_lights(p):
+        hood = hood + splice_sleeve(p, man, us)
+        hood = M.batch_boolean([q for q in hood.decompose() if q.volume() > 1.0], m3d.OpType.Add)   # no slivers
+    return hood - pins, fender - pins
 
 
 def fit_test(p):
@@ -1896,8 +1989,10 @@ def write_projector_set(here):
     for side, f in (("passenger", lambda m: m), ("driver", mirror_x)):
         save(print_orient_carrier(f(c)), os.path.join(out, f"carrier_{side}.stl"))
         save(f(print_orient_shroud(s)), os.path.join(out, f"bezel_{side}_one_piece.stl"))
-        for tag, piece in zip(("hood_piece", "fender_piece"), split_shell(P, s)):
+        pieces = split_shell(P, s)
+        for tag, piece in zip(("hood_piece", "fender_piece"), pieces):
             save(f(print_orient_shroud(piece)), os.path.join(out, f"bezel_{side}_{tag}.stl"))
+        save(f(joint_test(P, pieces)), os.path.join(out, f"bezel_joint_test_{side}.stl"))
         save(f(projector_straps(P)), os.path.join(out, f"projector_straps_{side}.stl"))
         dif = diffusers(P)
         if dif is not None:

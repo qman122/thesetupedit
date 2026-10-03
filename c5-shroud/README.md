@@ -580,14 +580,25 @@ bay. Use 4 walls, 40% gyroid infill, and 6 top and bottom layers.
 ## Joining the bezel halves
 
 The two pieces meet at a flat cut through the post between the hood-side and middle lights.
+On the projector bezels the hood piece also carries a **splice sleeve** (`splice_sleeve` in
+`generate.py`): an L of 2.4 mm plates that follows the inside of the face wall and the underside
+of the top rail across the cut, 6 mm along the hood piece and up to 7 mm on into the fender
+piece, which slides onto it. It lines the halves up in depth and height, adds about 500 mm2 of
+glue area to the bare cut face, and none of it shows. Where the fender piece's walls curve or
+carry ribs within its reach it's trimmed to clear them, with 0.15 mm all round, so the halves
+slide together. Its overhanging end prints about 3 mm off the bed with the rail's supports. Each
+projector set also has `bezel_joint_test_<side>.stl`: 18 mm of each piece either side of the cut,
+to try the fit (and the glue) before printing the whole halves.
 
-1. **Dry-fit first.** Push the dowel pin into one half, fit the other half on, and tape the
-   two together. Try the whole bezel on the car before gluing.
+1. **Dry-fit first.** Push the dowel pin into one half, slide the fender half onto the sleeve,
+   and tape the two together. Try the whole bezel on the car before gluing. If the sleeve is
+   tight, sand its faces lightly; don't force it (the fender half's thin walls can crack).
 2. **Prepare the faces.** Sand both cut faces flat with 120-grit on a flat board and wipe
    them with isopropyl alcohol. Test that they sit together with no gap and nothing rocking.
 3. **Glue.** Use a two-part epoxy made for plastics (J-B Weld PlasticBonder, Loctite Epoxy
    Plastic Bonder or similar). Superglue is brittle on PCTG/PETG.
-   - Coat both faces and the dowel hole.
+   - Coat both cut faces, the dowel hole and the sleeve's outer faces (the ones that meet the
+     fender half's face wall and rail).
    - Push the halves together on the pin, wipe off the squeeze-out and check the front runs
      smooth across the joint.
    - Hold them with tape or a light clamp while it cures, flat on the bench, rail down.
