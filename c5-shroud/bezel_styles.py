@@ -194,19 +194,17 @@ R_SHAPE_BACK = {"": 0.0, "visor": 5.0, "wedge": 8.2, "scoop": 6.0}[R_SHAPE]   # 
 PROJ3R = tuple((x, y - R_REC - R_SHAPE_BACK) for x, y in PROJ3D)   # the heads back by as much, the same skin over each
 
 
-# J's light line, drawn to a few rules: the same distance from the edge it follows the whole way, every
-# change of direction one tangent arc of the same radius, and the ends set to real lines on the part
-J_LINE = os.environ.get("J_LINE", "edge")    # 'edge' (these rules) or 'swoosh' (the freehand one before)
-J_BEND_R = 25.0          # the one bend radius, on the centre line (easy on a side-bend strip)
-J_CHIN = (188.0, 562.0)  # the face's bottom edge comes down between the two corners...
-J_CHIN_FADE = 40.0       # ...easing down over this much round each corner, so the line (parallel to it) eases too
-J_HOOD_RISE = 200.0      # hood side: the line rounds the corner with the bottom edge, turns up here as the corner ends...
-J_HOOD_MEET = 140.0      # ...and turns again here to run back parallel to the hood edge (the top rail)...
-J_HOOD_OFF = 30.0        # ...this far under it (clear of the screw bosses at a 131 and 159, in the door's gap)
-J_HOOD_END = 65.0        # ...ending here, near the back of the side panel
-J_FENDER_S = (518.0, 560.0, 22.8)   # fender side: one S up (its two turns' corners, a, and the height it
-                                    # climbs to), then parallel to the bottom edge...
-J_FENDER_END = 589.0     # ...ending right under the screw boss (a 589, z 37.4)
+# J's light line, drawn to a few rules: level along the bottom of the face and on round both front
+# corners, and its two ends the same move, measured from where the line leaves each corner: one S up
+# (two arcs of the same radius, a straight between), the same length, finishing the same height over
+# the bottom edge. The fender side sets the limit (its screw boss at a 589); both ends stop well short.
+J_LINE = os.environ.get("J_LINE", "ends")    # 'ends' (these rules) or 'swoosh' (the freehand one before)
+J_BEND_R = 20.0          # the one bend radius, on the centre line (easy on a side-bend strip)
+J_CORNERS = (195.0, 528.0)   # where the line leaves the hood-side and fender-side front corners (a)
+J_S = 38.0               # each end's S: this long past its corner...
+J_END = (42.0, 18.0)     # ...and the end this far past it, this high over the bottom edge
+J_CHIN_FADE = J_S        # the face's bottom edge (the chin) carries on level round each corner too, easing
+J_CHIN = (J_CORNERS[0] - J_CHIN_FADE, J_CORNERS[1] + J_CHIN_FADE)   # up to the side panel's under the S
 
 
 def chin_bottom(L, B, chin, chin_z, fade=20.0):
@@ -232,41 +230,35 @@ def arc_corner(p0, c, p1, r, n=24):
     return centre + r * np.c_[np.cos(a0 + da * s), np.sin(a0 + da * s)]
 
 
-def j_edge_line(sw, zlow, T_of_a):
-    """J's light line in the face's (a, z), from the hood-side panel to the fender-side one: back along
-    the hood edge, one turn down, a straight run down to the hood corner, a turn onto the bottom edge,
-    parallel to it right round the face (easing round each corner as the edge does), one S up past the
-    fender corner and on, parallel to the bottom edge again. Every turn is J_BEND_R."""
-    L, B, R = sw.L, sw.B, J_BEND_R
-    off = zlow - EYELID_CHIN                           # the line's height over the bottom edge, on the face
-    low = lambda a: np.interp(a, L, chin_bottom(L, B, J_CHIN, EYELID_CHIN, J_CHIN_FADE)) + off
-    top = lambda a: T_of_a(a) - J_HOOD_OFF
-    slope = lambda f, a: (f(a + 3.0) - f(a - 3.0)) / 6.0
-    # the hood side: corners where the two runs' tangent lines meet the straight between them
-    p2 = np.array([J_HOOD_MEET, top(J_HOOD_MEET)])
-    p1 = np.array([J_HOOD_RISE, low(J_HOOD_RISE)])
-    k2, k1 = slope(top, J_HOOD_MEET), slope(low, J_HOOD_RISE)
-    arc2 = arc_corner(p2 - 20.0 * np.array([1.0, k2]), p2, p1, R)
-    arc1 = arc_corner(p2, p1, p1 + 20.0 * np.array([1.0, k1]), R)
-    # the fender side: one S, the same two turns, then on parallel to the bottom edge
-    p3 = np.array([J_FENDER_S[0], low(J_FENDER_S[0])])
-    p4 = np.array([J_FENDER_S[1], J_FENDER_S[2]])
-    hi = lambda a: np.interp(a, L, B) + J_FENDER_S[2] - np.interp(J_FENDER_S[1], L, B)
-    k3, k4 = slope(low, p3[0]), slope(hi, p4[0])
-    arc3 = arc_corner(p3 - 20.0 * np.array([1.0, k3]), p3, p4, R)
-    arc4 = arc_corner(p3, p4, p4 + 20.0 * np.array([1.0, k4]), R)
-    run_end = [(a, hi(a)) for a in np.arange(arc4[-1, 0] + 1.5, J_FENDER_END + 0.1, 1.5)]
-    run_top = [(a, top(a)) for a in np.arange(J_HOOD_END, arc2[0, 0] - 0.5, 1.5)]
-    run_low = [(a, low(a)) for a in np.arange(arc1[-1, 0] + 1.5, arc3[0, 0] - 0.5, 1.5)]
-    arcs = lambda *cs: [tuple(p) for c in cs for p in c]
-    pts = np.array(run_top + arcs(arc2, arc1) + run_low + arcs(arc3, arc4) + run_end)
-    # evened out along its length (the runs follow curved edges, so their joins to the arcs carry
-    # tiny corners): resampled every 0.5 mm and smoothed over a few mm, which leaves the arcs as they are
-    s = np.r_[0.0, np.cumsum(np.hypot(*np.diff(pts, axis=0).T))]
-    u = np.arange(0.0, s[-1], 0.5)
-    pts = np.c_[np.interp(u, s, pts[:, 0]), np.interp(u, s, pts[:, 1])]
-    from scipy.ndimage import gaussian_filter1d
-    return [tuple(p) for p in gaussian_filter1d(pts, 6.0, axis=0, mode="nearest")]
+def s_rise(rise, span, r, n=60):
+    """An S from (0, 0) to (span, rise), level at both ends: two arcs of radius r and the straight between
+    them. Returns its points."""
+    from scipy.optimize import brentq
+    def gap(th):                       # the straight's length from the run, less what the rise needs
+        l = (span - 2 * r * np.sin(th)) / np.cos(th)
+        return 2 * r * (1 - np.cos(th)) + l * np.sin(th) - rise
+    th = brentq(gap, 1e-6, np.arcsin(min(1.0, span / (2 * r))) - 1e-9)
+    v = np.linspace(0, th, n // 2)
+    arc1 = np.c_[r * np.sin(v), r - r * np.cos(v)]                       # concave, from the run
+    arc2 = np.c_[span - r * np.sin(v[::-1]), rise - r + r * np.cos(v[::-1])]   # convex, onto the end
+    return np.vstack([arc1, arc2])
+
+
+def j_edge_line(sw, zlow):
+    """J's light line in the face's (a, z), hood end to fender end: level at zlow along the face and round
+    both corners, then past each corner the same S (J_BEND_R, J_S long) up to J_END's height over the
+    bottom edge, and level on to the end."""
+    L, B = sw.L, sw.B
+    u_end, h1 = J_END
+    out = []
+    for c, sgn in ((J_CORNERS[0], -1.0), (J_CORNERS[1], 1.0)):
+        z1 = float(np.interp(c + sgn * u_end, L, B)) + h1
+        sp = s_rise(z1 - zlow, J_S, J_BEND_R)
+        end = [(c + sgn * sp[:, 0][k], zlow + sp[:, 1][k]) for k in range(len(sp))]
+        end += [(c + sgn * u, z1) for u in np.arange(J_S + 1.0, u_end + 0.01, 1.0)]
+        out.append(end)
+    face = [(a, zlow) for a in np.arange(J_CORNERS[0] + 1.0, J_CORNERS[1] - 0.5, 1.0)]
+    return out[0][::-1] + face + out[1]
 
 
 def dowel_back(style):
@@ -783,8 +775,8 @@ class Style:
                 hwo = PROJ_W / 2 - lip[0]                                        # the openings
                 zlow = self.fronts[0][2] - PROJ_H / 2 + lip[1] - HOOK_GAP - DIFF.inner / 2 - DIFF.wall
                 x_rise = pxs[0] - hwo - HOOK_GAP - DIFF.inner / 2 - DIFF.wall   # past the hood-side opening
-                if J_LINE == "edge":
-                    pts = j_edge_line(sw, zlow, self.T_of_a)
+                if J_LINE == "ends":
+                    pts = j_edge_line(sw, zlow)
                 else:
                     ctrl = list(J_HOOD_SIDE) + [(ax(SW_HOOD[0]), SW_HOOD[1]), (ax(SW_HOOD[0] + 9.0), SW_HOOD[1] - 7.0),
                             (ax(x_rise - 6.0), zlow + 2.5), (ax(x_rise + 4.0), zlow)]
@@ -834,7 +826,7 @@ class Style:
                 def base_fn(a, ea0=ea0, ea1=ea1):
                     return EYELID * smoothstep(a, ea0 - 4.0, ea0 + 8.0) * (1.0 - smoothstep(a, ea1 - 10.0, ea1 + 4.0))
                 self.channels.append(Channel(pts, DIFF, base=EYELID, base_fn=base_fn))
-                if J_LINE == "edge":
+                if J_LINE == "ends":
                     self.chin, self.chin_fade = J_CHIN, J_CHIN_FADE   # the bottom edge steps down round each corner
                 else:
                     low = [p[0] for p in pts if p[1] < 8.0]
@@ -850,6 +842,9 @@ class Style:
                 self.pocket = POCKET_CHAMFER
                 self.block_extra = POCKET_CHAMFER[0]
             self.wire = (a_start + 12.0, min(p[1] for p in pts), 25.0)
+            if end == "swoosh" and J_LINE == "ends":     # behind the line's face run, by the hood-side corner
+                aw = J_CORNERS[0] + 40.0
+                self.wire = (aw, float(np.interp(aw, *np.array(pts).T)), 25.0)
             self.tray = dict(u0=ea0, u1=ea1, zb=EYELID_BOTTOM, zmid=self.fronts[0][2], r=4.0, top=EYELID_TOP)
             self.chin_z = EYELID_CHIN
             self.win_edge = 0.6
