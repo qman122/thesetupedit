@@ -441,6 +441,8 @@ R_STRAKE_DEPTH = 1.4     # into the 3 mm wall, with 45 degree sides
 R_GILLS = (504.0, 7.5, 4, 3.0, (12.0, 50.0))   # the fender corner past the C: 4 slots from a 504, 7.5 apart,
                                                # 3 mm wide, z 12 to 50, leaning with the C
 R_GILL_DEPTH = 1.4
+TEXTURE = os.environ.get("TEXTURE", "honey")   # the recessed face's texture: 'honey' (honeycomb) or 'carbon'
+CARBON = (4.0, 0.5)       # carbon: a 4 mm weave cell (two 2 mm tows), raised 0.5 mm
 HONEY_STEEP = (1.5, 1.0)  # no honeycomb where the sculpted face changes more than 1 mm within 1.5 mm
 R_HONEY = (6.5, 0.9, 0.6)    # the housing's floor: raised honeycomb, cells 6.5 mm across, ridges 0.9 wide, 0.6 high
 BOLD_STYLES = ("P3J", "P4J", "P3C", "P3V", "P3D", "P3R", "P3H", "P3K", "P3B")   # the looks with the bold strip (and the lower bottom edge)
@@ -594,6 +596,15 @@ def honeycomb(a, z, cell, w):
     # distance to the cell's edge: its hexagonal 'radius' (pointy along a) is the inradius cell/2
     hexr = np.maximum(np.abs(by), np.abs(bx) * (np.sqrt(3.0) / 2) + np.abs(by) / 2)
     return np.abs(cell / 2 - hexr) - w / 2
+
+
+def carbon_weave(a, z, cell):
+    """A 2x2 twill weave, as carbon fibre's: its height (0 to 1) at (a, z). Each cell holds two tows,
+    running along a or along z, each over two and under two, stepping one cell a row (the diagonal)."""
+    i, j = np.floor(a / cell), np.floor(z / cell)
+    along_a = np.mod(i - j, 4) < 2
+    v = np.where(along_a, z, a) / (cell / 2)                   # across the tows
+    return np.sin(np.pi * (v - np.floor(v))) ** 0.6
 
 
 class Channel:
@@ -1290,7 +1301,11 @@ class Style:
         if self.honey is not None and self.tray is not None:
             cell, w, h = self.honey
             fl = -self.tray_recess
-            ridge = np.maximum(honeycomb(a, Z, cell, w), np.abs(nn - fl - (h - 0.5) / 2) - (h + 0.5) / 2)   # 0.5 into the floor
+            if TEXTURE == "carbon":                                       # a raised twill weave
+                c_cell, c_h = CARBON
+                ridge = np.maximum(fl - 0.5 - nn, nn - (fl + c_h * carbon_weave(a, Z, c_cell)))
+            else:
+                ridge = np.maximum(honeycomb(a, Z, cell, w), np.abs(nn - fl - (h - 0.5) / 2) - (h + 0.5) / 2)   # 0.5 into the floor
             ridge = np.maximum(ridge, self.tray2d(a, Z) + 1.2)            # inside the housing, clear of its walls
             for (px, hw, zc, hh) in self.fronts:
                 if self.lens_hole is not None:                            # clear of the lens holes' bevels
