@@ -215,6 +215,7 @@ K_RING = (90.0, 74.0, 7.0, 10.0)   # outside width, height, band, depth (ASSUMED
 K_SHAPE = (0.6, 1.6)     # the ring's outline (heart_outline): lobes at +-0.6, its point 1.6 below
 K_CLEAR = 0.4            # the ring's pocket this much bigger all round
 K_TOP = 58.7             # the rings' tops (just under the rail at the fender head, 61.2)
+K_UNDER = 2.5            # the face this much below the rings' pockets at their points
 K_BEVEL = 0.5            # the lens holes' bevel (2.0 elsewhere would leave the rings' pockets paper thin)
 K_BACK = K_RING[3] + 1.0   # the ringed heads this far further back than D's: their rings sit in front of them   # the heads back by as much, the same skin over each
 
@@ -835,7 +836,7 @@ class Style:
             self.lens_bevel = K_BEVEL                 # a small bevel: the rings' pockets are close round the holes
             a0, a1 = self.arc_of_x(self.fronts[0][0]), self.arc_of_x(self.fronts[-1][0])
             self.chin = (a0 - K_RING[0] / 2 - 20.0, a1 + K_RING[0] / 2 + 20.0)
-            self.chin_z = min(lows) - RING.slot / 2 - RING.wall - 1.0
+            self.chin_z = min(lows) - RING.slot / 2 - RING.wall - K_UNDER
             self.win_edge = 0.6
         if name == "P3V":
             pxs = [t[0] for t in fg["tunnels"]]
