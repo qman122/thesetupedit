@@ -199,7 +199,7 @@ V_CORNERS = (195.0, 528.0)
 V_END_FADE = 15.0         # the chin eases up to the side panel's edge over this much past the line's ends
 J_HOOD_SIDE = [(70.0, 36.0), (100.0, 33.0), (130.0, 29.0), (160.0, 25.0), (188.0, 22.0)]   # rising back along the side
 R_SHAPE = os.environ.get("R_SHAPE", "")      # the face's sculpted form (R_RELIEF): '', 'visor', 'wedge', 'scoop'
-R_SHAPE_BACK = {"": 0.0, "visor": 5.0, "wedge": 8.2, "scoop": 6.0}[R_SHAPE]   # its deepest over the heads
+R_SHAPE_BACK = SHAPE_BACK[R_SHAPE]   # its deepest over the heads
 PROJ3R = tuple((x, y - R_REC - R_SHAPE_BACK) for x, y in PROJ3D)
 # P3H: a heart of light round each lens. The 2.0 in projectors' lens is the 1.5 in part (about 38 mm);
 # the heart is drawn as tight round it as a heart goes (two round lobes, a cusp between them, a
@@ -370,7 +370,7 @@ RING = Spec(slot=K_RING[2] + 2 * K_CLEAR, inner=K_RING[2] + 2 * K_CLEAR, wall=1.
 def dowel_back(style):
     """How much further back the print split's dowel goes in the post: with the face sculpted, the
     post's front is back by as much."""
-    return SHAPE_BACK[J_SHAPE] if style == "P3J" else 0.0
+    return SHAPE_BACK[J_SHAPE] if style == "P3J" else R_SHAPE_BACK if style == "P3R" else 0.0
 
 
 def smoothstep(x, a, b):
@@ -437,6 +437,7 @@ R_STRAKE_DEPTH = 1.4     # into the 3 mm wall, with 45 degree sides
 R_GILLS = (504.0, 7.5, 4, 3.0, (12.0, 50.0))   # the fender corner past the C: 4 slots from a 504, 7.5 apart,
                                                # 3 mm wide, z 12 to 50, leaning with the C
 R_GILL_DEPTH = 1.4
+HONEY_STEEP = (1.5, 1.0)  # no honeycomb where the sculpted face changes more than 1 mm within 1.5 mm
 R_HONEY = (6.5, 0.9, 0.6)    # the housing's floor: raised honeycomb, cells 6.5 mm across, ridges 0.9 wide, 0.6 high
 BOLD_STYLES = ("P3J", "P4J", "P3C", "P3V", "P3D", "P3R", "P3H", "P3K", "P3B")   # the looks with the bold strip (and the lower bottom edge)
 
@@ -843,7 +844,7 @@ class Style:
                 self.grooves.append(((a_ - lean * (zc - gz0), gz0), (a_ + lean * (gz1 - zc), gz1), gw, R_GILL_DEPTH))
             self.honey = R_HONEY
             if R_SHAPE:
-                sw.relief = face_relief(R_SHAPE, self.T_of_a)
+                sw.relief = face_relief(R_SHAPE, self.T_of_a, [(self.arc_of_x(f_[0]), f_[2]) for f_ in self.fronts])
             self.chin = (hb - 15.0, fb + 15.0)
             self.chin_z = zb - LINE4.inner / 2 - LINE4.wall - 1.0
             self.lens_hole = LENS_D / 2 + LENS_GAP
@@ -990,7 +991,7 @@ class Style:
             self.win_edge = 0.6
             self.honey = R_HONEY                     # honeycomb on the recess's floor, round the lenses
             if V_SHAPE:                              # the face sculpted (the heads stand proud of it, as J's)
-                sw.relief = face_relief(V_SHAPE, self.T_of_a)
+                sw.relief = face_relief(V_SHAPE, self.T_of_a, [(self.arc_of_x(f_[0]), f_[2]) for f_ in self.fronts])
         if name == "P3J":
             # three projectors in a line, in stepped pockets under a sharp brow; a thin light line
             # runs the face's full width under them and kicks up at both ends at crisp corners
@@ -1297,6 +1298,11 @@ class Style:
                     ridge = np.maximum(ridge, -out_)
             for ch, d in zip(self.channels, c["d"]):                      # and of the light line's channel
                 ridge = np.maximum(ridge, -(d[0] - ch.s.wall - 1.0))
+            if self.sw.relief is not None:                                # and off the sculpting's steep walls
+                r0 = self.sw.relief(a, Z)                                 # (blades' sides, steps, frames' rims)
+                steep = np.max([np.abs(self.sw.relief(a + da, Z + dz) - r0)
+                                for da, dz in ((HONEY_STEEP[0], 0), (-HONEY_STEEP[0], 0), (0, HONEY_STEEP[0]), (0, -HONEY_STEEP[0]))], axis=0)
+                ridge = np.maximum(ridge, (steep - HONEY_STEEP[1]) * 4.0)
             F = o.union_round(F, ridge, 0.25)
         if self.chamfer:
             for (px, hw, zc, hh) in self.fronts:
