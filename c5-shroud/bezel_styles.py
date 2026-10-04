@@ -181,7 +181,9 @@ J_SHAPE = os.environ.get("J_SHAPE", "visor")   # J's sculpted face (face_relief)
 J_TEXTURE = os.environ.get("J_TEXTURE", "1") == "1"   # J's honeycomb
 V_SHAPE = os.environ.get("V_SHAPE", "visor")      # W's sculpted face (face_relief): '', 'visor', 'scoop'
 SHAPE_DEEP = 9.0              # intake, tiers, blades: their deepest (the heads that far back)
-SHAPE_BACK = {"": 0.0, "visor": 5.0, "scoop": 6.0, "wedge": 8.2, "intake": SHAPE_DEEP, "tiers": SHAPE_DEEP, "blades": SHAPE_DEEP}
+SHAPE_BACK = {"": 0.0, "visor": 5.0, "scoop": 6.0, "wedge": 8.2, "intake": SHAPE_DEEP, "tiers": SHAPE_DEEP, "blades": SHAPE_DEEP,
+              "intake_blades": SHAPE_DEEP}
+COMBO_BASE = 7.0              # intake_blades: the face beyond the intakes' frames, the blades rising from it
 INTAKE = (0.85, 18.0, 20.0)   # intake: across-scale of its square, where it starts (in the lens hole) and how wide
 TIERS = (23.0, 2.0, 4.5)      # tiers: the first step this far from the lenses' line, each 2 mm, 4.5 mm apart
 BLADES = (16.0, 5.0, 0.7, 6.0)   # blades: pitch, width at the face, lean (along per height), how proud   # each form's deepest over the heads
@@ -386,7 +388,8 @@ def face_relief(shape, T_of_a, lens=()):
       intake: each lens at the bottom of a square, faceted funnel (crisp creases into it, a ridge
               where two meet between the lenses)
       tiers: the face stepping back toward the lenses in 2 mm terraces, like contour lines
-      blades: raked blades standing proud of the visor's face, slashing across it clear of the lenses"""
+      blades: raked blades standing proud of the visor's face, slashing across it clear of the lenses
+      intake_blades: the intakes as raised square frames, with the blades on the face beyond them"""
     lens = [(float(a_), float(z_)) for a_, z_ in lens]
     def f(a, z):
         wa = smoothstep(a, 195.0, 222.0) * (1.0 - smoothstep(a, 503.0, 528.0))
@@ -410,6 +413,17 @@ def face_relief(shape, T_of_a, lens=()):
             clear = np.min([np.hypot(a - la, z - lz) for la, lz in lens], axis=0)
             mask = smoothstep(clear, 27.0, 31.0) * smoothstep(z, 9.0, 13.0)
             d = SHAPE_DEEP - tall * tri * mask
+        elif shape == "intake_blades":
+            # the intakes as raised square frames (their rims 1 mm back), the face beyond them set
+            # deeper with the blades standing out of it
+            cheb = np.min([np.maximum(np.abs(a - la) * INTAKE[0], np.abs(z - lz)) for la, lz in lens], axis=0)
+            d_in = SHAPE_DEEP - (SHAPE_DEEP - 1.0) * np.clip((cheb - INTAKE[1]) / INTAKE[2], 0, 1)
+            pitch, width, lean, tall = BLADES
+            ph = (a + lean * z) / pitch
+            tri = np.clip(1.0 - np.abs(ph - np.round(ph)) * pitch / (width / 2), 0, 1)
+            d_out = COMBO_BASE - (COMBO_BASE - 1.0) * tri * smoothstep(z, 9.0, 13.0)
+            rim = INTAKE[1] + INTAKE[2] + 1.5                                # the frames' outer wall
+            d = np.where(cheb < rim, d_in, d_out)
         else:
             u = np.clip((z + 7.0) / (T - 3.5 + 7.0), 0, 1)
             d = 6.0 * np.sin(np.pi * u) ** 0.7
