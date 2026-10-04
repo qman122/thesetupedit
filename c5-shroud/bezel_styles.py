@@ -303,13 +303,14 @@ def heart_outline(c, p, n=600):
     return np.vstack([half, (half[::-1] * [-1, 1])[1:]])
 
 
-def heart_round_lens(R, rounding):
+def heart_round_lens(R, rounding, shape=None):
     """The heart's centre line round a lens at (0, 0): no nearer it than R anywhere, its cusp and point
     rounded (smoothed along its length). (x, z) points, closed, starting at the point."""
     from scipy.ndimage import gaussian_filter1d
-    o = heart_outline(*H_SHAPE)
+    shape = shape or H_SHAPE
+    o = heart_outline(*shape)
     best = (0.0, 0.0)
-    for y in np.linspace(-H_SHAPE[1] + 0.2, 0.9, 300):                    # the biggest circle inside
+    for y in np.linspace(-shape[1] + 0.2, 0.9, 300):                    # the biggest circle inside
         best = max(best, (float(np.hypot(o[:, 0], o[:, 1] - y).min()), y))
     r_in, y_in = best
     s_ = np.r_[0.0, np.cumsum(np.hypot(*np.diff(o, axis=0).T))]
@@ -340,6 +341,19 @@ def ring_centreline():
 
 
 K_LINE, K_OPEN = ring_centreline()
+# P3B: a heart cut out of the face round each lens, lit from behind: a 5 mm slot with a frosted
+# diffuser in it (a T: its flange behind a 1 mm lip), and behind that a light box 10 mm deep, wide
+# enough for short straight pieces of narrow LED strip, facing forward, to follow the curves. No
+# strip bends, so its point and cusp stay crisp
+BOX = Spec(slot=5.0, inner=6.0, wall=1.0, skin=1.0, depth=10.0, insert=2.0)
+B_SHAPE = (0.55, 1.7)    # a little slimmer than the ring's (K_SHAPE): three that shape overlap on the 76 mm spacing
+B_LENS_D = 38.0          # the lens (MEASURE)
+B_GAP = 0.5              # round the lens, in its hole
+B_WEB = 0.4              # plastic between the hole and the box's inner wall
+B_ROUND = 1.0            # the point and the cusp rounded this little (for printing)
+B_LIFT = -4.3            # the heads a little lower, for the hearts' lobes to clear the rail
+B_BACK = BOX.skin + BOX.depth + BOX.wall + 0.5 - 1.8   # the heads further back than D's, behind the boxes
+PROJ3B = tuple((x, y - B_BACK) for x, y in PROJ3D)
 K_ZC = K_TOP - K_RING[2] / 2 - K_LINE[:, 1].max()          # the lenses' centres
 K_LIFT = K_ZC - 30.6                                       # against the pods' (J's heads: 33.5 at PROJ_LIFT 2.9)
 PROJ3K = tuple((x, y - (K_BACK if k != 1 else 0.0)) for k, (x, y) in enumerate(PROJ3D))
@@ -386,7 +400,7 @@ R_GILLS = (504.0, 7.5, 4, 3.0, (12.0, 50.0))   # the fender corner past the C: 4
                                                # 3 mm wide, z 12 to 50, leaning with the C
 R_GILL_DEPTH = 1.4
 R_HONEY = (6.5, 0.9, 0.6)    # the housing's floor: raised honeycomb, cells 6.5 mm across, ridges 0.9 wide, 0.6 high
-BOLD_STYLES = ("P3J", "P4J", "P3C", "P3V", "P3D", "P3R", "P3H", "P3K")   # the looks with the bold strip (and the lower bottom edge)
+BOLD_STYLES = ("P3J", "P4J", "P3C", "P3V", "P3D", "P3R", "P3H", "P3K", "P3B")   # the looks with the bold strip (and the lower bottom edge)
 
 
 def is_proj(style):
@@ -395,12 +409,12 @@ def is_proj(style):
 
 def proj_lip(style):
     """(side, top/bottom) of how much smaller each opening is than the head's face (negative: a gap)."""
-    return J_LIP if style in ("P3J", "P3D", "P3R", "P3V", "P3H", "P3K") else PROJ_LIP
+    return J_LIP if style in ("P3J", "P3D", "P3R", "P3V", "P3H", "P3K", "P3B") else PROJ_LIP
 
 
 def proj_lift(style):
     """How much higher than the pods the heads sit."""
-    return D_LIFT if style == "P3D" else R_LIFT if style == "P3R" else H_LIFT if style == "P3H" else K_LIFT if style == "P3K" else PROJ_LIFT
+    return D_LIFT if style == "P3D" else R_LIFT if style == "P3R" else H_LIFT if style == "P3H" else K_LIFT if style == "P3K" else B_LIFT if style == "P3B" else PROJ_LIFT
 
 
 def proj_layout(style, pod_ys):
@@ -418,6 +432,8 @@ def proj_layout(style, pod_ys):
         return list(PROJ3H)
     if style == "P3K":
         return list(PROJ3K)
+    if style == "P3B":
+        return list(PROJ3B)
     if style == "P3V":
         return list(PROJ3W)
     if style == "P3C":
@@ -817,6 +833,28 @@ class Style:
             a0, a1 = self.arc_of_x(self.fronts[0][0]), self.arc_of_x(self.fronts[-1][0])
             self.chin = (a0 - R * 1.5 - 20.0, a1 + R * 1.5 + 20.0)
             self.chin_z = min(lows) - LINE4.slot / 2 - LINE4.wall - 1.0
+        if name == "P3B":
+            # a backlit heart cut out round each lens (BOX): the face covers each head, the lens shows
+            # through a round hole inside the heart
+            hole = B_LENS_D / 2 + B_GAP
+            R = hole + B_WEB + BOX.inner / 2 + BOX.wall              # the hearts' centre lines from the lenses'
+            heart = heart_round_lens(R, B_ROUND, B_SHAPE)
+            self.wire, lows = [], []
+            for (px, hw, zc, hh) in self.fronts:
+                pts = [(self.arc_of_x(px + x), zc + z) for x, z in heart]
+                room = self.T_of_a(np.array([p_[0] for p_ in pts])) - RAIL_T - np.array([p_[1] for p_ in pts])
+                need = BOX.inner / 2 + BOX.wall + 0.6
+                assert room.min() > need - 0.05, f"B: a heart is {need - room.min():.2f} mm too close to the rail (B_LIFT)"
+                self.channels.append(Channel(pts, BOX))
+                lows.append(min(p_[1] for p_ in pts))
+                tip = min(pts, key=lambda p_: p_[1])
+                self.wire.append((tip[0], tip[1] + 2.0, 25.0))   # each box's wires go back at its point
+            self.lens_hole = hole
+            self.lens_bevel = 0.0
+            self.win_edge = 0.6
+            a0, a1 = self.arc_of_x(self.fronts[0][0]), self.arc_of_x(self.fronts[-1][0])
+            self.chin = (a0 - R * 1.6 - 20.0, a1 + R * 1.6 + 20.0)
+            self.chin_z = min(lows) - BOX.inner / 2 - BOX.wall - 2.0
         if name == "P3K":
             # the owner's heart rings round the outer two lenses, each in a pocket in the face; the
             # middle lens plain; every head covered, only its lens showing
