@@ -194,7 +194,19 @@ V_END_FADE = 15.0         # the chin eases up to the side panel's edge over this
 J_HOOD_SIDE = [(70.0, 36.0), (100.0, 33.0), (130.0, 29.0), (160.0, 25.0), (188.0, 22.0)]   # rising back along the side
 R_SHAPE = os.environ.get("R_SHAPE", "")      # the face's sculpted form (R_RELIEF): '', 'visor', 'wedge', 'scoop'
 R_SHAPE_BACK = {"": 0.0, "visor": 5.0, "wedge": 8.2, "scoop": 6.0}[R_SHAPE]   # its deepest over the heads
-PROJ3R = tuple((x, y - R_REC - R_SHAPE_BACK) for x, y in PROJ3D)   # the heads back by as much, the same skin over each
+PROJ3R = tuple((x, y - R_REC - R_SHAPE_BACK) for x, y in PROJ3D)
+# P3H: a heart of light round each lens. The 2.0 in projectors' lens is the 1.5 in part (about 38 mm);
+# the heart is drawn as tight round it as a heart goes (two round lobes, a cusp between them, a
+# point below), its strip in a 5 mm channel, the lens in a round hole inside it
+H_LENS_D = 38.0          # the lens (1.5 in; MEASURE)
+H_GAP = 1.0              # round the lens, in its hole
+H_WEB = 0.6              # plastic between the hole and the heart's channel
+H_SHAPE = (0.55, 1.7)    # the heart: lobes (unit circles) at +-0.55, its point 1.7 below their centres
+H_ROUND = 3.0            # the cusp and the point rounded over about this much (for the strip to bend)
+H_LIFT = -1.7            # the heads a little lower than J's, for the hearts' lobes to clear the rail
+H_BACK = 8.0             # the heads this far further back than D's: the hearts' channels run in front of them
+H_GAP_TOP = 0.6          # each heart's channel this far under the rail at its highest
+PROJ3H = tuple((x, y - H_BACK) for x, y in PROJ3D)   # the heads back by as much, the same skin over each
 
 
 # J's light line, drawn to a few rules: level along the bottom of the face and on round both front
@@ -266,6 +278,38 @@ def j_edge_line(sw, zlow):
     return out[0][::-1] + face + out[1]
 
 
+def heart_outline(c, p, n=600):
+    """A heart of two unit-circle lobes at (+-c, 0) and a point at (0, -p): its outline, closed, from
+    the point up the right side, over the right lobe to the cusp, and down the left."""
+    C, P = np.array([c, 0.0]), np.array([0.0, -p])
+    v = P - C
+    d, al = np.hypot(*v), np.arctan2(v[1], v[0])
+    tp = max((al + np.arccos(1 / d), al - np.arccos(1 / d)), key=np.cos)    # the outer tangent point
+    k = np.arctan2(np.sqrt(1 - c * c), -c)                                  # the cusp, where the lobes cross
+    th = np.linspace(tp if tp < k else tp - 2 * np.pi, k, n)
+    half = np.vstack([np.linspace(P, C + [np.cos(th[0]), np.sin(th[0])], n // 4, endpoint=False),
+                      np.c_[c + np.cos(th), np.sin(th)]])
+    return np.vstack([half, (half[::-1] * [-1, 1])[1:]])
+
+
+def heart_round_lens(R, rounding):
+    """The heart's centre line round a lens at (0, 0): no nearer it than R anywhere, its cusp and point
+    rounded (smoothed along its length). (x, z) points, closed, starting at the point."""
+    from scipy.ndimage import gaussian_filter1d
+    o = heart_outline(*H_SHAPE)
+    best = (0.0, 0.0)
+    for y in np.linspace(-H_SHAPE[1] + 0.2, 0.9, 300):                    # the biggest circle inside
+        best = max(best, (float(np.hypot(o[:, 0], o[:, 1] - y).min()), y))
+    r_in, y_in = best
+    s_ = np.r_[0.0, np.cumsum(np.hypot(*np.diff(o, axis=0).T))]
+    u = np.arange(0.0, s_[-1], 0.02)
+    o = np.c_[np.interp(u, s_, o[:, 0]), np.interp(u, s_, o[:, 1])]
+    o = gaussian_filter1d(o, rounding / (0.02 * R / r_in), axis=0, mode="wrap")   # rounding in mm
+    o = np.c_[o[:, 0], o[:, 1] - y_in]
+    o *= R / np.hypot(o[:, 0], o[:, 1]).min()                             # the smoothing moved it: R again
+    return np.vstack([o, o[:1]])
+
+
 def dowel_back(style):
     """How much further back the print split's dowel goes in the post: with the face sculpted, the
     post's front is back by as much."""
@@ -305,7 +349,7 @@ R_GILLS = (504.0, 7.5, 4, 3.0, (12.0, 50.0))   # the fender corner past the C: 4
                                                # 3 mm wide, z 12 to 50, leaning with the C
 R_GILL_DEPTH = 1.4
 R_HONEY = (6.5, 0.9, 0.6)    # the housing's floor: raised honeycomb, cells 6.5 mm across, ridges 0.9 wide, 0.6 high
-BOLD_STYLES = ("P3J", "P4J", "P3C", "P3V", "P3D", "P3R")   # the looks with the bold strip (and the lower bottom edge)
+BOLD_STYLES = ("P3J", "P4J", "P3C", "P3V", "P3D", "P3R", "P3H")   # the looks with the bold strip (and the lower bottom edge)
 
 
 def is_proj(style):
@@ -314,12 +358,12 @@ def is_proj(style):
 
 def proj_lip(style):
     """(side, top/bottom) of how much smaller each opening is than the head's face (negative: a gap)."""
-    return J_LIP if style in ("P3J", "P3D", "P3R", "P3V") else PROJ_LIP
+    return J_LIP if style in ("P3J", "P3D", "P3R", "P3V", "P3H") else PROJ_LIP
 
 
 def proj_lift(style):
     """How much higher than the pods the heads sit."""
-    return D_LIFT if style == "P3D" else R_LIFT if style == "P3R" else PROJ_LIFT
+    return D_LIFT if style == "P3D" else R_LIFT if style == "P3R" else H_LIFT if style == "P3H" else PROJ_LIFT
 
 
 def proj_layout(style, pod_ys):
@@ -333,6 +377,8 @@ def proj_layout(style, pod_ys):
         return list(PROJ3D)
     if style == "P3R":
         return list(PROJ3R)
+    if style == "P3H":
+        return list(PROJ3H)
     if style == "P3V":
         return list(PROJ3W)
     if style == "P3C":
@@ -581,6 +627,7 @@ class Style:
         self.tray_recess = TRAY_RECESS
         self.pocket_r = POCKET_R
         self.lens_hole = None
+        self.lens_bevel = LENS_BEVEL
         self.block_extra = 0.0   # the tunnels' solid blocks reach this much further sideways
         self.fin = (FIN_FRONT, FIN_EDGE, 2.15)   # the fins: front edge behind the face, half width there and at the floor
         self.grooves = []        # sculpted grooves: ((a0, z0), (a1, z1), width, depth), cut with 45 degree sides
@@ -708,6 +755,29 @@ class Style:
             self.chin_z = zb - LINE4.inner / 2 - LINE4.wall - 1.0
             self.lens_hole = LENS_D / 2 + LENS_GAP
             self.win_edge = 0.6
+        if name == "P3H":
+            # a heart of light round each lens: the face covers each head, only the lens shows through
+            # a round hole, and the heart's channel runs round it as tight as it can
+            hole = H_LENS_D / 2 + H_GAP
+            R = hole + H_WEB + LINE4.slot / 2 + LINE4.wall       # the hearts' centre lines from the lenses'
+            heart = heart_round_lens(R, H_ROUND)
+            self.wire = []
+            lows = []
+            for (px, hw, zc, hh) in self.fronts:
+                pts = [(self.arc_of_x(px + x), zc + z) for x, z in heart]
+                room = self.T_of_a(np.array([p_[0] for p_ in pts])) - RAIL_T - np.array([p_[1] for p_ in pts])
+                assert room.min() > LINE4.slot / 2 + LINE4.wall + H_GAP_TOP - 0.05, \
+                    f"H: a heart is {LINE4.slot / 2 + LINE4.wall + H_GAP_TOP - room.min():.2f} mm too close to the rail (H_LIFT)"
+                self.channels.append(Channel(pts, LINE4))
+                lows.append(min(p_[1] for p_ in pts))
+                tip = min(pts, key=lambda p_: p_[1])
+                self.wire.append((tip[0], tip[1] + 3.0, 25.0))   # the strip's ends meet at the point; its wires go back there
+            self.lens_hole = hole
+            self.lens_bevel = 0.0                                 # no room for a bevel: the heart's right there
+            self.win_edge = 0.6
+            a0, a1 = self.arc_of_x(self.fronts[0][0]), self.arc_of_x(self.fronts[-1][0])
+            self.chin = (a0 - R * 1.5 - 20.0, a1 + R * 1.5 + 20.0)
+            self.chin_z = min(lows) - LINE4.slot / 2 - LINE4.wall - 1.0
         if name == "P3V":
             pxs = [t[0] for t in fg["tunnels"]]
             zc = self.fronts[0][2]
@@ -976,7 +1046,7 @@ class Style:
             return chamfer_rect(x, z, hw, hh, CH * e_)
         if self.lens_hole is not None:       # a round hole for the lens; the face covers the rest of the head,
             t = np.sqrt(np.clip(e_, 0, 1))   # with a bevel round the hole's edge, widest at the face
-            return np.hypot(x, z) - (self.lens_hole + LENS_BEVEL * t)
+            return np.hypot(x, z) - (self.lens_hole + self.lens_bevel * t)
         if self.pocket is not None:          # flat chamfers, from nothing at the head to full at the face
             cs, cb, ct = self.pocket
             if t is not None and self.tray is not None:
@@ -1066,9 +1136,9 @@ class Style:
             acc = ch.access(X, c["Y"], Z, nn)
             if acc is not None:
                 F = o.diff_round(F, acc, 0.5)
-        if self.wire is not None:
+        wires = [] if self.wire is None else self.wire if isinstance(self.wire, list) else [self.wire]
+        for aw, zw, wl in wires:
             # straight in along the face's normal, from the channel's back out underneath
-            aw, zw, wl = self.wire
             dep = self.channels[0].back      # the channel's back (its depth, plus any recess it sits in)
             hole = iround(np.hypot(a - aw, Z - zw) - WIRE_R, slab(nn, -(dep + wl), -(dep - 1.0)), 0.3)
             F = o.diff_round(F, hole, 0.4)
@@ -1083,7 +1153,7 @@ class Style:
             ridge = np.maximum(ridge, self.tray2d(a, Z) + 1.2)            # inside the housing, clear of its walls
             for (px, hw, zc, hh) in self.fronts:
                 if self.lens_hole is not None:                            # clear of the lens holes' bevels
-                    ridge = np.maximum(ridge, self.lens_hole + LENS_BEVEL + 1.0 - np.hypot(X - px, Z - zc))
+                    ridge = np.maximum(ridge, self.lens_hole + self.lens_bevel + 1.0 - np.hypot(X - px, Z - zc))
                 elif self.pocket is not None:                             # or of the pockets and their chamfers
                     cs, cb, ct = self.pocket
                     out_ = np.maximum(np.abs(X - px) - (hw + cs + 1.2),
