@@ -206,7 +206,16 @@ H_ROUND = 3.0            # the cusp and the point rounded over about this much (
 H_LIFT = -1.7            # the heads a little lower than J's, for the hearts' lobes to clear the rail
 H_BACK = 8.0             # the heads this far further back than D's: the hearts' channels run in front of them
 H_GAP_TOP = 0.6          # each heart's channel this far under the rail at its highest
-PROJ3H = tuple((x, y - H_BACK) for x, y in PROJ3D)   # the heads back by as much, the same skin over each
+PROJ3H = tuple((x, y - H_BACK) for x, y in PROJ3D)
+# P3K: two of the owner's heart rings (bought: 90 x 74 mm outside, a 7 mm band; its depth not given
+# yet), one round each outer projector, the middle projector plain between them. Three don't fit
+# (90 mm rings on 76 mm spacing), and one is taller than the face, so the face comes down to carry
+# them and the heads drop to sit each lens in its ring's widest part
+K_RING = (90.0, 74.0, 7.0, 10.0)   # outside width, height, band, depth (ASSUMED: the listing doesn't say)
+K_SHAPE = (0.6, 1.6)     # the ring's outline (heart_outline): lobes at +-0.6, its point 1.6 below
+K_CLEAR = 0.4            # the ring's pocket this much bigger all round
+K_TOP = 58.7             # the rings' tops (just under the rail at the fender head, 61.2)
+K_BACK = K_RING[3] + 1.0   # the ringed heads this far further back than D's: their rings sit in front of them   # the heads back by as much, the same skin over each
 
 
 # J's light line, drawn to a few rules: level along the bottom of the face and on round both front
@@ -310,6 +319,32 @@ def heart_round_lens(R, rounding):
     return np.vstack([o, o[:1]])
 
 
+def ring_centreline():
+    """The heart ring's band's centre line, (x, z) points closed, its origin at the middle of the ring's
+    opening (where the lens goes: the biggest circle inside), scaled to K_RING."""
+    from scipy.ndimage import gaussian_filter1d
+    W, H, band, _ = K_RING
+    o = heart_outline(*K_SHAPE)
+    s_ = np.r_[0.0, np.cumsum(np.hypot(*np.diff(o, axis=0).T))]
+    u = np.arange(0.0, s_[-1], 0.01)
+    o = np.c_[np.interp(u, s_, o[:, 0]), np.interp(u, s_, o[:, 1])]
+    o = gaussian_filter1d(o, 0.05 / 0.01, axis=0, mode="wrap")          # its point and cusp rounded, as moulded
+    o = (o - [0.0, o[:, 1].min()]) * [(W - band) / np.ptp(o[:, 0]), (H - band) / np.ptp(o[:, 1])]
+    best = (0.0, 0.0)
+    for y in np.linspace(0.2 * (H - band), 0.8 * (H - band), 200):
+        best = max(best, (float(np.hypot(o[:, 0], o[:, 1] - y).min()), y))
+    o[:, 1] -= best[1]
+    return np.vstack([o, o[:1]]), best[0]
+
+
+K_LINE, K_OPEN = ring_centreline()
+K_ZC = K_TOP - K_RING[2] / 2 - K_LINE[:, 1].max()          # the lenses' centres
+K_LIFT = K_ZC - 30.6                                       # against the pods' (J's heads: 33.5 at PROJ_LIFT 2.9)
+PROJ3K = tuple((x, y - (K_BACK if k != 1 else 0.0)) for k, (x, y) in enumerate(PROJ3D))
+RING = Spec(slot=K_RING[2] + 2 * K_CLEAR, inner=K_RING[2] + 2 * K_CLEAR, wall=1.0, skin=0.0,
+            depth=K_RING[3], insert=K_RING[3] - 2.0, front=True, closed=1.5)   # the ring's pocket (insert: the ring, for renders)
+
+
 def dowel_back(style):
     """How much further back the print split's dowel goes in the post: with the face sculpted, the
     post's front is back by as much."""
@@ -349,7 +384,7 @@ R_GILLS = (504.0, 7.5, 4, 3.0, (12.0, 50.0))   # the fender corner past the C: 4
                                                # 3 mm wide, z 12 to 50, leaning with the C
 R_GILL_DEPTH = 1.4
 R_HONEY = (6.5, 0.9, 0.6)    # the housing's floor: raised honeycomb, cells 6.5 mm across, ridges 0.9 wide, 0.6 high
-BOLD_STYLES = ("P3J", "P4J", "P3C", "P3V", "P3D", "P3R", "P3H")   # the looks with the bold strip (and the lower bottom edge)
+BOLD_STYLES = ("P3J", "P4J", "P3C", "P3V", "P3D", "P3R", "P3H", "P3K")   # the looks with the bold strip (and the lower bottom edge)
 
 
 def is_proj(style):
@@ -358,12 +393,12 @@ def is_proj(style):
 
 def proj_lip(style):
     """(side, top/bottom) of how much smaller each opening is than the head's face (negative: a gap)."""
-    return J_LIP if style in ("P3J", "P3D", "P3R", "P3V", "P3H") else PROJ_LIP
+    return J_LIP if style in ("P3J", "P3D", "P3R", "P3V", "P3H", "P3K") else PROJ_LIP
 
 
 def proj_lift(style):
     """How much higher than the pods the heads sit."""
-    return D_LIFT if style == "P3D" else R_LIFT if style == "P3R" else H_LIFT if style == "P3H" else PROJ_LIFT
+    return D_LIFT if style == "P3D" else R_LIFT if style == "P3R" else H_LIFT if style == "P3H" else K_LIFT if style == "P3K" else PROJ_LIFT
 
 
 def proj_layout(style, pod_ys):
@@ -379,6 +414,8 @@ def proj_layout(style, pod_ys):
         return list(PROJ3R)
     if style == "P3H":
         return list(PROJ3H)
+    if style == "P3K":
+        return list(PROJ3K)
     if style == "P3V":
         return list(PROJ3W)
     if style == "P3C":
@@ -778,6 +815,26 @@ class Style:
             a0, a1 = self.arc_of_x(self.fronts[0][0]), self.arc_of_x(self.fronts[-1][0])
             self.chin = (a0 - R * 1.5 - 20.0, a1 + R * 1.5 + 20.0)
             self.chin_z = min(lows) - LINE4.slot / 2 - LINE4.wall - 1.0
+        if name == "P3K":
+            # the owner's heart rings round the outer two lenses, each in a pocket in the face; the
+            # middle lens plain; every head covered, only its lens showing
+            self.wire = []
+            lows = []
+            for k, (px, hw, zc, hh) in enumerate(self.fronts):
+                if k == 1:
+                    continue
+                pts = [(self.arc_of_x(px + x), zc + z) for x, z in K_LINE]
+                room = self.T_of_a(np.array([p_[0] for p_ in pts])) - RAIL_T - np.array([p_[1] for p_ in pts])
+                assert room.min() > RING.slot / 2 + RING.wall - 0.05, f"K: a ring is {RING.slot / 2 + RING.wall - room.min():.2f} mm into the rail"
+                self.channels.append(Channel(pts, RING))
+                lows.append(min(p_[1] for p_ in pts))
+                tip = min(pts, key=lambda p_: p_[1])
+                self.wire.append((tip[0], tip[1] + 2.0, 25.0))   # the ring's wire, back through the face at its point
+            self.lens_hole = LENS_D / 2 + LENS_GAP
+            a0, a1 = self.arc_of_x(self.fronts[0][0]), self.arc_of_x(self.fronts[-1][0])
+            self.chin = (a0 - K_RING[0] / 2 - 20.0, a1 + K_RING[0] / 2 + 20.0)
+            self.chin_z = min(lows) - RING.slot / 2 - RING.wall - 1.0
+            self.win_edge = 0.6
         if name == "P3V":
             pxs = [t[0] for t in fg["tunnels"]]
             zc = self.fronts[0][2]
