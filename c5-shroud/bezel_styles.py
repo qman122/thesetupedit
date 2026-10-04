@@ -186,7 +186,9 @@ SHAPE_BACK = {"": 0.0, "visor": 5.0, "scoop": 6.0, "wedge": 8.2, "intake": SHAPE
 COMBO_BASE = 7.0              # intake_blades: the face beyond the intakes' frames, the blades rising from it
 INTAKE = (0.85, 18.0, 20.0)   # intake: across-scale of its square, where it starts (in the lens hole) and how wide
 TIERS = (23.0, 2.0, 4.5)      # tiers: the first step this far from the lenses' line, each 2 mm, 4.5 mm apart
-BLADES = (16.0, 5.0, 0.7, 6.0)   # blades: pitch, width at the face, lean (along per height), how proud   # each form's deepest over the heads
+BLADES = (16.0, 5.0, 0.7, 6.0)
+BLADES_SPAN = (234.0, 494.0)   # blades only between these (a): on the flat face, clear of the corners and the
+                               # recesses' ends, where their tips were cut off loose   # blades: pitch, width at the face, lean (along per height), how proud   # each form's deepest over the heads
 # J and W, like D and R, cover the heads with the face and show only the lens through a round hole:
 # the heads sit behind the recess's floor (EYELID) and the sculpted face, with D's skin over them
 PROJ3W = tuple((x, y - EYELID - SHAPE_BACK[V_SHAPE]) for x, y in PROJ3D)
@@ -412,6 +414,7 @@ def face_relief(shape, T_of_a, lens=()):
             tri = np.clip(1.0 - np.abs(ph - np.round(ph)) * pitch / (width / 2), 0, 1)   # a sharp ridge each pitch
             clear = np.min([np.hypot(a - la, z - lz) for la, lz in lens], axis=0)
             mask = smoothstep(clear, 27.0, 31.0) * smoothstep(z, 9.0, 13.0)
+            mask = mask * smoothstep(a, BLADES_SPAN[0], BLADES_SPAN[0] + 4.0) * (1.0 - smoothstep(a, BLADES_SPAN[1] - 4.0, BLADES_SPAN[1]))
             d = SHAPE_DEEP - tall * tri * mask
         elif shape == "intake_blades":
             # the intakes as raised square frames (their rims 1 mm back), the face beyond them set
@@ -421,7 +424,8 @@ def face_relief(shape, T_of_a, lens=()):
             pitch, width, lean, tall = BLADES
             ph = (a + lean * z) / pitch
             tri = np.clip(1.0 - np.abs(ph - np.round(ph)) * pitch / (width / 2), 0, 1)
-            d_out = COMBO_BASE - (COMBO_BASE - 1.0) * tri * smoothstep(z, 9.0, 13.0)
+            span = smoothstep(a, BLADES_SPAN[0], BLADES_SPAN[0] + 4.0) * (1.0 - smoothstep(a, BLADES_SPAN[1] - 4.0, BLADES_SPAN[1]))
+            d_out = COMBO_BASE - (COMBO_BASE - 1.0) * tri * smoothstep(z, 9.0, 13.0) * span
             rim = INTAKE[1] + INTAKE[2] + 1.5                                # the frames' outer wall
             d = np.where(cheb < rim, d_in, d_out)
         else:
