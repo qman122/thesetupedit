@@ -696,7 +696,7 @@ def build(h=H, preview=False):
     x0, x1 = sw.path[:, 0].min() - 6, sw.path[:, 0].max() + 6
     y0 = min(sw.path[:, 1].min(), fg["tongue"][:, 1].min()) - 6
     y1 = sw.path[:, 1].max() + 6
-    z0, z1 = sw.B.min() - 6, max(sw.T.max(), fg["lip_c"]) + 6
+    z0, z1 = min(sw.B.min() - 6, sw.Bw.min() - 3), max(sw.T.max(), fg["lip_c"]) + 6   # down past any chin too
     xs = np.arange(x0, x1, h)
     ys = np.arange(y0, y1, h)
     zs = np.arange(z0, z1, h)
