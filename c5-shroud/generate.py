@@ -1594,8 +1594,15 @@ def door_clearance(p):
 def bezel_cad_name(kind="bezel"):
     """The bezel_sdf.py output for BEZEL_STYLE: C7 (the default) keeps the plain names."""
     st = os.environ.get("BEZEL_STYLE", "C7")
-    suffix = "" if st == "C7" else "_" + st
+    suffix = ("" if st == "C7" else "_" + st) + variant_suffix()
     return f"{'bezel_cad' if kind == 'bezel' else 'drl_inserts'}_passenger{suffix}.stl"
+
+
+def variant_suffix():
+    """VARIANT names a version of a style (its face shape, texture: J_SHAPE, TEXTURE...) so its files
+    sit beside the style's own instead of over them."""
+    v = os.environ.get("VARIANT", "")
+    return "_" + v if v else ""
 
 
 def shroud(p):
@@ -2003,7 +2010,7 @@ def write_projector_set(here):
     its light line's diffusers, in stl/projectors_<style>/, with a fit-check assembly. The fit
     tests, spacers and the rest stay in stl/ (they don't change)."""
     st = os.environ.get("BEZEL_STYLE", "P3J")
-    out = os.path.join(here, "stl", "projectors_" + st)
+    out = os.path.join(here, "stl", "projectors_" + st + variant_suffix())
     os.makedirs(os.path.join(out, "assembled"), exist_ok=True)
     c, s = carrier(P), shroud(P)
     for side, f in (("passenger", lambda m: m), ("driver", mirror_x)):
