@@ -1,5 +1,4 @@
-"""Extra fit tests for a print set (run with the set's env, e.g. VARIANT=A1 J_SHAPE=intake TEXTURE=carbon BEZEL_STYLE=P3J LIGHTS=projectors): the bezel goes on over the mounted projectors; the diffusers fit their channel; the straps match the cradles.
-their channel; the straps match the cradles."""
+"""Extra fit tests for a print set (run with the set's env, e.g. VARIANT=A1 J_SHAPE=intake TEXTURE=carbon BEZEL_STYLE=P3J LIGHTS=projectors): the bezel goes on over the mounted projectors; the diffusers fit their channel; the straps match the cradles."""
 import os, sys, numpy as np, trimesh, manifold3d as m3d
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 import generate as g
