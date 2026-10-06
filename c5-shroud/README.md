@@ -140,8 +140,10 @@ each head's front the bezel keeps 2 mm clear of it side to side and 0.75 mm up a
 heads only just fit under the door: at the
 fender end there's about 1 mm between the head and the rail, which is why they sit 2.9 mm higher
 than the pods did (the line runs under them). The print split runs through the post between the
-first two heads, with the dowel pin in a small boss (J: half way up the post, behind the recess;
-W: under the post).
+first two heads, which is solid from the face back to the tunnels' rim and from the floor to the
+rail (the whole gap between the heads, 1.2 mm clear of each), so the cut face is solid rather
+than the thin face wall. J's dowel pins go in that post, three up its height, behind the recess
+(W: one under the post).
 
 **Light line.** A channel 8 mm wide and 8 mm deep, closed behind by a 1.5 mm wall tied into the
 bezel's floor; the bezel's bottom edge comes down 3.7 mm below the bracket's floor to carry it,
@@ -568,7 +570,7 @@ bay. Use 4 walls, 40% gyroid infill, and 6 top and bottom layers.
   tightens from above with one hand, as in the owner's bracket sketch.
 - The stock bezel ear screws, through each ear and the door's flange into the headlight, as
   stock (2 at the hood end in the photo; use the fender end's as found)
-- 1 × 3 mm × 12 mm dowel pin, and plastic epoxy (or a plastic-welding pen), for the two bezel
+- 3 mm × 12 mm dowel pins (3 for J, 1 for the others), and plastic epoxy (or a plastic-welding pen), for the two bezel
   pieces
 - Lights (C7 look): about 250 mm of 4 mm wide 12 V COB LED strip for the light blade, and a
   25 mm piece of 8 mm wide 12 V COB strip for the ladder (or white/amber switchback strip).
@@ -581,25 +583,30 @@ bay. Use 4 walls, 40% gyroid infill, and 6 top and bottom layers.
 
 The two pieces meet at a flat cut through the post between the hood-side and middle lights.
 On the projector bezels the hood piece also carries a **splice sleeve** (`splice_sleeve` in
-`generate.py`): an L of 2.4 mm plates that follows the inside of the face wall and the underside
-of the top rail across the cut, 6 mm along the hood piece and up to 7 mm on into the fender
-piece, which slides onto it. It lines the halves up in depth and height, adds about 500 mm2 of
-glue area to the bare cut face, and none of it shows. Where the fender piece's walls curve or
-carry ribs within its reach it's trimmed to clear them, with 0.15 mm all round, so the halves
-slide together. Its overhanging end prints about 3 mm off the bed with the rail's supports. Each
+`generate.py`): an L of 2.4 mm plates that follows the back of the post and the underside of
+the top rail across the cut, 8 mm along the hood piece and on into the fender piece, which slides
+onto it: the rail plate up to 12 mm, the plate behind the post as far as it stays 1 mm clear of
+the next head (10 mm on J). It lines the halves up in depth and height, adds glue area to the
+cut face, and none of it shows. Where the fender piece's walls curve or carry ribs within its
+reach it's trimmed to clear them, with 0.15 mm all round, so the halves slide together.
+
+The first printed J (A1) split here: the cut then ran through the thin face wall (394 mm2, one
+pin in a boss that wasn't joined to the wall) and the sleeve had been cut back to 2 mm by a
+fillet just grazing it. Now the post is solid across the cut (about 1,070 mm2), with three pins,
+and a graze is trimmed off instead of shortening the sleeve. Its overhanging end prints about 3 mm off the bed with the rail's supports. Each
 projector set also has `bezel_joint_test_<side>.stl`: 18 mm of each piece either side of the cut,
 to try the fit (and the glue) before printing the whole halves.
 
-1. **Dry-fit first.** Push the dowel pin into one half, slide the fender half onto the sleeve,
+1. **Dry-fit first.** Push the dowel pins into one half, slide the fender half onto the sleeve,
    and tape the two together. Try the whole bezel on the car before gluing. If the sleeve is
    tight, sand its faces lightly; don't force it (the fender half's thin walls can crack).
 2. **Prepare the faces.** Sand both cut faces flat with 120-grit on a flat board and wipe
    them with isopropyl alcohol. Test that they sit together with no gap and nothing rocking.
 3. **Glue.** Use a two-part epoxy made for plastics (J-B Weld PlasticBonder, Loctite Epoxy
    Plastic Bonder or similar). Superglue is brittle on PCTG/PETG.
-   - Coat both cut faces, the dowel hole and the sleeve's outer faces (the ones that meet the
+   - Coat both cut faces, the dowel holes and the sleeve's outer faces (the ones that meet the
      fender half's face wall and rail).
-   - Push the halves together on the pin, wipe off the squeeze-out and check the front runs
+   - Push the halves together on the pins, wipe off the squeeze-out and check the front runs
      smooth across the joint.
    - Hold them with tape or a light clamp while it cures, flat on the bench, rail down.
 4. **Optional: stronger still.** Once the epoxy has cured, run a plastic-welding pen or a

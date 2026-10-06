@@ -49,6 +49,7 @@ TUNNEL_BACK = 18.0  # the tunnels round the lights reach this far back past each
 TUNNEL_CLEAR = 1.0  # round the pod's body inside the tunnel
 TUNNEL_T = 3.5      # the tunnels' side and top walls (a little over 3 so the taper doesn't thin them)
 OUTER_FILL = 14.0   # the outer tunnels' outboard walls reach this much further out, to the corner walls
+SPLIT_POST_CLEAR = 1.2   # the print split's post, clear of the heads either side of it
 TONGUE_T = 5.0      # the clip tongue's thickness
 FLARE_SIDE = 0.5    # the opening at the front: this much wider each side than the window,
 FLARE_TOP = 6.0     # and up to this much taller at the top (less where the rail comes lower)
@@ -466,6 +467,17 @@ def apply_features(F, x, y, z, fg, pointwise=False, outside=None, door=None, sc=
         blk = inter_round(blk, (py - fg.get("tunnel_back", TUNNEL_BACK)) - Y + 0 * Z, R_EDGE)        # rounded back rim
         blk = inter_round(blk, outside + 1.5 + 0 * Z, R_EDGE)                 # ends inside the front wall
         blocks = blk if blocks is None else smin(blocks, blk, 2.0)
+        if bs.is_proj(STYLE) and k == 1:
+            # the print split's post (generate.split_plane_u): solid from the face back to the
+            # tunnels' back rim, across the gap between the first two heads (SPLIT_POST_CLEAR clear
+            # of each), floor to rail, so the cut goes through a solid block instead of the thin face
+            xa = fg["tunnels"][0][0] + bs.PROJ_W / 2 + SPLIT_POST_CLEAR
+            xb = px - bs.PROJ_W / 2 - SPLIT_POST_CLEAR
+            post = round_box2(X - (xa + xb) / 2, Z, -(xb - xa) / 2, (xb - xa) / 2, z_lo, zc_ + hh + TUNNEL_T,
+                              1.0, r_lo, 1.0, r_lo)
+            post = inter_round(post, (py - fg.get("tunnel_back", TUNNEL_BACK)) - Y + 0 * Z, R_EDGE)
+            post = inter_round(post, outside + 1.5 + 0 * Z, R_EDGE)
+            blocks = smin(blocks, post, 2.0)
     # the blend is 2 mm, shrinking to 0.5 mm near the floor's underside, which the tunnels' bottoms
     # run just above (a bigger blend there would bulge it)
     F = union_round(F, blocks, 0.5 + 1.5 * np.clip((Z - FLOOR_B - 1.5) / 1.5, 0, 1))

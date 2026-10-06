@@ -1708,20 +1708,22 @@ def dowel_spot(p):
     us = split_plane_u(p)
     n_c = float(bow(p, us)) - p.post_depth / 2 - p.post_setback
     if os.environ.get("BEZEL_STYLE", "") in ("P3J", "P3D", "P3R"):
-        # J: its floor is taken by the deeper recess and the light line's channel, so the pin goes up
-        # in the post between the first two openings, half way up, just behind the recessed face
-        return us, n_c + 1.5 - bs.dowel_back(os.environ.get("BEZEL_STYLE", "")), (33.5,)
+        # J: its floor is taken by the deeper recess and the light line's channel, so the pins go in
+        # the solid post between the first two openings (bezel_sdf), just behind the recessed face:
+        # three, low, half way up and high, so the halves can't hinge open at the cut
+        return us, n_c + 1.5 - bs.dowel_back(os.environ.get("BEZEL_STYLE", "")), (15.0, 33.5, 52.0)
     if proj_lights(p):
         return us, n_c - 5.0, (4.5,)
     return us, n_c, dowel_levels(p)
 
 
 SPLICE_T = 2.4          # the splice sleeve's plates (6 perimeters at 0.4 mm)
-SPLICE_IN = 7.0         # how far it reaches into the fender piece
-SPLICE_BACK = 6.0       # ...and how far it runs along the inside of the hood piece
+SPLICE_IN = 12.0        # how far it reaches into the fender piece
+SPLICE_BACK = 8.0       # ...and how far it runs along the inside of the hood piece
 SPLICE_H = 45.0         # its face plate, down from the rail's underside
 SPLICE_CLEAR = 0.15     # round the fender piece's walls, so the halves slide together
 SPLICE_FUSE = 0.8       # how far its plates run into the hood piece's walls
+SPLICE_GRAZE = 0.5      # mm3: less than this in its way is trimmed off rather than stopping it
 
 
 def _inside_lines(cs, rows, n_probe):
@@ -1805,10 +1807,27 @@ def splice_sleeve(p, man, us):
         if near.is_empty():
             return prof
         return prof - (lights ^ box(-500, 500, -500, 500, u0 - 1.0, u1 + 1.0)).project().offset(1.0, m3d.JoinType.Miter)
-    ten_p = clear_of_lights(ten_p, 0.0, SPLICE_IN)
-    hit = (loc ^ box(-500, 500, -500, 500, 0.05, SPLICE_IN + 0.5)) ^ M.extrude(ten_p, SPLICE_IN + 0.5)
-    reach_in = SPLICE_IN if hit.is_empty() else max(2.0, min(SPLICE_IN, hit.bounding_box()[2] - 0.5))
-    tenon = M.extrude(ten_p, reach_in + 0.5).translate([0, 0, -0.5])          # overlaps the root
+    # the rail plate and the face plate each reach as far as they can on their own: the face plate
+    # sits nearer the next light, which can stop it well short of the rail plate. Each stops short
+    # of the lights (as far as it keeps most of itself 1 mm clear of them) and of anything solid in
+    # its way; a graze (a fillet just touching an edge, under SPLICE_GRAZE mm3) is trimmed off
+    # instead, so it doesn't cut the whole plate short
+    ahead = loc ^ box(-500, 500, -500, 500, 0.05, SPLICE_IN + 0.5)
+    z_split = z_f - SPLICE_T - SPLICE_CLEAR - 0.01
+    tenon = []
+    for part in (ten_p ^ CS.square([1000, 1000]).translate([-500, z_split]),            # the rail plate
+                 ten_p ^ CS.square([1000, 1000]).translate([-500, z_split - 1000])):    # the face plate
+        if part.is_empty():
+            continue
+        for reach in np.arange(SPLICE_IN, 1.9, -1.0):
+            kept = clear_of_lights(part, 0.0, reach)
+            if kept.area() > 0.8 * part.area():
+                break
+        hit = [q for q in (ahead ^ M.extrude(kept, reach + 0.5)).decompose() if q.volume() > SPLICE_GRAZE]
+        if hit:
+            reach = max(2.0, min(reach, min(q.bounding_box()[2] for q in hit) - 0.5))
+        tenon.append(M.extrude(kept, reach + 0.5).translate([0, 0, -0.5]))             # overlaps the root
+    tenon = M.batch_boolean(tenon, m3d.OpType.Add) - ahead
     root = M.extrude(clear_of_lights(root_p, -SPLICE_BACK, 0.0), SPLICE_BACK).translate([0, 0, -SPLICE_BACK])
     return (root + tenon).transform(back[:3].tolist())
 
