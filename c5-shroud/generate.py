@@ -1892,6 +1892,73 @@ def fit_test_blade(p):
     return M.batch_boolean([pc for pc in strip.decompose() if pc.volume() > 5], m3d.OpType.Add)   # no slivers
 
 
+FIT_STATIONS = (-125.0, -85.0, -45.0, 0.0, 45.0, 85.0, 125.0)   # spots 1-7 along the front (u), hood end first
+
+
+def station_marks(p, strip, depth=0.6):
+    """Cutters that mark spots 1-7 (FIT_STATIONS) on the underside of the top rail of strip (a
+    part in the model frame), so the gaps measured on the door at each spot can be matched to the
+    model: at each, a groove straight in from the front edge and the spot's number in dots along
+    the edge beside it (toward the middle), depth mm deep. The rail is 38 mm deep in the middle but
+    only a 4 mm lip at the corners, so the marks sit on the rail's middle line, at most 10 mm in."""
+    F = np.array(front_frame(p))
+    R, t = F[:, :3], F[:, 3]
+    loc = strip.transform(np.c_[R.T, -R.T @ t].tolist())          # (u, n, z)
+    from matplotlib.path import Path
+    plan = [Path(q) for q in loc.project().to_polygons()]
+
+    def inside(q):
+        return sum(pa.contains_point(tuple(q)) for pa in plan) % 2 == 1
+
+    def front(u_):           # the front edge at u_ (frontmost material across the strip)
+        sec = loc.transform([[0, 1, 0, 0], [0, 0, 1, 0], [1, 0, 0, -u_]]).slice(0.0)
+        return sec.bounds()[2]
+
+    def spot(u_):            # (point on the rail's middle line, inward normal, along-edge tangent)
+        d = 0.5
+        tg = np.array([2 * d, front(u_ + d) - front(u_ - d)])
+        tg /= np.linalg.norm(tg)
+        nrm = np.array([tg[1], -tg[0]])                               # into the part (back from the edge)
+        p0 = np.array([u_, front(u_)])
+        w = 0.0
+        while w < 20.0 and inside(p0 + nrm * (w + 0.3)):     # the rail's depth here, up to 20 mm
+            w += 0.3
+        return p0, nrm, tg, w
+
+    def underside(q):        # the bottom of the topmost material at plan point q
+        col = loc ^ box(q[0] - 0.2, q[0] + 0.2, q[1] - 0.2, q[1] + 0.2, -500, 500)
+        parts = col.decompose()
+        if not parts:
+            return None
+        return max(parts, key=lambda c: c.bounding_box()[5]).bounding_box()[2]
+
+    def cutter(q, ang, w, l):
+        zb = underside(q)
+        if zb is None:
+            return None
+        return (box(-l / 2, l / 2, -w / 2, w / 2, zb - 1.0, zb + depth)
+                .rotate([0, 0, math.degrees(ang)]).translate([q[0], q[1], 0]))
+
+    cuts = []
+    for i, u0 in enumerate(FIT_STATIONS, 1):
+        p0, nrm, tg, w = spot(u0)
+        mid = min(w / 2, 10.0)
+        cuts.append(cutter(p0 + nrm * mid, math.atan2(nrm[1], nrm[0]), 1.0, max(min(w - 1.2, 10.0), 1.0)))
+        side = -1.0 if u0 > 0 else 1.0
+        for k in range(i):
+            p1, n1_, t1, w1 = spot(u0 + side * (4.5 + 2.4 * k))
+            cuts.append(cutter(p1 + n1_ * min(w1 / 2, 10.0), math.atan2(t1[1], t1[0]), 1.3, 1.3))
+    cuts = [c for c in cuts if c is not None]
+    return M.batch_boolean(cuts, m3d.OpType.Add).transform(F.tolist())
+
+
+def fit_test_top(p):
+    """Quick print to measure the fit on the door: fit_test_blade (the top rail with both corners
+    and the clip tongue) with spots 1-7 marked on the rail's underside (station_marks)."""
+    strip = fit_test_blade(p)
+    return strip - station_marks(p, strip)
+
+
 def fit_test_mount(p):
     """Quick print: the two mounting tabs as flat 3 mm pieces, laid side by side.
     Checks the slots line up with the arm (A) and the pad (H) without anything in between."""
@@ -2039,6 +2106,7 @@ def write_projector_set(here):
         for tag, piece in zip(("hood_piece", "fender_piece"), pieces):
             save(f(print_orient_shroud(piece)), os.path.join(out, f"bezel_{side}_{tag}.stl"))
         save(f(joint_test(P, pieces)), os.path.join(out, f"bezel_joint_test_{side}.stl"))
+        save(on_bed_diagonal(f(print_orient_shroud(fit_test_top(P)))), os.path.join(out, f"fit_test_top_{side}.stl"))
         save(f(projector_straps(P)), os.path.join(out, f"projector_straps_{side}.stl"))
         dif = diffusers(P)
         if dif is not None:

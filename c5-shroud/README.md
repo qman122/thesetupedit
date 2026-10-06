@@ -595,7 +595,11 @@ pin in a boss that wasn't joined to the wall) and the sleeve had been cut back t
 fillet just grazing it. Now the post is solid across the cut (about 1,070 mm2), with three pins,
 and a graze is trimmed off instead of shortening the sleeve. Its overhanging end prints about 3 mm off the bed with the rail's supports. Each
 projector set also has `bezel_joint_test_<side>.stl`: 18 mm of each piece either side of the cut,
-to try the fit (and the glue) before printing the whole halves.
+to try the fit (and the glue) before printing the whole halves. And `fit_test_top_<side>.stl`: the bezel's top rail
+only, with both corners and the clip tongue, and spots 1-7 marked on its underside (a line in
+from the front edge, and the spot's number in dots beside it; `FIT_STATIONS` in `generate.py`).
+Clip it on the door and measure the gap and the front edge's offset at each spot to correct the
+shape.
 
 1. **Dry-fit first.** Push the dowel pins into one half, slide the fender half onto the sleeve,
    and tape the two together. Try the whole bezel on the car before gluing. If the sleeve is
