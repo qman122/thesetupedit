@@ -135,7 +135,7 @@ check("every lens has a clear view 10 degrees either side of straight ahead", bl
       f"{blocked} blocked rays")
 
 # 6d. the headlight door (measured from the owner's model, cover_scan.py): its lip rests on the
-#     top blade all the way across, and the clip's cross bar drops into the groove in the tongue
+#     top blade all the way across, and the tongue reaches the clip
 F_ = g.front_frame(P)
 U_ = (P.opening_w / 2 - P.opening_side_clear) / F_[0][0]
 z_top = g.bezel_z(P)[0]
@@ -166,12 +166,19 @@ def bar(dn=0.0, dz=0.0):
     return M.hull_points(pts).transform(F_)
 
 
-check("the clip's cross bar sits in the groove across the tongue", overlap(shroud, bar()) < 1e-3)
-check("pulled forward, the bar catches on the tongue's tooth",
-      overlap(shroud, bar(dn=-(P.clip_bar_t + 2 * P.groove_clear))) > 1)
-tw = P.tongue_w
-check(f"the tongue ({tw:.0f} mm) fits between the clip's legs ({P.clip_leg_gap:.0f} mm apart)",
-      P.clip_leg_gap - tw >= 2)
+check("the tongue's prongs stop short of the clip's cross bar", overlap(shroud, bar()) < 1e-3)
+# (the bar's bottom only reaches 1.2 mm down the prongs, where their top edge is rounded over)
+check(f"...within {P.tip_gap + 1.2:.1f} mm of it", overlap(shroud, bar(dn=P.tip_gap + 1.2)) > 1)
+_L = math.hypot(1, P.clip_skew)
+_hole = []
+for s_ in (-1, 1):
+    a_, d_ = s_ * P.clip_hole_a, P.tip_gap + P.clip_hole_back
+    u_ = P.clip_u + (a_ - d_ * P.clip_skew) / _L
+    n_ = g.clip_n(P, P.clip_u) + (a_ * P.clip_skew + d_) / _L + bow(u_)
+    zc_ = z_top + float(g.top_rise(P, u_))
+    pin = M.cylinder(12, P.clip_hole_d / 2 - 0.3, circular_segments=24).translate([u_, n_, zc_ - 8]).transform(F_)
+    _hole.append(overlap(shroud, pin))
+check("a clear hole through each prong for the clip to catch", max(_hole) < 1e-3, f"{max(_hole):.2f} mm3 in the way")
 
 # 7. the bezel is one continuous shell; its ears lie outside the door's side flanges with a
 #    screw hole on every hole in the flange (where the stock bezel's ears screw on)
@@ -242,7 +249,7 @@ for f in sorted(glob.glob(os.path.join(here, "stl", "**", "*.stl"), recursive=Tr
     parts = len(M(m3d.Mesh(tm.vertices.astype("float32"), tm.faces.astype("uint32"))).decompose())
     multi = ("spacer" in name or "fit_test_mount" in name or "fit_test_window" in name      # printed as separate pieces on purpose
              or "assembled" in name)                                                            # (and the fit-check assemblies)
-    curved = "bezel_" in name or "fit_test_blade" in name or "assembled" in name   # the top follows the door: supports under it
+    curved = "bezel_" in name or "fit_test_blade" in name or "fit_test_curve" in name or "assembled" in name   # the top follows the door: supports under it
     ok = tm.is_watertight and tm.volume > 0 and tm.bounds[0][2] == 0 and (flat or curved) and (parts == 1 or multi)
     check(f"{name}: watertight, {'on' if curved else 'flat on'} the bed, {parts} piece(s)", ok)
 

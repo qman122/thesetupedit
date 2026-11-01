@@ -142,12 +142,15 @@ class Params:
     clip_skew: float = 0.36       # the bar runs 0.36 mm further forward per mm toward the fender (20 deg)
     clip_leg_gap: float = 26.0    # between the legs' inner faces
     cover_edge_n: float = 2.5     # the door's front edge sits this far behind the blade's front, just behind the bead
-    # a tongue on the blade runs back under the clip: the bar drops into a groove across it and the
-    # legs sit either side of it (it prints flush with the blade, so the blade still lies flat)
-    tongue_w: float = 23.0
-    groove_clear: float = 1.0     # groove is this much wider than the bar front and back
-    groove_depth: float = 2.0     # the bar hangs about 1.2 mm below the cover's lip
-    tooth_len: float = 4.5        # tongue behind the groove, chamfered so it ramps under the bar
+    # a tongue on the blade runs back to the clip, shaped like the stock bezel's (scanned): two flat
+    # prongs either side of a slit, square to the bar, ending just short of it, with a hole near
+    # each tip that the clip catches (it prints flush with the blade, so the blade still lies flat)
+    tongue_w: float = 32.0        # across both prongs at their tips
+    tip_gap: float = 1.3          # the prong tips stop this far in front of the bar
+    clip_slit_len: float = 45.0   # slit between the prongs, back from their tips
+    clip_hole_d: float = 4.2      # a hole through each prong...
+    clip_hole_a: float = 10.3     # ...this far either side of the slit
+    clip_hole_back: float = 5.7   # ...and this far behind the tips
     # the door's lip is not level: in the owner's model it runs about level over the hood half and
     # drops about 9 mm toward the fender. The top of the bezel follows it so the door sits down on
     # the blade all the way across (COVER_LIP below).
@@ -184,8 +187,9 @@ class Params:
     ear_start_y: tuple = (-35.0, -45.0)   # hood, fender: where the door's side flange starts
     ear_tip_past: float = 15.0    # ears end this far past the last screw hole
     ear_tip_above: float = 14.0   # ...and taper to this far above it (and 12 below)
-    tongue_root_w: float = 40.0   # clip tongue: width where it leaves the blade
-    tongue_slot_w: float = 5.0    # ...and the slot along it
+    tongue_root_w: float = 44.0   # clip tongue: width where it leaves the blade
+    tongue_slot_w: float = 2.0    # ...and the slit between the prongs
+    curve_test_depth: float = 15.0  # curve test print: this much of the top, back from the front edge
     dowel_d: float = 3.1          # dowel holes across the print split (3 mm pins)
     dowel_depth: float = 6.0      # each side of the split
     # moulded look: every edge of the bezel rounded (smooth_solid)
@@ -197,7 +201,7 @@ class Params:
     smooth_reduce: float = 0.85   # the remeshed surface keeps this share fewer triangles (fast_simplification)
     smooth_tol: float = 0.02      # ...or, without it, stays this close to the rounded shape
     smooth_margin: float = 0.15   # the door's underside and outline are cut this much deeper first; the rounding stays inside that
-    keep_gap: float = 0.08        # rounding keeps this far off the windows, screw holes, groove and flange pockets
+    keep_gap: float = 0.08        # rounding keeps this far off the windows, screw holes, clip slit and holes and flange pockets
     keep_round: float = 1.2       # ...and rounds the edges round them over about this much
     keep_sigma: float = 0.7       # ...their faces smoothed over this much first (the exact cut afterwards takes off what's left)
     min_wall: float = 1.05        # thinnest the side wall gets where it's pocketed round the door's flange
@@ -662,30 +666,32 @@ def clip_n(p, u):
 
 
 def clip_tongue(p, z_top):
-    """The tongue on the blade that clicks onto the cover's clip, and the groove the bar drops
-    into, in the front's own frame (before the bow). It tapers back from a wide root and has
-    a slot along its middle. The tongue fits between the clip's legs
-    and ends in a chamfered tooth that ramps under the bar as the blade slides in."""
-    ul, ur = p.clip_u - p.tongue_w / 2, p.clip_u + p.tongue_w / 2
-    g0 = [clip_n(p, u) + p.groove_clear for u in (ul, ur)]                 # groove front edge
-    g1 = [clip_n(p, u) - p.clip_bar_t - p.groove_clear for u in (ul, ur)]  # groove back edge
-    tb = [n - p.tooth_len for n in g1]                                      # end of the tooth
-    zb = z_top - p.rail_t
-    # tapered from a wide root at the blade to the tooth, with a slot along it (as in the photo)
+    """The tongue on the blade that clips onto the cover's clip, and the cuts through it (the slit
+    and the two holes), in the front's own frame (before the bow). Shaped like the stock bezel's
+    (scanned): two flat prongs either side of a slit, laid out square to the clip's cross bar,
+    tapering from the blade to rounded tips that stop tip_gap short of the bar, with a hole near
+    each tip that the clip catches."""
+    L = math.hypot(1, p.clip_skew)
+    b = np.array([1, p.clip_skew]) / L                   # along the bar
+    t = np.array([-p.clip_skew, 1]) / L                  # square to it, forward
+    o = np.array([p.clip_u, clip_n(p, p.clip_u)])        # the bar's front face at the clip's centre
+
+    def pt(a, d):
+        return list(o + a * b + d * t)
+    # the root runs 2 mm into the blade at both corners
     rw = p.tongue_root_w / 2
-    n_r = -p.blade_depth + 1
-    n_n = min(g0) + 7                                    # the taper ends ahead of the groove, clear of the bar's ends
-    plan = CS([[[ul, tb[0]], [ur, tb[1]], [ur, n_n], [p.clip_u + rw, n_r], [p.clip_u - rw, n_r], [ul, n_n]]])
-    plan = plan - CS.square([p.tongue_slot_w, n_r - 4 - (n_n - 2)]).translate([p.clip_u - p.tongue_slot_w / 2, n_n - 2])
+    d_r = max((-p.blade_depth + 2 - o[1] - a * b[1]) / t[1] for a in (-rw, rw))
+    d0 = p.tip_gap
+    plan = CS([[pt(-p.tongue_w / 2, d0), pt(p.tongue_w / 2, d0), pt(rw, d_r), pt(-rw, d_r)]])
+    w = p.tongue_slot_w / 2
+    slit = CS([[pt(-w, d0 - 1), pt(w, d0 - 1), pt(w, d0 + p.clip_slit_len), pt(-w, d0 + p.clip_slit_len)]])
+    r = 4.0                                              # the tips' corners round over, inside and out, as on the stock part
+    plan = (plan - slit).offset(-r, m3d.JoinType.Round).offset(r, m3d.JoinType.Round)
+    zb = z_top - p.rail_t
     tongue = M.extrude(plan, p.rail_t).translate([0, 0, zb])
-    # chamfer the back of the tooth: 1.8 mm down at its end, running out 3 mm in
-    ch = M.hull_points([[u, n + dn, z] for (u, n) in ((ul - 1, tb[0] - p.clip_skew), (ur + 1, tb[1] + p.clip_skew))
-                        for (dn, z) in ((-1, z_top - 2.4), (-1, z_top + 1), (4.67, z_top + 1))])
-    tongue = tongue - ch
-    gr = CS([[[ul - 1, g1[0] - p.clip_skew], [ur + 1, g1[1] + p.clip_skew],
-              [ur + 1, g0[1] + p.clip_skew], [ul - 1, g0[0] - p.clip_skew]]])
-    groove = M.extrude(gr, p.groove_depth + 1).translate([0, 0, z_top - p.groove_depth])
-    return tongue, groove
+    holes = [CS.circle(p.clip_hole_d / 2, 32).translate(pt(s_ * p.clip_hole_a, d0 + p.clip_hole_back)) for s_ in (-1, 1)]
+    cut = M.extrude(CS.batch_boolean([slit] + holes, m3d.OpType.Add), p.rail_t + 3.2).translate([0, 0, zb - 0.2])
+    return tongue, cut
 
 
 def face_profile(p, z):
@@ -1126,7 +1132,7 @@ def shell_parts(p, with_cuts=False):
     slab = box(ua - 30, ub + 30, -p.post_setback - p.post_depth, 0.3, z_fb, z_top)   # posts come out of this
     blade = box(*wide, -p.blade_depth, 0.3, z_bu, z_top)
     floor = box(*wide, -p.floor_depth, 0.3, z_fb, z_wb)
-    tongue, groove = clip_tongue(p, z_top)
+    tongue, clip_cut = clip_tongue(p, z_top)
     front = M.batch_boolean([bow_warp(p, m) for m in (slab, blade, floor, tongue)], m3d.OpType.Add).transform(F)
     front = front ^ M.extrude(CS([outline]).offset(-0.07, m3d.JoinType.Round), 400).translate([0, 0, -150])  # just inside the walls' face
     # lip rolled along the bottom front edge, and a bead along the blade's front edge, both
@@ -1143,7 +1149,7 @@ def shell_parts(p, with_cuts=False):
     lip = _tube3(edge_path(p.lip_r, z_wb - p.lip_r), p.lip_r)
     bead = _tube3(edge_path(p.bead_r, z_top), p.bead_r)
     front = M.batch_boolean([front, lip, bead], m3d.OpType.Add)
-    front = front - bow_warp(p, groove, 1.0).transform(F)
+    front = front - bow_warp(p, clip_cut, 1.0).transform(F)
 
     # --- windows: one per pod, the pod's face plus window_clear_x each side and window_clear_y
     # top and bottom (the 1-notch test frame), corners rounded to match. Cut straight ahead
@@ -1383,9 +1389,9 @@ def shell_parts(p, with_cuts=False):
                                      for z in (z0 - dz * (x - x0), z0 + 40)])
     if with_cuts:
         # the cuts that set the fit, to take out again exactly once the shell has been smoothed
-        groove_cut = lift_top(p, bow_warp(p, groove, 1.0).transform(F))
+        clip_cut = lift_top(p, bow_warp(p, clip_cut, 1.0).transform(F))
         pocket_cut = M.batch_boolean(pockets, m3d.OpType.Add) - M.batch_boolean(bosses, m3d.OpType.Add)
-        return body, M.batch_boolean([windows, groove_cut, pocket_cut] + holes, m3d.OpType.Add)
+        return body, M.batch_boolean([windows, clip_cut, pocket_cut] + holes, m3d.OpType.Add)
     return body
 
 
@@ -1651,7 +1657,7 @@ def _shroud(p):
         man = man ^ clip
     if p.smooth_sigma > 0:
         # round it all off, keeping clear of the fit-setting cuts (the windows round the pods, the
-        # screw holes, the clip groove, the pockets round the door's flange), then take those out
+        # screw holes, the clip slit and holes, the pockets round the door's flange), then take those out
         # again exactly, which only shaves off specks. The door's underside and its outline from
         # above were cut smooth_margin deeper first, which the rounding stays inside
         man = body if cut is None else body - cut.translate([0, 0, -p.smooth_margin])
@@ -1716,6 +1722,17 @@ def fit_test_blade(p):
     strip = shroud(p) ^ keep
     return M.batch_boolean([pc for pc in strip.decompose() if pc.volume() > 5], m3d.OpType.Add)   # no slivers
 
+
+def fit_test_curve(p):
+    """Quick print: just the front of the top, curve_test_depth deep (the bead and the front of the
+    blade), round the nose and into both corners. Hold it up under the headlight door's front edge
+    to check the top line's curve before printing the bezel."""
+    z_top = bezel_z(p)[0]
+    F = front_frame(p)
+    U = (p.opening_w / 2 - p.opening_side_clear) / F[0][0]
+    band = bow_warp(p, box(-U - 60, U + 60, -p.curve_test_depth, p.front_bow + 8, z_top - p.rail_t + 0.3, z_top + 3), 2.0)
+    strip = shroud(p) ^ lift_top(p, band.transform(F))
+    return M.batch_boolean([pc for pc in strip.decompose() if pc.volume() > 5], m3d.OpType.Add)   # no slivers
 
 def fit_test_mount(p):
     """Quick print: the two mounting tabs as flat 3 mm pieces, laid side by side.
@@ -1871,6 +1888,10 @@ if __name__ == "__main__":
     for tag, piece in zip(("hood_piece", "fender_piece"), split_shell(P, blade)):
         save(print_orient_shroud(piece), os.path.join(out, f"fit_test_blade_passenger_{tag}.stl"))
         save(mirror_x(print_orient_shroud(piece)), os.path.join(out, f"fit_test_blade_driver_{tag}.stl"))
+    curve = fit_test_curve(P)                            # the top line's curve, split the same way
+    for tag, piece in zip(("hood_piece", "fender_piece"), split_shell(P, curve)):
+        save(print_orient_shroud(piece), os.path.join(out, f"fit_test_curve_passenger_{tag}.stl"))
+        save(mirror_x(print_orient_shroud(piece)), os.path.join(out, f"fit_test_curve_driver_{tag}.stl"))
     save(fit_test_mount(P), os.path.join(out, "fit_test_mount_passenger.stl"))
     save(mirror_x(fit_test_mount(P)), os.path.join(out, "fit_test_mount_driver.stl"))
     save(spacers(P), os.path.join(out, "spacer_washers.stl"))

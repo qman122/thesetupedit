@@ -1,4 +1,4 @@
-# C5 sleepy-eye pod carrier and bezel (v10)
+# C5 sleepy-eye pod carrier and bezel (v11)
 
 For a 2000 C5 Corvette with the headlight door stops already fitted, holding three
 3.0 × 1.8 in dual-lens LED pods per side. Like the KnightDriveTV kit, each side is one
@@ -127,11 +127,13 @@ reference photo. It's modelled in one piece and split in two for printing (see b
   - The blade follows the lip's height (up to about 9 mm higher at the hood end).
   - It's trimmed wherever the door's underside comes lower (`door_clearance`, measured
     from the door model), so the door touches only the blade.
-- **Clip tongue:** a flat tongue, tapered from 40 mm and slotted along its middle, runs
-  back from the middle of the blade.
-  - The clip's cross bar drops into a groove across it.
-  - A chamfered tooth behind the groove catches the bar, and the clip's legs sit either
-    side of it.
+- **Clip tongue:** shaped like the stock bezel's (from the owner's scan of it). Two flat
+  prongs run back from the middle of the blade, either side of a 2 mm slit.
+  - They're laid out square to the clip's cross bar, which runs 20° off square to the front.
+  - They taper from 44 mm across at the blade to 32 mm at their rounded tips, which stop
+    1.3 mm short of the bar (`tip_gap`).
+  - A 4.2 mm hole through each prong near its tip, 10.3 mm either side of the slit, is what
+    the clip catches.
 - **No screws into the carrier.** The shell hangs from the door alone: the tongue on the
   clip, and the ears screwed through the door's flanges, like the stock bezel.
 - **Printing:**
@@ -147,6 +149,27 @@ reference photo. It's modelled in one piece and split in two for printing (see b
 the headlight door and check:
 - the tongue clicks onto the clip,
 - the door's lip sits down on the blade at both ends, just behind the bead.
+
+Quicker still, `stl/fit_test_curve_*.stl` is just the front 15 mm of the top (`curve_test_depth`):
+the bead and the front of the blade, round the nose and into both corners. Tape the two halves
+together and hold it up under the door's front edge to check the top line's curve.
+
+## What changed in v11: the clip and the top line checked against the stock bezel
+
+The owner scanned a stock passenger bezel. Lined up with v10 on the top front edge and the clip:
+- **The top line was already right.** Seen from above, the stock nose and v10's differ by
+  0.16 mm rms (0.47 mm at most), and the bow by 0.1 mm across 240 mm. Nothing moved.
+- **The clip is now the stock one** (see "The bezel"). v10 had a single slotted tongue with a
+  groove for the bar and a chamfered tooth behind it. The stock part has two prongs that stop
+  just short of the bar, with a hole in each. The checks for the groove, the tooth and the
+  tongue's width between the clip's legs are replaced: the prongs stop short of the bar but
+  within 2.5 mm of it, and each hole is clear.
+  - The clip's position across the car still comes from the door model (`clip_u`); lining up
+    on the clip means the scan can't check it.
+- **New quick print:** `fit_test_curve_*.stl`, the top line only (see above). All 60 checks pass.
+- `tongue_w`, `tongue_root_w` and `tongue_slot_w` changed; `groove_clear`, `groove_depth` and
+  `tooth_len` are gone; `tip_gap`, `clip_slit_len`, `clip_hole_d`, `clip_hole_a`,
+  `clip_hole_back` and `curve_test_depth` are new.
 
 ## What changed in v10: a moulded look, like the reference part
 
@@ -325,7 +348,7 @@ file's path.
 
 ## Checks
 
-`python3 check.py` runs 52 checks. They all pass:
+`python3 check.py` runs 60 checks. They all pass:
 
 - The hole spacing matches A, H, B and D.
 - Every slot is open, with solid material past its ends.
@@ -334,8 +357,8 @@ file's path.
   7 mm behind them for the wiring.
 - The pods clear the bezel, which clears the carrier.
 - Every lens has a clear view 10° either side of straight ahead.
-- The door's lip sits on the top blade all the way across, the clip's cross bar sits in the
-  tongue's groove and catches on its tooth, and the tongue fits between the clip's legs.
+- The door's lip sits on the top blade all the way across, the clip tongue's
+  prongs stop just short of the bar, and each prong has a clear hole for the clip to catch.
 - The bezel is one piece, with a screw hole on every hole in the door's side flanges
   (`cover_scan.py` also checks the bezel against the door itself).
 - The two print pieces are each one solid and fit the 256 mm bed, and the dowel holes go
