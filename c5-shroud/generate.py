@@ -1884,14 +1884,13 @@ if __name__ == "__main__":
         save(print_orient_shroud(piece), os.path.join(out, f"bezel_passenger_{tag}.stl"))
         save(mirror_x(print_orient_shroud(piece)), os.path.join(out, f"bezel_driver_{tag}.stl"))
     save(fit_test(P), os.path.join(out, "fit_test_window.stl"))
-    blade = fit_test_blade(P)                            # split like the bezel, to fit the bed
-    for tag, piece in zip(("hood_piece", "fender_piece"), split_shell(P, blade)):
-        save(print_orient_shroud(piece), os.path.join(out, f"fit_test_blade_passenger_{tag}.stl"))
-        save(mirror_x(print_orient_shroud(piece)), os.path.join(out, f"fit_test_blade_driver_{tag}.stl"))
-    curve = fit_test_curve(P)                            # the top line's curve, split the same way
-    for tag, piece in zip(("hood_piece", "fender_piece"), split_shell(P, curve)):
-        save(print_orient_shroud(piece), os.path.join(out, f"fit_test_curve_passenger_{tag}.stl"))
-        save(mirror_x(print_orient_shroud(piece)), os.path.join(out, f"fit_test_curve_driver_{tag}.stl"))
+    # the two quick prints of the top: whole for a big bed, and split like the bezel for the A1
+    for name, part in (("blade", fit_test_blade(P)), ("curve", fit_test_curve(P))):
+        save(print_orient_shroud(part), os.path.join(out, f"fit_test_{name}_passenger_one_piece.stl"))
+        save(mirror_x(print_orient_shroud(part)), os.path.join(out, f"fit_test_{name}_driver_one_piece.stl"))
+        for tag, piece in zip(("hood_piece", "fender_piece"), split_shell(P, part)):
+            save(print_orient_shroud(piece), os.path.join(out, f"fit_test_{name}_passenger_{tag}.stl"))
+            save(mirror_x(print_orient_shroud(piece)), os.path.join(out, f"fit_test_{name}_driver_{tag}.stl"))
     save(fit_test_mount(P), os.path.join(out, "fit_test_mount_passenger.stl"))
     save(mirror_x(fit_test_mount(P)), os.path.join(out, "fit_test_mount_driver.stl"))
     save(spacers(P), os.path.join(out, "spacer_washers.stl"))

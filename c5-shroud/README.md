@@ -137,22 +137,23 @@ reference photo. It's modelled in one piece and split in two for printing (see b
 - **No screws into the carrier.** The shell hangs from the door alone: the tongue on the
   clip, and the ears screwed through the door's flanges, like the stock bezel.
 - **Printing:**
-  - It's split through the middle of the hood-side post into a hood piece (about
-    123 × 226 mm) and a fender piece (about 218 × 197 mm). Both fit the A1's 256 mm bed.
-  - Two 3 mm dowels, 12 mm long, cross the cut: one where the post meets the floor, one
-    where it meets the blade. Glue the joint as well.
-  - Each piece prints upside down on its blade, tipped to lie as flat as it goes. The bead
-    and the lip-following top mean it needs supports under the blade.
+  - The owner prints it whole (`bezel_*_one_piece.stl`, about 322 × 236 mm) on a Qidi Max4.
+  - For a smaller bed like the A1's 256 mm, it's also split through the middle of the
+    hood-side post into a hood piece (about 123 × 226 mm) and a fender piece (about
+    218 × 197 mm). Two 3 mm dowels, 12 mm long, cross the cut: one where the post meets the
+    floor, one where it meets the blade. Glue the joint as well.
+  - It prints upside down on its blade, tipped to lie as flat as it goes. The bead and the
+    lip-following top mean it needs supports under the blade.
 
-**Before printing the bezel,** print the two halves of `stl/fit_test_blade_driver_*.stl`
-(the blade, bead and tongue only) and tape them together. Slide it in under the front of
-the headlight door and check:
+**Before printing the bezel,** print `stl/fit_test_blade_driver_one_piece.stl` (the blade,
+bead and tongue only). Slide it in under the front of the headlight door and check:
 - the tongue clicks onto the clip,
 - the door's lip sits down on the blade at both ends, just behind the bead.
 
-Quicker still, `stl/fit_test_curve_*.stl` is just the front 15 mm of the top (`curve_test_depth`):
-the bead and the front of the blade, round the nose and into both corners. Tape the two halves
-together and hold it up under the door's front edge to check the top line's curve.
+Quicker still, `stl/fit_test_curve_*_one_piece.stl` is just the front 15 mm of the top
+(`curve_test_depth`): the bead and the front of the blade, round the nose and into both
+corners. Hold it up under the door's front edge to check the top line's curve.
+Both test prints also come split in two (`..._hood_piece` and `..._fender_piece`) for the A1.
 
 ## What changed in v11: the clip and the top line checked against the stock bezel
 
@@ -166,7 +167,7 @@ The owner scanned a stock passenger bezel. Lined up with v10 on the top front ed
   within 2.5 mm of it, and each hole is clear.
   - The clip's position across the car still comes from the door model (`clip_u`); lining up
     on the clip means the scan can't check it.
-- **New quick print:** `fit_test_curve_*.stl`, the top line only (see above). All 60 checks pass.
+- **New quick print:** `fit_test_curve_*.stl`, the top line only (see above). All 60 checks pass (64 with the one-piece test prints added later).
 - `tongue_w`, `tongue_root_w` and `tongue_slot_w` changed; `groove_clear`, `groove_depth` and
   `tooth_len` are gone; `tip_gap`, `clip_slit_len`, `clip_hole_d`, `clip_hole_a`,
   `clip_hole_back` and `curve_test_depth` are new.
@@ -348,7 +349,7 @@ file's path.
 
 ## Checks
 
-`python3 check.py` runs 60 checks. They all pass:
+`python3 check.py` runs 64 checks. They all pass:
 
 - The hole spacing matches A, H, B and D.
 - Every slot is open, with solid material past its ends.
@@ -376,17 +377,17 @@ file's path.
 2. `stl/fit_test_mount_driver.stl` (about 20 minutes, two small flat tabs). Bolt the taller
    tab to the arm (holes 1 and 4) and the shorter one to the aiming pad (both holes).
    The bolts should go through snugly without forcing. Already done: the spacing fit.
-3. `stl/fit_test_blade_driver_hood_piece.stl` and `..._fender_piece.stl` (about 40 minutes;
-   supports on). Tape them together and slide them in under the front of the headlight
-   door. Check the tongue clicks onto the clip and the lip sits down behind the bead at
-   both ends.
-4. `stl/carrier_driver.stl`, then `stl/bezel_driver_hood_piece.stl` and
-   `stl/bezel_driver_fender_piece.stl`, then the passenger set.
-   - The bezel pieces print upside down on the blade; turn supports on.
-   - Join them with two 3 mm × 12 mm dowel pins and glue.
-   - `bezel_*_one_piece.stl` is the whole bezel for reference; it's too wide for the A1.
-   - The carrier is 263 mm wide, still over the A1's bed.
-5. `stl/spacer_washers.stl`: only if a tab doesn't sit flat against the arm or the pad.
+3. `stl/fit_test_curve_driver_one_piece.stl` (supports on). Hold it under the door's front
+   edge to check the top line's curve.
+4. `stl/fit_test_blade_driver_one_piece.stl` (about 40 minutes; supports on). Slide it in
+   under the front of the headlight door. Check the tongue clicks onto the clip and the
+   lip sits down behind the bead at both ends.
+5. `stl/carrier_driver.stl`, then `stl/bezel_driver_one_piece.stl`, then the passenger set.
+   - The bezel prints upside down on the blade; turn supports on.
+   - On the A1, print `bezel_*_hood_piece.stl` and `..._fender_piece.stl` instead and join
+     them with two 3 mm × 12 mm dowel pins and glue. The carrier (263 mm) is over the
+     A1's bed either way.
+6. `stl/spacer_washers.stl`: only if a tab doesn't sit flat against the arm or the pad.
 
 **Material:** ASA or ABS is best; PETG works. Don't use PLA, which softens in a hot engine
 bay. Use 4 walls, 40% gyroid infill, and 6 top and bottom layers.
